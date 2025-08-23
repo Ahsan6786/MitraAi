@@ -68,6 +68,12 @@ function ReportDialog({ entry }: { entry: JournalEntry }) {
                     </DialogDescription>
                 </DialogHeader>
                 <div className="py-4">
+                     <div className="mb-4">
+                        <h4 className="font-semibold text-sm">User's Entry:</h4>
+                        <p className="text-sm text-muted-foreground italic p-2 bg-muted rounded-md">
+                           "{entry.type === 'text' ? entry.content : entry.transcription}"
+                        </p>
+                    </div>
                     <Textarea
                         placeholder="Write your report here..."
                         value={report}
@@ -109,6 +115,9 @@ export default function AdminPage() {
                 } as JournalEntry));
                 setEntries(entriesData);
                 setIsLoadingEntries(false);
+            }, (error) => {
+                console.error("Error fetching journal entries: ", error);
+                setIsLoadingEntries(false);
             });
 
             return () => unsubscribe();
@@ -116,8 +125,12 @@ export default function AdminPage() {
     }, [isAdmin]);
 
 
-    if (loading) {
-        return <div className="flex items-center justify-center h-full">Loading...</div>;
+    if (loading || isLoadingEntries) {
+        return (
+            <div className="flex items-center justify-center h-screen">
+                 <Loader2 className="w-10 h-10 animate-spin text-primary" />
+            </div>
+        );
     }
 
     if (!isAdmin) {

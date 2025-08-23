@@ -119,9 +119,6 @@ export default function VoiceJournalPage() {
           description: "Your voice journal has been analyzed and saved.",
         });
 
-        // After saving, reset to allow a new recording
-        resetRecording();
-
       } catch (error) {
          console.error('Error analyzing or saving audio:', error);
          toast({
