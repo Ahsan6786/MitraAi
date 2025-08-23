@@ -46,11 +46,10 @@ export default function JournalPage() {
 
   useEffect(() => {
     if (user) {
-      // Corrected the query to match the required index more efficiently
       const q = query(
         collection(db, 'journalEntries'),
-        where('type', '==', 'text'),
         where('userId', '==', user.uid),
+        where('type', '==', 'text'),
         orderBy('createdAt', 'desc')
       );
       
