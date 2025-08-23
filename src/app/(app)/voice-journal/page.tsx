@@ -1,15 +1,14 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { analyzeVoiceJournal, AnalyzeVoiceJournalOutput } from '@/ai/flows/analyze-voice-journal';
-import { Loader2, Mic, Play, Square, Trash2, Lightbulb, ListChecks, Quote } from 'lucide-react';
+import { Loader2, Mic, Square, Trash2, Lightbulb, ListChecks, Quote } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/use-auth';
-import { db, storage } from '@/lib/firebase';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { db } from '@/lib/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 
 
@@ -93,19 +92,12 @@ export default function VoiceJournalPage() {
       const base64Audio = reader.result as string;
       try {
         const result = await analyzeVoiceJournal({ audioDataUri: base64Audio });
-        setAnalysisResult(result);
         
-        // Upload audio to Firebase Storage
-        const storageRef = ref(storage, `voice-journals/${user.uid}/${Date.now()}.webm`);
-        const snapshot = await uploadBytes(storageRef, audioBlob);
-        const downloadURL = await getDownloadURL(snapshot.ref);
-
         // Save analysis to Firestore
         await addDoc(collection(db, 'journalEntries'), {
           userId: user.uid,
           userEmail: user.email,
           type: 'voice',
-          audioUrl: downloadURL,
           mood: result.mood,
           transcription: result.transcription,
           solutions: result.solutions,
@@ -114,9 +106,10 @@ export default function VoiceJournalPage() {
           doctorReport: null,
         });
 
-         toast({
+        setAnalysisResult(result); // Keep results on screen
+        toast({
           title: "Analysis Complete & Saved",
-          description: "Your voice journal has been analyzed and saved.",
+          description: "Your voice journal transcript has been saved.",
         });
 
       } catch (error) {
@@ -179,7 +172,7 @@ export default function VoiceJournalPage() {
                 <div className="flex justify-center gap-2">
                    <Button onClick={handleAnalyze} disabled={isLoading}>
                       {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                      {isLoading ? 'Analyzing & Saving...' : 'Analyze My Mood'}
+                      {isLoading ? 'Analyzing & Saving...' : 'Analyze & Save Transcript'}
                    </Button>
                    <Button onClick={resetRecording} variant="outline" disabled={isLoading}>
                       <Trash2 className="mr-2 h-4 w-4"/> Discard

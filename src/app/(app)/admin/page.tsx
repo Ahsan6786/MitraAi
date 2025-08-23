@@ -21,9 +21,8 @@ interface JournalEntry {
     type: 'text' | 'voice';
     createdAt: Timestamp;
     mood: string;
-    content?: string;
-    audioUrl?: string;
-    transcription?: string;
+    content?: string; // For text journals
+    transcription?: string; // For voice journals
     reviewed: boolean;
     doctorReport?: string;
 }
@@ -52,6 +51,8 @@ function ReportDialog({ entry }: { entry: JournalEntry }) {
         }
     };
 
+    const entryContent = entry.type === 'text' ? entry.content : entry.transcription;
+
     return (
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogTrigger asChild>
@@ -70,8 +71,8 @@ function ReportDialog({ entry }: { entry: JournalEntry }) {
                 <div className="py-4">
                      <div className="mb-4">
                         <h4 className="font-semibold text-sm">User's Entry:</h4>
-                        <p className="text-sm text-muted-foreground italic p-2 bg-muted rounded-md">
-                           "{entry.type === 'text' ? entry.content : entry.transcription}"
+                        <p className="text-sm text-muted-foreground italic p-2 bg-muted rounded-md max-h-40 overflow-y-auto">
+                           "{entryContent}"
                         </p>
                     </div>
                     <Textarea
@@ -100,13 +101,15 @@ export default function AdminPage() {
     const [isLoadingEntries, setIsLoadingEntries] = useState(true);
 
     useEffect(() => {
-        if (!loading && !isAdmin) {
-            router.push('/chat');
+        if (!loading && !user) {
+            router.push('/signin');
+        } else if (!loading && user && !isAdmin) {
+             router.push('/chat');
         }
     }, [user, loading, isAdmin, router]);
 
     useEffect(() => {
-        if (isAdmin) {
+        if (user && isAdmin) {
             const q = query(collection(db, 'journalEntries'), orderBy('createdAt', 'desc'));
             const unsubscribe = onSnapshot(q, (querySnapshot) => {
                 const entriesData = querySnapshot.docs.map(doc => ({
@@ -122,19 +125,15 @@ export default function AdminPage() {
 
             return () => unsubscribe();
         }
-    }, [isAdmin]);
+    }, [user, isAdmin]);
 
 
-    if (loading || isLoadingEntries) {
+    if (loading || isLoadingEntries || !isAdmin) {
         return (
             <div className="flex items-center justify-center h-screen">
                  <Loader2 className="w-10 h-10 animate-spin text-primary" />
             </div>
         );
-    }
-
-    if (!isAdmin) {
-        return null;
     }
 
     return (
@@ -152,11 +151,7 @@ export default function AdminPage() {
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
-                        {isLoadingEntries ? (
-                             <div className="flex justify-center items-center py-10">
-                                <Loader2 className="w-8 h-8 animate-spin text-primary" />
-                             </div>
-                        ) : entries.length === 0 ? (
+                        {entries.length === 0 ? (
                             <p className="text-center text-muted-foreground py-10">No journal entries have been submitted yet.</p>
                         ) : (
                             <Table>
@@ -172,30 +167,28 @@ export default function AdminPage() {
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {entries.map(entry => (
-                                        <TableRow key={entry.id}>
-                                            <TableCell className="font-medium">{entry.userEmail}</TableCell>
-                                            <TableCell><Badge variant={entry.type === 'text' ? 'secondary' : 'outline'}>{entry.type}</Badge></TableCell>
-                                            <TableCell>{entry.createdAt.toDate().toLocaleString()}</TableCell>
-                                            <TableCell className="capitalize">{entry.mood}</TableCell>
-                                            <TableCell>
-                                                {entry.type === 'text' && <p className="truncate max-w-xs">{entry.content}</p>}
-                                                {entry.type === 'voice' && entry.audioUrl && (
-                                                    <audio controls src={entry.audioUrl} className="w-64 h-10">
-                                                        Your browser does not support the audio element.
-                                                    </audio>
-                                                )}
-                                            </TableCell>
-                                            <TableCell>
-                                                <Badge variant={entry.reviewed ? 'default' : 'destructive'}>
-                                                    {entry.reviewed ? 'Reviewed' : 'Pending'}
-                                                </Badge>
-                                            </TableCell>
-                                            <TableCell>
-                                                <ReportDialog entry={entry} />
-                                            </TableCell>
-                                        </TableRow>
-                                    ))}
+                                    {entries.map(entry => {
+                                        const content = entry.type === 'text' ? entry.content : entry.transcription;
+                                        return (
+                                            <TableRow key={entry.id}>
+                                                <TableCell className="font-medium">{entry.userEmail}</TableCell>
+                                                <TableCell><Badge variant={entry.type === 'text' ? 'secondary' : 'outline'}>{entry.type}</Badge></TableCell>
+                                                <TableCell>{entry.createdAt.toDate().toLocaleString()}</TableCell>
+                                                <TableCell className="capitalize">{entry.mood}</TableCell>
+                                                <TableCell>
+                                                    <p className="truncate max-w-xs">{content}</p>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <Badge variant={entry.reviewed ? 'default' : 'destructive'}>
+                                                        {entry.reviewed ? 'Reviewed' : 'Pending'}
+                                                    </Badge>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <ReportDialog entry={entry} />
+                                                </TableCell>
+                                            </TableRow>
+                                        );
+                                    })}
                                 </TableBody>
                             </Table>
                         )}

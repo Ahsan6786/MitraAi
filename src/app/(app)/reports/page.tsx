@@ -41,6 +41,9 @@ export default function ReportsPage() {
                 } as JournalEntry));
                 setEntries(entriesData);
                 setIsLoading(false);
+            }, (error) => {
+                console.error("Error fetching reports: ", error);
+                setIsLoading(false);
             });
 
             return () => unsubscribe();
@@ -64,45 +67,48 @@ export default function ReportsPage() {
                     <Card className="text-center p-10">
                          <CardTitle>No Reports Yet</CardTitle>
                         <CardDescription className="mt-2">
-                            Once an admin reviews your journal entries, their reports will appear here.
+                            Once a doctor reviews your journal entries, their reports will appear here.
                         </CardDescription>
                     </Card>
                 ) : (
                     <Accordion type="single" collapsible className="w-full space-y-4">
-                        {entries.map(entry => (
-                            <AccordionItem value={entry.id} key={entry.id} className="border rounded-lg bg-card">
-                                <AccordionTrigger className="p-4 hover:no-underline">
-                                    <div className="flex items-center gap-4">
-                                        {entry.type === 'text' ? <PenSquare className="w-5 h-5 text-primary" /> : <Mic className="w-5 h-5 text-primary" />}
-                                        <div>
-                                            <div className="font-semibold">
-                                               {entry.type === 'text' ? 'Text Journal' : 'Voice Journal'} - {entry.createdAt.toDate().toLocaleDateString()}
+                        {entries.map(entry => {
+                             const entryContent = entry.type === 'text' ? entry.content : entry.transcription;
+                             return (
+                                <AccordionItem value={entry.id} key={entry.id} className="border rounded-lg bg-card">
+                                    <AccordionTrigger className="p-4 hover:no-underline">
+                                        <div className="flex items-center gap-4">
+                                            {entry.type === 'text' ? <PenSquare className="w-5 h-5 text-primary" /> : <Mic className="w-5 h-5 text-primary" />}
+                                            <div>
+                                                <div className="font-semibold">
+                                                {entry.type === 'text' ? 'Text Journal' : 'Voice Journal'} - {entry.createdAt.toDate().toLocaleDateString()}
+                                                </div>
+                                                <Badge variant="outline" className="mt-1 capitalize">{entry.mood}</Badge>
                                             </div>
-                                            <Badge variant="outline" className="mt-1 capitalize">{entry.mood}</Badge>
                                         </div>
-                                    </div>
-                                </AccordionTrigger>
-                                <AccordionContent className="p-4 border-t">
-                                     <div className="space-y-4">
-                                        <div>
-                                            <h4 className="font-semibold text-sm mb-1">Your Entry:</h4>
-                                            <p className="text-sm text-muted-foreground italic">
-                                                "{entry.type === 'text' ? entry.content : entry.transcription}"
-                                            </p>
+                                    </AccordionTrigger>
+                                    <AccordionContent className="p-4 border-t">
+                                        <div className="space-y-4">
+                                            <div>
+                                                <h4 className="font-semibold text-sm mb-1">Your Entry:</h4>
+                                                <p className="text-sm text-muted-foreground italic">
+                                                    "{entryContent}"
+                                                </p>
+                                            </div>
+                                            <div>
+                                                <h4 className="font-semibold text-sm mb-1 flex items-center gap-2">
+                                                    <MessageSquareText className="w-4 h-4 text-green-600"/>
+                                                    Doctor's Report:
+                                                </h4>
+                                                <p className="text-sm text-foreground whitespace-pre-wrap">
+                                                    {entry.doctorReport}
+                                                </p>
+                                            </div>
                                         </div>
-                                         <div>
-                                            <h4 className="font-semibold text-sm mb-1 flex items-center gap-2">
-                                                <MessageSquareText className="w-4 h-4 text-green-600"/>
-                                                Doctor's Report:
-                                            </h4>
-                                            <p className="text-sm text-foreground whitespace-pre-wrap">
-                                                {entry.doctorReport}
-                                            </p>
-                                        </div>
-                                    </div>
-                                </AccordionContent>
-                            </AccordionItem>
-                        ))}
+                                    </AccordionContent>
+                                </AccordionItem>
+                             );
+                        })}
                     </Accordion>
                 )}
             </main>
