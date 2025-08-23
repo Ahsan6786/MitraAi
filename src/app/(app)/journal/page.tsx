@@ -9,6 +9,9 @@ import { Frown, Loader2, Meh, Smile } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/use-auth';
+import { db } from '@/lib/firebase';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 
 interface JournalEntry {
   id: number;
@@ -37,6 +40,7 @@ export default function JournalPage() {
   const [entries, setEntries] = useState<JournalEntry[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const { user } = useAuth();
 
   const handleSaveEntry = async () => {
     if (!journalText.trim()) {
@@ -47,10 +51,30 @@ export default function JournalPage() {
       });
       return;
     };
+    if (!user) {
+        toast({
+            title: "Not Authenticated",
+            description: "You must be logged in to save an entry.",
+            variant: "destructive",
+        });
+        return;
+    }
     setIsLoading(true);
 
     try {
       const result = await predictUserMood({ journalEntry: journalText });
+      
+      // Save to Firestore
+      await addDoc(collection(db, 'journalEntries'), {
+        userId: user.uid,
+        userEmail: user.email,
+        type: 'text',
+        content: journalText,
+        mood: result.mood,
+        confidence: result.confidence,
+        createdAt: serverTimestamp(),
+      });
+      
       const newEntry: JournalEntry = {
         id: Date.now(),
         date: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
@@ -58,17 +82,18 @@ export default function JournalPage() {
         mood: result.mood,
         confidence: result.confidence,
       };
+
       setEntries([newEntry, ...entries]);
       setJournalText('');
        toast({
         title: "Entry Saved",
-        description: `We've analyzed and saved your journal entry.`,
+        description: `Your journal entry has been saved and is available for admin review.`,
       });
     } catch (error) {
-      console.error('Error predicting mood:', error);
+      console.error('Error saving entry:', error);
        toast({
-        title: "Analysis Failed",
-        description: "Sorry, we couldn't analyze your mood right now. Please try again.",
+        title: "Save Failed",
+        description: "Sorry, we couldn't save your entry right now. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -101,13 +126,13 @@ export default function JournalPage() {
           <CardFooter>
             <Button onClick={handleSaveEntry} disabled={isLoading}>
               {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-              {isLoading ? 'Analyzing...' : 'Analyze & Save Mood'}
+              {isLoading ? 'Analyzing & Saving...' : 'Analyze & Save Mood'}
             </Button>
           </CardFooter>
         </Card>
 
         <div className="space-y-4">
-            <h2 className="text-lg font-semibold font-headline">Past Entries</h2>
+            <h2 className="text-lg font-semibold font-headline">Recent Entries (Local)</h2>
              {entries.length === 0 ? (
                 <div className="text-center text-muted-foreground py-10">
                     <p>Your saved journal entries will appear here.</p>

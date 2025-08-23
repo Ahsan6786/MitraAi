@@ -7,7 +7,11 @@ import { analyzeVoiceJournal, AnalyzeVoiceJournalOutput } from '@/ai/flows/analy
 import { Loader2, Mic, Play, Square, Trash2, Lightbulb, ListChecks, Quote } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { useAuth } from '@/hooks/use-auth';
+import { db, storage } from '@/lib/firebase';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+
 
 type RecordingStatus = 'idle' | 'recording' | 'stopped';
 
@@ -21,11 +25,12 @@ export default function VoiceJournalPage() {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const { toast } = useToast();
+  const { user } = useAuth();
 
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      mediaRecorderRef.current = new MediaRecorder(stream);
+      mediaRecorderRef.current = new MediaRecorder(stream, { mimeType: 'audio/webm' });
       audioChunksRef.current = [];
 
       mediaRecorderRef.current.ondataavailable = (event) => {
@@ -36,7 +41,6 @@ export default function VoiceJournalPage() {
         const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
         setAudioBlob(blob);
         setAudioUrl(URL.createObjectURL(blob));
-        // Stop all media tracks
         stream.getTracks().forEach(track => track.stop());
       };
 
@@ -71,6 +75,14 @@ export default function VoiceJournalPage() {
 
   const handleAnalyze = async () => {
     if (!audioBlob) return;
+     if (!user) {
+        toast({
+            title: "Not Authenticated",
+            description: "You must be logged in to save an entry.",
+            variant: "destructive",
+        });
+        return;
+    }
 
     setIsLoading(true);
     setAnalysisResult(null);
@@ -83,15 +95,33 @@ export default function VoiceJournalPage() {
         try {
           const result = await analyzeVoiceJournal({ audioDataUri: base64Audio });
           setAnalysisResult(result);
+          
+          // Upload audio to Firebase Storage
+          const storageRef = ref(storage, `voice-journals/${user.uid}/${Date.now()}.webm`);
+          const snapshot = await uploadBytes(storageRef, audioBlob);
+          const downloadURL = await getDownloadURL(snapshot.ref);
+
+          // Save analysis to Firestore
+          await addDoc(collection(db, 'journalEntries'), {
+            userId: user.uid,
+            userEmail: user.email,
+            type: 'voice',
+            audioUrl: downloadURL,
+            mood: result.mood,
+            transcription: result.transcription,
+            solutions: result.solutions,
+            createdAt: serverTimestamp(),
+          });
+
            toast({
-            title: "Analysis Complete",
-            description: "Your voice journal has been analyzed.",
+            title: "Analysis Complete & Saved",
+            description: "Your voice journal has been analyzed and saved for admin review.",
           });
         } catch (error) {
-           console.error('Error analyzing audio:', error);
+           console.error('Error analyzing or saving audio:', error);
            toast({
             title: 'Analysis Failed',
-            description: 'Sorry, we could not analyze your audio right now.',
+            description: 'Sorry, we could not process your audio right now.',
             variant: 'destructive',
           });
         } finally {
@@ -147,7 +177,7 @@ export default function VoiceJournalPage() {
                 <div className="flex justify-center gap-2">
                    <Button onClick={handleAnalyze} disabled={isLoading}>
                       {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                      {isLoading ? 'Analyzing...' : 'Analyze My Mood'}
+                      {isLoading ? 'Analyzing & Saving...' : 'Analyze My Mood'}
                    </Button>
                    <Button onClick={resetRecording} variant="outline" disabled={isLoading}>
                       <Trash2 className="mr-2 h-4 w-4"/> Discard
@@ -158,7 +188,7 @@ export default function VoiceJournalPage() {
           </CardContent>
         </Card>
 
-        {isLoading && (
+        {isLoading && !analysisResult && (
             <div className="text-center p-10">
                 <Loader2 className="mx-auto h-12 w-12 animate-spin text-primary"/>
                 <p className="mt-4 text-muted-foreground">Analyzing your voice journal...</p>
