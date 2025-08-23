@@ -109,26 +109,33 @@ export default function AdminPage() {
     }, [user, loading, isAdmin, router]);
 
     useEffect(() => {
-        if (user && isAdmin) {
-            const q = query(collection(db, 'journalEntries'), orderBy('createdAt', 'desc'));
-            const unsubscribe = onSnapshot(q, (querySnapshot) => {
-                const entriesData = querySnapshot.docs.map(doc => ({
-                    id: doc.id,
-                    ...doc.data()
-                } as JournalEntry));
-                setEntries(entriesData);
-                setIsLoadingEntries(false);
-            }, (error) => {
-                console.error("Error fetching journal entries: ", error);
-                setIsLoadingEntries(false);
+        if (loading || !isAdmin) return;
+
+        setIsLoadingEntries(true);
+        const q = query(collection(db, 'journalEntries'), orderBy('createdAt', 'desc'));
+        const unsubscribe = onSnapshot(q, (querySnapshot) => {
+            const entriesData = querySnapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            } as JournalEntry));
+            setEntries(entriesData);
+            setIsLoadingEntries(false);
+        }, (error) => {
+            console.error("Error fetching journal entries: ", error);
+            // This might happen due to Firestore rules
+            toast({
+                title: "Error",
+                description: "Could not fetch journal entries. Please check Firestore rules.",
+                variant: "destructive"
             });
+            setIsLoadingEntries(false);
+        });
 
-            return () => unsubscribe();
-        }
-    }, [user, isAdmin]);
+        return () => unsubscribe();
+    }, [user, isAdmin, loading, toast]);
 
 
-    if (loading || isLoadingEntries || !isAdmin) {
+    if (loading || !isAdmin) {
         return (
             <div className="flex items-center justify-center h-screen">
                  <Loader2 className="w-10 h-10 animate-spin text-primary" />
@@ -151,7 +158,11 @@ export default function AdminPage() {
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
-                        {entries.length === 0 ? (
+                        {isLoadingEntries ? (
+                             <div className="flex justify-center items-center py-10">
+                                <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                             </div>
+                        ) : entries.length === 0 ? (
                             <p className="text-center text-muted-foreground py-10">No journal entries have been submitted yet.</p>
                         ) : (
                             <Table>
