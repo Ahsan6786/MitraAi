@@ -99,6 +99,7 @@ export default function AdminPage() {
     const router = useRouter();
     const [entries, setEntries] = useState<JournalEntry[]>([]);
     const [isLoadingEntries, setIsLoadingEntries] = useState(true);
+    const { toast } = useToast();
 
     useEffect(() => {
         if (!loading && !user) {
