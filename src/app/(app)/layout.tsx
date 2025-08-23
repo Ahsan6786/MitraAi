@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { BookHeart, MessageSquare, UserCircle } from 'lucide-react';
+import { BookHeart, MessageSquare, UserCircle, MicVocal } from 'lucide-react';
 
 import {
   SidebarProvider,
@@ -45,6 +45,14 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 <Link href="/journal">
                   <BookHeart />
                   <span>Journal</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+               <SidebarMenuButton asChild isActive={pathname === '/voice-journal'}>
+                <Link href="/voice-journal">
+                  <MicVocal />
+                  <span>Voice Journal</span>
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
