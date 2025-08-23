@@ -13,6 +13,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Loader2, MessageSquarePlus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { SidebarTrigger } from '@/components/ui/sidebar';
 
 interface JournalEntry {
     id: string;
@@ -145,9 +146,12 @@ export default function AdminPage() {
 
     return (
         <div className="h-full flex flex-col">
-            <header className="border-b p-4">
-                <h1 className="text-xl font-bold font-headline">Admin Panel</h1>
-                <p className="text-sm text-muted-foreground">Review user journal entries.</p>
+            <header className="border-b bg-background p-3 md:p-4 flex items-center gap-2">
+                <SidebarTrigger className="md:hidden" />
+                <div>
+                  <h1 className="text-lg md:text-xl font-bold font-headline">Admin Panel</h1>
+                  <p className="text-sm text-muted-foreground">Review user journal entries.</p>
+                </div>
             </header>
             <main className="flex-1 overflow-auto p-4 md:p-6">
                 <Card>
@@ -169,37 +173,32 @@ export default function AdminPage() {
                                 <TableHeader>
                                     <TableRow>
                                         <TableHead>User</TableHead>
-                                        <TableHead>Type</TableHead>
-                                        <TableHead>Date</TableHead>
+                                        <TableHead className="hidden sm:table-cell">Type</TableHead>
+                                        <TableHead className="hidden lg:table-cell">Date</TableHead>
                                         <TableHead>Mood</TableHead>
-                                        <TableHead>Content</TableHead>
                                         <TableHead>Status</TableHead>
                                         <TableHead>Action</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {entries.map(entry => {
-                                        const content = entry.content || entry.transcription || '';
-                                        return (
-                                            <TableRow key={entry.id}>
-                                                <TableCell className="font-medium">{entry.userEmail}</TableCell>
-                                                <TableCell><Badge variant={entry.type === 'text' ? 'secondary' : 'outline'}>{entry.type}</Badge></TableCell>
-                                                <TableCell>{entry.createdAt?.toDate().toLocaleString()}</TableCell>
-                                                <TableCell className="capitalize">{entry.mood}</TableCell>
-                                                <TableCell>
-                                                    <p className="truncate max-w-xs">{content}</p>
-                                                </TableCell>
-                                                <TableCell>
-                                                    <Badge variant={entry.reviewed ? 'default' : 'destructive'}>
-                                                        {entry.reviewed ? 'Reviewed' : 'Pending'}
-                                                    </Badge>
-                                                </TableCell>
-                                                <TableCell>
-                                                    <ReportDialog entry={entry} />
-                                                </TableCell>
-                                            </TableRow>
-                                        );
-                                    })}
+                                    {entries.map(entry => (
+                                        <TableRow key={entry.id}>
+                                            <TableCell className="font-medium">
+                                                <div className="truncate max-w-28 sm:max-w-none">{entry.userEmail}</div>
+                                            </TableCell>
+                                            <TableCell className="hidden sm:table-cell"><Badge variant={entry.type === 'text' ? 'secondary' : 'outline'}>{entry.type}</Badge></TableCell>
+                                            <TableCell className="hidden lg:table-cell">{entry.createdAt?.toDate().toLocaleString()}</TableCell>
+                                            <TableCell className="capitalize">{entry.mood}</TableCell>
+                                            <TableCell>
+                                                <Badge variant={entry.reviewed ? 'default' : 'destructive'}>
+                                                    {entry.reviewed ? 'Reviewed' : 'Pending'}
+                                                </Badge>
+                                            </TableCell>
+                                            <TableCell>
+                                                <ReportDialog entry={entry} />
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
                                 </TableBody>
                             </Table>
                         )}

@@ -13,6 +13,7 @@ import {
   SidebarMenuButton,
   SidebarFooter,
   SidebarInset,
+  SidebarTrigger,
 } from '@/components/ui/sidebar';
 import { Logo } from '@/components/icons';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -54,9 +55,12 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
     <SidebarProvider>
       <Sidebar>
         <SidebarHeader>
-          <div className="flex items-center gap-2">
-            <Logo className="size-8 text-primary" />
-            <span className="text-lg font-semibold font-headline">MitraAI</span>
+           <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Logo className="size-8 text-primary" />
+              <span className="text-lg font-semibold font-headline">MitraAI</span>
+            </div>
+            <SidebarTrigger className="md:hidden" />
           </div>
         </SidebarHeader>
         <SidebarContent>
@@ -120,7 +124,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
                 <Avatar>
                   <AvatarFallback>{user.email?.[0].toUpperCase()}</AvatarFallback>
                 </Avatar>
-                <div className="flex flex-col">
+                <div className="flex flex-col overflow-hidden">
                   <span className="text-sm font-medium truncate">{user.email}</span>
                   <span className="text-xs text-muted-foreground">{isAdmin ? 'Admin' : 'User'}</span>
                 </div>

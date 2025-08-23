@@ -12,6 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
 import { db } from '@/lib/firebase';
 import { collection, addDoc, serverTimestamp, query, where, onSnapshot, orderBy, Timestamp } from 'firebase/firestore';
+import { SidebarTrigger } from '@/components/ui/sidebar';
 
 interface JournalEntry {
   id: string;
@@ -64,7 +65,7 @@ export default function JournalPage() {
         console.error("Error fetching journal entries:", error);
         toast({
           title: "Error",
-          description: "Could not fetch journal entries. Please ensure Firestore indexes are correct.",
+          description: "Could not fetch journal entries.",
           variant: "destructive"
         });
         setIsLoadingEntries(false);
@@ -128,9 +129,12 @@ export default function JournalPage() {
 
   return (
     <div className="h-full flex flex-col bg-muted/20">
-      <header className="border-b bg-background p-4">
-        <h1 className="text-xl font-bold font-headline">Daily Mood Journal</h1>
-        <p className="text-sm text-muted-foreground">Reflect on your day, understand your emotions.</p>
+       <header className="border-b bg-background p-3 md:p-4 flex items-center gap-2">
+        <SidebarTrigger className="md:hidden" />
+        <div>
+          <h1 className="text-lg md:text-xl font-bold font-headline">Daily Mood Journal</h1>
+          <p className="text-sm text-muted-foreground">Reflect on your day, understand your emotions.</p>
+        </div>
       </header>
       <div className="flex-1 overflow-auto p-4 md:p-6 space-y-6">
         <Card>
@@ -163,7 +167,7 @@ export default function JournalPage() {
                     <Loader2 className="w-8 h-8 animate-spin text-primary" />
                 </div>
              ) : entries.length === 0 ? (
-                <div className="text-center text-muted-foreground bg-background rounded-lg py-10">
+                <div className="text-center text-muted-foreground bg-background rounded-lg py-10 px-4">
                     <p>Your saved journal entries will appear here.</p>
                 </div>
             ) : (
