@@ -1,0 +1,55 @@
+// This is a Genkit flow for chatting with an AI companion in a regional language with an empathetic tone.
+
+'use server';
+
+/**
+ * @fileOverview A flow for chatting with an AI companion in a regional language with an empathetic tone.
+ *
+ * - chatEmpatheticTone - A function that handles the chat with empathetic tone.
+ * - ChatEmpatheticToneInput - The input type for the chatEmpatheticTone function.
+ * - ChatEmpatheticToneOutput - The return type for the chatEmpatheticTone function.
+ */
+
+import {ai} from '@/ai/genkit';
+import {z} from 'genkit';
+
+const ChatEmpatheticToneInputSchema = z.object({
+  message: z.string().describe('The user message to the AI companion.'),
+  language: z.string().describe('The regional language to respond in (e.g., Hindi).'),
+});
+export type ChatEmpatheticToneInput = z.infer<typeof ChatEmpatheticToneInputSchema>;
+
+const ChatEmpatheticToneOutputSchema = z.object({
+  response: z.string().describe('The AI companion’s empathetic response in the specified language.'),
+});
+export type ChatEmpatheticToneOutput = z.infer<typeof ChatEmpatheticToneOutputSchema>;
+
+export async function chatEmpatheticTone(input: ChatEmpatheticToneInput): Promise<ChatEmpatheticToneOutput> {
+  return chatEmpatheticToneFlow(input);
+}
+
+const prompt = ai.definePrompt({
+  name: 'chatEmpatheticTonePrompt',
+  input: {schema: ChatEmpatheticToneInputSchema},
+  output: {schema: ChatEmpatheticToneOutputSchema},
+  prompt: `You are an AI companion designed to provide empathetic responses to users in their regional language.
+
+  The user will provide a message in any language, and you will respond in {{language}} with an empathetic and supportive tone.
+
+  User Message: {{{message}}}
+
+  Response in {{language}}:
+  `,
+});
+
+const chatEmpatheticToneFlow = ai.defineFlow(
+  {
+    name: 'chatEmpatheticToneFlow',
+    inputSchema: ChatEmpatheticToneInputSchema,
+    outputSchema: ChatEmpatheticToneOutputSchema,
+  },
+  async input => {
+    const {output} = await prompt(input);
+    return output!;
+  }
+);
