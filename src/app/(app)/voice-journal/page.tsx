@@ -30,8 +30,16 @@ export default function VoiceJournalPage() {
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      // Let the browser choose the best mimeType
-      mediaRecorderRef.current = new MediaRecorder(stream);
+      
+      // Prefer 'audio/webm' as it is widely supported by AI models, but allow browser to fall back.
+      const options = { mimeType: 'audio/webm' };
+      if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+        console.warn(`${options.mimeType} is not supported, using browser default.`);
+        mediaRecorderRef.current = new MediaRecorder(stream);
+      } else {
+        mediaRecorderRef.current = new MediaRecorder(stream, options);
+      }
+      
       audioChunksRef.current = [];
 
       mediaRecorderRef.current.ondataavailable = (event) => {
