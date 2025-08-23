@@ -123,10 +123,9 @@ export default function AdminPage() {
             setIsLoadingEntries(false);
         }, (error) => {
             console.error("Error fetching journal entries: ", error);
-            // This might happen due to Firestore rules
             toast({
                 title: "Error",
-                description: "Could not fetch journal entries. Please check Firestore rules.",
+                description: "Could not fetch journal entries. Please ensure Firestore rules and indexes are correct.",
                 variant: "destructive"
             });
             setIsLoadingEntries(false);

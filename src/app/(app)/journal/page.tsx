@@ -48,8 +48,8 @@ export default function JournalPage() {
     if (user) {
       const q = query(
         collection(db, 'journalEntries'),
-        where('userId', '==', user.uid),
         where('type', '==', 'text'),
+        where('userId', '==', user.uid),
         orderBy('createdAt', 'desc')
       );
       
@@ -64,7 +64,7 @@ export default function JournalPage() {
         console.error("Error fetching journal entries:", error);
         toast({
           title: "Error",
-          description: "Could not fetch journal entries. Please check Firestore rules and indexes.",
+          description: "Could not fetch journal entries. Please ensure Firestore indexes are correct.",
           variant: "destructive"
         });
         setIsLoadingEntries(false);

@@ -29,8 +29,8 @@ export default function ReportsPage() {
         if (user) {
             const q = query(
                 collection(db, 'journalEntries'),
-                where('userId', '==', user.uid),
                 where('reviewed', '==', true),
+                where('userId', '==', user.uid),
                 orderBy('createdAt', 'desc')
             );
 
