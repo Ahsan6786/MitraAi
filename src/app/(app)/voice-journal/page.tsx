@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/use-auth';
 import { db } from '@/lib/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { SidebarTrigger } from '@/components/ui/sidebar';
 
 
 type RecordingStatus = 'idle' | 'recording' | 'stopped';
@@ -29,7 +30,8 @@ export default function VoiceJournalPage() {
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      mediaRecorderRef.current = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+      // Let the browser choose the best mimeType
+      mediaRecorderRef.current = new MediaRecorder(stream);
       audioChunksRef.current = [];
 
       mediaRecorderRef.current.ondataavailable = (event) => {
@@ -37,7 +39,8 @@ export default function VoiceJournalPage() {
       };
 
       mediaRecorderRef.current.onstop = () => {
-        const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        // Use the mimeType provided by the recorder
+        const blob = new Blob(audioChunksRef.current, { type: mediaRecorderRef.current?.mimeType });
         setAudioBlob(blob);
         setAudioUrl(URL.createObjectURL(blob));
         stream.getTracks().forEach(track => track.stop());
@@ -135,10 +138,13 @@ export default function VoiceJournalPage() {
   };
 
   return (
-    <div className="h-full flex flex-col">
-      <header className="border-b p-4">
-        <h1 className="text-xl font-bold font-headline">Voice Journal</h1>
-        <p className="text-sm text-muted-foreground">Speak your mind, discover your mood.</p>
+    <div className="h-full flex flex-col bg-muted/20">
+      <header className="border-b bg-background p-3 md:p-4 flex items-center gap-2">
+        <SidebarTrigger className="md:hidden" />
+        <div>
+          <h1 className="text-lg md:text-xl font-bold font-headline">Voice Journal</h1>
+          <p className="text-sm text-muted-foreground">Speak your mind, discover your mood.</p>
+        </div>
       </header>
       <div className="flex-1 overflow-auto p-4 md:p-6 space-y-6">
         <Card>
@@ -169,7 +175,7 @@ export default function VoiceJournalPage() {
             {recordingStatus === 'stopped' && audioUrl && (
               <div className="w-full space-y-4">
                 <audio controls src={audioUrl} className="w-full" />
-                <div className="flex justify-center gap-2">
+                <div className="flex flex-col sm:flex-row justify-center gap-2">
                    <Button onClick={handleAnalyze} disabled={isLoading}>
                       {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                       {isLoading ? 'Analyzing & Saving...' : 'Analyze & Save Transcript'}
