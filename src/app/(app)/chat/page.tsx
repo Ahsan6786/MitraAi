@@ -53,8 +53,8 @@ export default function ChatPage() {
   };
 
   return (
-    <div className="h-full flex flex-col">
-      <header className="border-b p-4">
+    <div className="h-full flex flex-col bg-muted/20">
+      <header className="border-b bg-background p-4">
         <h1 className="text-xl font-bold font-headline">AI Companion</h1>
         <p className="text-sm text-muted-foreground">Chat with MitraAI in Hindi</p>
       </header>
@@ -63,9 +63,9 @@ export default function ChatPage() {
           <div className="p-4 md:p-6 space-y-6">
             {messages.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full pt-20 text-center">
-                 <Logo className="w-16 h-16 text-primary mb-4 opacity-50" />
+                 <Logo className="w-20 h-20 text-primary mb-6" />
                  <h2 className="text-2xl font-semibold">Hello! How are you feeling?</h2>
-                 <p className="text-muted-foreground mt-2">I'm here to listen. Share anything on your mind.</p>
+                 <p className="text-muted-foreground mt-2 max-w-sm">I'm here to listen. Share anything on your mind, and we can talk through it together.</p>
               </div>
             ) : (
               messages.map((message, index) => (
@@ -77,7 +77,7 @@ export default function ChatPage() {
                   )}
                 >
                   {message.sender === 'ai' && (
-                    <Avatar className="w-8 h-8">
+                    <Avatar className="w-9 h-9 border">
                       <AvatarFallback className="bg-primary text-primary-foreground">
                         <Logo className="w-5 h-5"/>
                       </AvatarFallback>
@@ -88,13 +88,13 @@ export default function ChatPage() {
                       'max-w-xs md:max-w-md lg:max-w-lg rounded-xl px-4 py-3 text-base shadow-sm',
                       message.sender === 'user'
                         ? 'bg-primary text-primary-foreground rounded-br-none'
-                        : 'bg-card text-card-foreground rounded-bl-none'
+                        : 'bg-background text-card-foreground rounded-bl-none border'
                     )}
                   >
                     <p>{message.text}</p>
                   </div>
                    {message.sender === 'user' && (
-                    <Avatar className="w-8 h-8">
+                    <Avatar className="w-9 h-9 border">
                       <AvatarFallback>
                         <User className="w-5 h-5"/>
                       </AvatarFallback>
@@ -105,12 +105,12 @@ export default function ChatPage() {
             )}
             {isLoading && (
                <div className="flex items-start gap-3 justify-start">
-                  <Avatar className="w-8 h-8">
+                  <Avatar className="w-9 h-9 border">
                       <AvatarFallback className="bg-primary text-primary-foreground">
                         <Logo className="w-5 h-5"/>
                       </AvatarFallback>
                     </Avatar>
-                    <div className="bg-card text-card-foreground rounded-xl px-4 py-3 shadow-sm rounded-bl-none flex items-center">
+                    <div className="bg-background text-card-foreground rounded-xl px-4 py-3 shadow-sm rounded-bl-none border flex items-center">
                       <Loader2 className="w-5 h-5 animate-spin mr-2"/> Thinking...
                     </div>
                </div>
@@ -118,13 +118,13 @@ export default function ChatPage() {
           </div>
         </ScrollArea>
       </main>
-      <footer className="border-t p-4">
+      <footer className="border-t bg-background p-4">
         <form onSubmit={handleSendMessage} className="flex items-center gap-2">
           <Input
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="Type your message here..."
-            className="flex-1"
+            className="flex-1 text-base"
             disabled={isLoading}
             autoComplete="off"
           />

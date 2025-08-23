@@ -119,8 +119,8 @@ export default function JournalPage() {
   };
 
   return (
-    <div className="h-full flex flex-col">
-      <header className="border-b p-4">
+    <div className="h-full flex flex-col bg-muted/20">
+      <header className="border-b bg-background p-4">
         <h1 className="text-xl font-bold font-headline">Daily Mood Journal</h1>
         <p className="text-sm text-muted-foreground">Reflect on your day, understand your emotions.</p>
       </header>
@@ -135,8 +135,8 @@ export default function JournalPage() {
               placeholder="Start writing here..."
               value={journalText}
               onChange={(e) => setJournalText(e.target.value)}
-              rows={6}
-              className="resize-none"
+              rows={8}
+              className="resize-none text-base"
               disabled={isLoading}
             />
           </CardContent>
@@ -155,7 +155,7 @@ export default function JournalPage() {
                     <Loader2 className="w-8 h-8 animate-spin text-primary" />
                 </div>
              ) : entries.length === 0 ? (
-                <div className="text-center text-muted-foreground py-10">
+                <div className="text-center text-muted-foreground bg-background rounded-lg py-10">
                     <p>Your saved journal entries will appear here.</p>
                 </div>
             ) : (
@@ -164,7 +164,7 @@ export default function JournalPage() {
                         <CardHeader className="flex flex-row justify-between items-start">
                             <div>
                                 <CardTitle className="text-base">{entry.createdAt?.toDate().toLocaleDateString()}</CardTitle>
-                                <Badge variant="outline" className="mt-2 capitalize">{entry.mood}</Badge>
+                                <Badge variant="secondary" className="mt-2 capitalize">{entry.mood}</Badge>
                             </div>
                             <MoodIcon mood={entry.mood} />
                         </CardHeader>
