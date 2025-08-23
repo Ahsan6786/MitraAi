@@ -51,7 +51,7 @@ function ReportDialog({ entry }: { entry: JournalEntry }) {
         }
     };
 
-    const entryContent = entry.type === 'text' ? entry.content : entry.transcription;
+    const entryContent = entry.content || entry.transcription || 'No content available.';
 
     return (
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -168,12 +168,12 @@ export default function AdminPage() {
                                 </TableHeader>
                                 <TableBody>
                                     {entries.map(entry => {
-                                        const content = entry.type === 'text' ? entry.content : entry.transcription;
+                                        const content = entry.content || entry.transcription || '';
                                         return (
                                             <TableRow key={entry.id}>
                                                 <TableCell className="font-medium">{entry.userEmail}</TableCell>
                                                 <TableCell><Badge variant={entry.type === 'text' ? 'secondary' : 'outline'}>{entry.type}</Badge></TableCell>
-                                                <TableCell>{entry.createdAt.toDate().toLocaleString()}</TableCell>
+                                                <TableCell>{entry.createdAt?.toDate().toLocaleString()}</TableCell>
                                                 <TableCell className="capitalize">{entry.mood}</TableCell>
                                                 <TableCell>
                                                     <p className="truncate max-w-xs">{content}</p>
