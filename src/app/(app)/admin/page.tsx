@@ -3,12 +3,16 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/hooks/use-auth';
 import { db } from '@/lib/firebase';
-import { collection, query, onSnapshot, orderBy, Timestamp } from 'firebase/firestore';
+import { collection, query, onSnapshot, orderBy, Timestamp, doc, updateDoc } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { Loader2 } from 'lucide-react';
+import { Loader2, MessageSquarePlus } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 interface JournalEntry {
     id: string;
@@ -20,7 +24,68 @@ interface JournalEntry {
     content?: string;
     audioUrl?: string;
     transcription?: string;
+    reviewed: boolean;
+    doctorReport?: string;
 }
+
+function ReportDialog({ entry }: { entry: JournalEntry }) {
+    const [report, setReport] = useState(entry.doctorReport || '');
+    const [isOpen, setIsOpen] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
+    const { toast } = useToast();
+
+    const handleSave = async () => {
+        setIsSaving(true);
+        try {
+            const entryRef = doc(db, 'journalEntries', entry.id);
+            await updateDoc(entryRef, {
+                doctorReport: report,
+                reviewed: true,
+            });
+            toast({ title: "Success", description: "Report saved successfully." });
+            setIsOpen(false);
+        } catch (error) {
+            console.error("Error saving report: ", error);
+            toast({ title: "Error", description: "Failed to save report.", variant: "destructive" });
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    return (
+        <Dialog open={isOpen} onOpenChange={setIsOpen}>
+            <DialogTrigger asChild>
+                <Button variant="outline" size="sm">
+                   <MessageSquarePlus className="mr-2 h-4 w-4"/>
+                   {entry.reviewed ? 'Edit Report' : 'Add Report'}
+                </Button>
+            </DialogTrigger>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Doctor's Report for {entry.userEmail}</DialogTitle>
+                    <DialogDescription>
+                        Review the user's entry and provide your feedback below.
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="py-4">
+                    <Textarea
+                        placeholder="Write your report here..."
+                        value={report}
+                        onChange={(e) => setReport(e.target.value)}
+                        rows={8}
+                    />
+                </div>
+                <DialogFooter>
+                    <Button onClick={handleSave} disabled={isSaving}>
+                        {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Save Report
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
 
 export default function AdminPage() {
     const { user, loading, isAdmin } = useAuth();
@@ -89,6 +154,8 @@ export default function AdminPage() {
                                         <TableHead>Date</TableHead>
                                         <TableHead>Mood</TableHead>
                                         <TableHead>Content</TableHead>
+                                        <TableHead>Status</TableHead>
+                                        <TableHead>Action</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -105,6 +172,14 @@ export default function AdminPage() {
                                                         Your browser does not support the audio element.
                                                     </audio>
                                                 )}
+                                            </TableCell>
+                                            <TableCell>
+                                                <Badge variant={entry.reviewed ? 'default' : 'destructive'}>
+                                                    {entry.reviewed ? 'Reviewed' : 'Pending'}
+                                                </Badge>
+                                            </TableCell>
+                                            <TableCell>
+                                                <ReportDialog entry={entry} />
                                             </TableCell>
                                         </TableRow>
                                     ))}

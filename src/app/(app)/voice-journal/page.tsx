@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { analyzeVoiceJournal, AnalyzeVoiceJournalOutput } from '@/ai/flows/analyze-voice-journal';
@@ -87,55 +87,60 @@ export default function VoiceJournalPage() {
     setIsLoading(true);
     setAnalysisResult(null);
 
-    try {
-      const reader = new FileReader();
-      reader.readAsDataURL(audioBlob);
-      reader.onloadend = async () => {
-        const base64Audio = reader.result as string;
-        try {
-          const result = await analyzeVoiceJournal({ audioDataUri: base64Audio });
-          setAnalysisResult(result);
-          
-          // Upload audio to Firebase Storage
-          const storageRef = ref(storage, `voice-journals/${user.uid}/${Date.now()}.webm`);
-          const snapshot = await uploadBytes(storageRef, audioBlob);
-          const downloadURL = await getDownloadURL(snapshot.ref);
+    const reader = new FileReader();
+    reader.readAsDataURL(audioBlob);
+    reader.onloadend = async () => {
+      const base64Audio = reader.result as string;
+      try {
+        const result = await analyzeVoiceJournal({ audioDataUri: base64Audio });
+        setAnalysisResult(result);
+        
+        // Upload audio to Firebase Storage
+        const storageRef = ref(storage, `voice-journals/${user.uid}/${Date.now()}.webm`);
+        const snapshot = await uploadBytes(storageRef, audioBlob);
+        const downloadURL = await getDownloadURL(snapshot.ref);
 
-          // Save analysis to Firestore
-          await addDoc(collection(db, 'journalEntries'), {
-            userId: user.uid,
-            userEmail: user.email,
-            type: 'voice',
-            audioUrl: downloadURL,
-            mood: result.mood,
-            transcription: result.transcription,
-            solutions: result.solutions,
-            createdAt: serverTimestamp(),
-          });
+        // Save analysis to Firestore
+        await addDoc(collection(db, 'journalEntries'), {
+          userId: user.uid,
+          userEmail: user.email,
+          type: 'voice',
+          audioUrl: downloadURL,
+          mood: result.mood,
+          transcription: result.transcription,
+          solutions: result.solutions,
+          createdAt: serverTimestamp(),
+          reviewed: false,
+          doctorReport: null,
+        });
 
-           toast({
-            title: "Analysis Complete & Saved",
-            description: "Your voice journal has been analyzed and saved for admin review.",
-          });
-        } catch (error) {
-           console.error('Error analyzing or saving audio:', error);
-           toast({
-            title: 'Analysis Failed',
-            description: 'Sorry, we could not process your audio right now.',
+         toast({
+          title: "Analysis Complete & Saved",
+          description: "Your voice journal has been analyzed and saved.",
+        });
+
+        // After saving, reset to allow a new recording
+        resetRecording();
+
+      } catch (error) {
+         console.error('Error analyzing or saving audio:', error);
+         toast({
+          title: 'Analysis Failed',
+          description: 'Sorry, we could not process your audio right now.',
+          variant: 'destructive',
+        });
+      } finally {
+          setIsLoading(false);
+      }
+    };
+    reader.onerror = (error) => {
+        console.error('Error reading audio file:', error);
+        toast({
+            title: 'Processing Error',
+            description: 'There was an error processing your audio file.',
             variant: 'destructive',
-          });
-        } finally {
-            setIsLoading(false);
-        }
-      };
-    } catch (error) {
-      console.error('Error processing audio:', error);
-       toast({
-        title: 'Processing Error',
-        description: 'There was an error processing your audio file.',
-        variant: 'destructive',
-      });
-      setIsLoading(false);
+        });
+        setIsLoading(false);
     }
   };
 
@@ -151,7 +156,7 @@ export default function VoiceJournalPage() {
             <CardTitle>Record Your Thoughts</CardTitle>
             <CardDescription>Press the microphone to start recording. Speak freely about your day or how you're feeling.</CardDescription>
           </CardHeader>
-          <CardContent className="flex flex-col items-center justify-center gap-4">
+          <CardContent className="flex flex-col items-center justify-center gap-4 py-8">
             {recordingStatus === 'recording' && (
                <div className="text-primary flex items-center gap-2">
                   <div className="w-3 h-3 rounded-full bg-red-500 animate-pulse"></div>
@@ -197,7 +202,7 @@ export default function VoiceJournalPage() {
 
         {analysisResult && (
           <div className="space-y-4">
-            <h2 className="text-lg font-semibold font-headline">Analysis Results</h2>
+            <h2 className="text-lg font-semibold font-headline">Last Analysis Results</h2>
             <Card>
                 <CardHeader>
                     <div className="flex justify-between items-start">
