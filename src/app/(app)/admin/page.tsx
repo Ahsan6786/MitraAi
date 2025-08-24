@@ -183,20 +183,20 @@ export default function AdminPage() {
               q,
               async (querySnapshot) => {
                 const entriesDataPromises = querySnapshot.docs.map(
-                  async (doc) => {
-                    const entryData = doc.data() as JournalEntry;
-                    entryData.id = doc.id;
+                  async (entryDoc) => {
+                    const entryData = entryDoc.data() as JournalEntry;
+                    entryData.id = entryDoc.id;
 
                     // Fetch user profile to get the name
-                    const userDocRef = collection(db, 'users');
-                    const userDoc = await getDoc(collection(userDocRef, entryData.userId).parent);
+                    const userDocRef = doc(db, 'users', entryData.userId);
+                    const userDoc = await getDoc(userDocRef);
 
                     if (userDoc.exists()) {
                         const userData = userDoc.data() as UserProfile;
-                        entryData.userName = `${userData.firstName} ${userData.lastName}`;
+                        entryData.userName = `${userData.firstName || ''} ${userData.lastName || ''}`.trim();
                     } else {
                         // Fallback to email if profile doesn't exist
-                        entryData.userName = doc.data().userEmail;
+                        entryData.userName = entryDoc.data().userEmail;
                     }
                     return entryData;
                   }
