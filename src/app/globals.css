@@ -46,11 +46,11 @@ body {
 
   .dark,
   .theme-blue-dark {
-    --background: 222 47% 11%;
+    --background: 240 5% 4%;
     --foreground: 210 40% 98%;
-    --card: 222 47% 11%;
+    --card: 240 5% 4%;
     --card-foreground: 210 40% 98%;
-    --popover: 222 47% 11%;
+    --popover: 240 5% 4%;
     --popover-foreground: 210 40% 98%;
     --primary: 217 91% 60%;
     --primary-foreground: 210 40% 98%;
@@ -70,7 +70,7 @@ body {
     --chart-3: 30 80% 55%;
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
-    --sidebar-background: 222 47% 11%;
+    --sidebar-background: 240 5% 4%;
     --sidebar-foreground: 210 40% 98%;
     --sidebar-primary: 217 91% 60%;
     --sidebar-primary-foreground: 210 40% 98%;
@@ -81,11 +81,11 @@ body {
   }
 
   .theme-gold-dark {
-    --background: 24 10% 10%;
+    --background: 0 0% 4%;
     --foreground: 40 10% 85%;
-    --card: 24 10% 10%;
+    --card: 0 0% 4%;
     --card-foreground: 40 10% 85%;
-    --popover: 24 10% 10%;
+    --popover: 0 0% 4%;
     --popover-foreground: 40 10% 85%;
     --primary: 45 90% 60%;
     --primary-foreground: 24 10% 10%;
@@ -100,7 +100,7 @@ body {
     --border: 30 10% 20%;
     --input: 30 10% 20%;
     --ring: 45 90% 60%;
-    --sidebar-background: 24 10% 10%;
+    --sidebar-background: 0 0% 4%;
     --sidebar-foreground: 40 10% 85%;
     --sidebar-primary: 45 90% 60%;
     --sidebar-primary-foreground: 24 10% 10%;
@@ -111,11 +111,11 @@ body {
   }
 
   .theme-pink-dark {
-    --background: 330 10% 10%;
+    --background: 0 0% 4%;
     --foreground: 330 10% 85%;
-    --card: 330 10% 10%;
+    --card: 0 0% 4%;
     --card-foreground: 330 10% 85%;
-    --popover: 330 10% 10%;
+    --popover: 0 0% 4%;
     --popover-foreground: 330 10% 85%;
     --primary: 340 90% 65%;
     --primary-foreground: 330 10% 10%;
@@ -130,7 +130,7 @@ body {
     --border: 330 10% 20%;
     --input: 330 10% 20%;
     --ring: 340 90% 65%;
-    --sidebar-background: 330 10% 10%;
+    --sidebar-background: 0 0% 4%;
     --sidebar-foreground: 330 10% 85%;
     --sidebar-primary: 340 90% 65%;
     --sidebar-primary-foreground: 330 10% 10%;
