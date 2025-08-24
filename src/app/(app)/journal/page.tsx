@@ -20,6 +20,7 @@ interface JournalEntry {
   content: string;
   mood: string;
   confidence: number;
+  type: 'text' | 'voice';
 }
 
 const MoodIcon = ({ mood }: { mood: string }) => {
@@ -47,18 +48,22 @@ export default function JournalPage() {
 
   useEffect(() => {
     if (user) {
+      // This simplified query fetches all entries for a user, sorted by date.
+      // It relies on a basic index that Firestore can create automatically or that you likely already have.
       const q = query(
         collection(db, 'journalEntries'),
-        where('type', '==', 'text'),
         where('userId', '==', user.uid),
         orderBy('createdAt', 'desc')
       );
       
       const unsubscribe = onSnapshot(q, (querySnapshot) => {
-        const entriesData = querySnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data(),
-        } as JournalEntry));
+        const entriesData = querySnapshot.docs
+          .map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+          } as JournalEntry))
+          .filter(entry => entry.type === 'text'); // Filter for text entries on the client side.
+
         setEntries(entriesData);
         setIsLoadingEntries(false);
       }, (error) => {
