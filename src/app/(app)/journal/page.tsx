@@ -48,8 +48,8 @@ export default function JournalPage() {
 
   useEffect(() => {
     if (user) {
-      // This simplified query fetches all entries for a user, sorted by date.
-      // It relies on a basic index that Firestore can create automatically or that you likely already have.
+      setIsLoadingEntries(true);
+      // This query specifically requires an index on userId and createdAt.
       const q = query(
         collection(db, 'journalEntries'),
         where('userId', '==', user.uid),
@@ -62,7 +62,7 @@ export default function JournalPage() {
             id: doc.id,
             ...doc.data(),
           } as JournalEntry))
-          .filter(entry => entry.type === 'text'); // Filter for text entries on the client side.
+          .filter(entry => entry.type === 'text'); // We still filter for text entries on the client.
 
         setEntries(entriesData);
         setIsLoadingEntries(false);
@@ -70,13 +70,15 @@ export default function JournalPage() {
         console.error("Error fetching journal entries:", error);
         toast({
           title: "Error",
-          description: "Could not fetch journal entries.",
+          description: "Could not fetch journal entries. Please ensure the Firestore index is created.",
           variant: "destructive"
         });
         setIsLoadingEntries(false);
       });
 
       return () => unsubscribe();
+    } else {
+      setIsLoadingEntries(false);
     }
   }, [user, toast]);
 
