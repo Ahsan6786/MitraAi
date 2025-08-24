@@ -3,7 +3,6 @@
 
 /**
  * @fileOverview A flow for chatting with an AI companion in a regional language with an empathetic tone.
- * This flow also includes crisis detection.
  *
  * - chatEmpatheticTone - A function that handles the chat with empathetic tone.
  * - ChatEmpatheticToneInput - The input type for the chatEmpatheticTone function.
@@ -16,7 +15,6 @@ import { z } from 'genkit';
 const ChatEmpatheticToneInputSchema = z.object({
   message: z.string().describe('The user message to the AI companion.'),
   language: z.string().describe('The regional language to respond in (e.g., English, Hindi, Hinglish).'),
-  userId: z.string().describe('The unique ID of the user.'),
 });
 export type ChatEmpatheticToneInput = z.infer<typeof ChatEmpatheticToneInputSchema>;
 
@@ -54,11 +52,8 @@ const chatEmpatheticToneFlow = ai.defineFlow(
     inputSchema: ChatEmpatheticToneInputSchema,
     outputSchema: ChatEmpatheticToneOutputSchema,
   },
-  async ({ message, language, userId }) => {
-    // This flow is now only responsible for generating the empathetic response.
-    // Crisis detection and alerting logic has been moved to the client-side
-    // to leverage the user's authenticated session for Firestore permissions.
-    const { output } = await prompt({ message, language, userId });
+  async ({ message, language }) => {
+    const { output } = await prompt({ message, language });
     return output!;
   }
 );
