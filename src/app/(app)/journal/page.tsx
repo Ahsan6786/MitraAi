@@ -45,7 +45,7 @@ export default function JournalPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingEntries, setIsLoadingEntries] = useState(true);
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
 
   useEffect(() => {
     if (user) {
@@ -146,7 +146,7 @@ export default function JournalPage() {
       <div className="flex-1 overflow-auto p-2 sm:p-4 md:p-6 space-y-6">
         <Card>
           <CardHeader>
-            <CardTitle>How are you feeling today?</CardTitle>
+            <CardTitle>How are you feeling today, {profile?.firstName || 'friend'}?</CardTitle>
             <CardDescription>Write down your thoughts and feelings. Our AI will help you identify your mood.</CardDescription>
           </CardHeader>
           <CardContent>

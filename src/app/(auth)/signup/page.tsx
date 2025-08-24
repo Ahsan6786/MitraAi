@@ -8,9 +8,10 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
+import { auth, db } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
+import { doc, setDoc } from 'firebase/firestore';
 
 function SignUpForm() {
   const [email, setEmail] = useState('');
@@ -31,7 +32,15 @@ function SignUpForm() {
     }
     setIsLoading(true);
     try {
-      await createUserWithEmailAndPassword(auth, email, password);
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+
+      // Create a basic user profile document to indicate this is a new user
+      await setDoc(doc(db, "users", user.uid), {
+        email: user.email,
+        profileComplete: false,
+      });
+
       router.push('/chat');
     } catch (error: any) {
       toast({

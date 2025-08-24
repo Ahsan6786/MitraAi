@@ -40,7 +40,7 @@ export default function ChatPage() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
 
   useEffect(() => {
     if (scrollAreaRef.current) {
@@ -69,7 +69,8 @@ export default function ChatPage() {
         return;
       }
 
-      const chatResult = await chatEmpatheticTone({ message: messageText, language });
+      const userName = profile?.firstName || 'friend';
+      const chatResult = await chatEmpatheticTone({ message: messageText, language, userName });
       
       const aiMessage: Message = { sender: 'ai', text: chatResult.response };
       setMessages((prev) => [...prev, aiMessage]);
@@ -180,7 +181,7 @@ export default function ChatPage() {
             {messages.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full pt-10 md:pt-20 text-center">
                  <Logo className="w-16 h-16 md:w-20 md:h-20 text-primary mb-6" />
-                 <h2 className="text-xl md:text-2xl font-semibold">Hello! How are you feeling?</h2>
+                 <h2 className="text-xl md:text-2xl font-semibold">Hello {profile?.firstName || ''}! How are you feeling?</h2>
                  <p className="text-muted-foreground mt-2 max-w-xs sm:max-w-sm">I'm here to listen. Share anything on your mind, and we can talk through it together.</p>
               </div>
             ) : (
@@ -212,7 +213,7 @@ export default function ChatPage() {
                    {message.sender === 'user' && (
                     <Avatar className="w-8 h-8 md:w-9 md:h-9 border">
                       <AvatarFallback>
-                        <User className="w-4 h-4 md:w-5 md:h-5"/>
+                         {profile?.firstName ? profile.firstName[0].toUpperCase() : <User className="w-4 h-4 md:w-5 md:h-5" />}
                       </AvatarFallback>
                     </Avatar>
                   )}

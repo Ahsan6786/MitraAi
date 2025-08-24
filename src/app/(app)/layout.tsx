@@ -23,10 +23,11 @@ import { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { auth } from '@/lib/firebase';
 import { signOut } from 'firebase/auth';
+import ProfileSetupModal from '@/components/profile-setup-modal';
 
 function AppLayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const { user, loading, isAdmin } = useAuth();
+  const { user, loading, isAdmin, profile, profileLoading } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
@@ -40,7 +41,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
     router.push('/signin');
   };
 
-  if (loading) {
+  if (loading || profileLoading) {
     return (
       <div className="flex items-center justify-center h-screen">
         <div>Loading...</div>
@@ -51,9 +52,12 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
   if (!user) {
     return null;
   }
+  
+  const showProfileSetup = !profileLoading && profile && !profile.profileComplete;
 
   return (
     <SidebarProvider>
+       {showProfileSetup && <ProfileSetupModal />}
       <Sidebar>
         <SidebarHeader>
            <div className="flex items-center justify-between">
@@ -153,10 +157,10 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
           <div className="flex flex-col gap-2 p-2">
              <div className="flex items-center gap-3 p-2">
                 <Avatar>
-                  <AvatarFallback>{user.email?.[0].toUpperCase()}</AvatarFallback>
+                  <AvatarFallback>{profile?.firstName ? profile.firstName[0].toUpperCase() : user.email?.[0].toUpperCase()}</AvatarFallback>
                 </Avatar>
                 <div className="flex flex-col overflow-hidden">
-                  <span className="text-sm font-medium truncate">{user.email}</span>
+                  <span className="text-sm font-medium truncate">{profile?.firstName ? `${profile.firstName} ${profile.lastName}`: user.email}</span>
                   <span className="text-xs text-muted-foreground">{isAdmin ? 'Admin' : 'User'}</span>
                 </div>
               </div>
