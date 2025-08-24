@@ -115,32 +115,27 @@ export default function VoiceJournalPage() {
 
     try {
         const base64Audio = await convertBlobToBase64(audioBlob);
-
-        // Perform AI analysis and file upload concurrently
-        const [analysisResult, downloadURL] = await Promise.all([
-          analyzeVoiceJournal({ audioDataUri: base64Audio }),
-          (async () => {
-            const audioFileName = `voice-journals/${user.uid}/${Date.now()}.webm`;
-            const storageRef = ref(storage, audioFileName);
-            await uploadBytes(storageRef, audioBlob);
-            return getDownloadURL(storageRef);
-          })()
-        ]);
+        const analysis = await analyzeVoiceJournal({ audioDataUri: base64Audio });
+        
+        const audioFileName = `voice-journals/${user.uid}/${Date.now()}.webm`;
+        const storageRef = ref(storage, audioFileName);
+        await uploadBytes(storageRef, audioBlob);
+        const downloadURL = await getDownloadURL(storageRef);
         
         await addDoc(collection(db, 'journalEntries'), {
             userId: user.uid,
             userEmail: user.email,
             type: 'voice',
-            mood: analysisResult.mood,
-            transcription: analysisResult.transcription,
-            solutions: analysisResult.solutions,
+            mood: analysis.mood,
+            transcription: analysis.transcription,
+            solutions: analysis.solutions,
             audioUrl: downloadURL,
             createdAt: serverTimestamp(),
             reviewed: false,
             doctorReport: null,
         });
 
-        setAnalysisResult(analysisResult);
+        setAnalysisResult(analysis);
         toast({
             title: "Analysis Complete & Saved",
             description: "Your voice journal has been successfully saved.",
