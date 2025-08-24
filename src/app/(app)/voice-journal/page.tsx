@@ -4,8 +4,7 @@
 import { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { transcribeAudio } from '@/ai/flows/transcribe-audio';
-import { predictUserMood } from '@/ai/flows/predict-user-mood';
+import { analyzeVoiceJournal } from '@/ai/flows/analyze-voice-journal';
 import { Loader2, Mic, Square, Trash2, Lightbulb, ListChecks, Quote } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
@@ -118,54 +117,37 @@ export default function VoiceJournalPage() {
     setAnalysisResult(null);
 
     try {
-      // Step 1: Convert audio to Data URI
       const audioDataUri = await convertBlobToDataURI(audioBlob);
 
-      // Step 2: Transcribe the audio to text
-      const transcriptionResult = await transcribeAudio({ audioDataUri });
-      const { transcription } = transcriptionResult;
+      // Single call to the unified AI flow
+      const result = await analyzeVoiceJournal({ audioDataUri });
 
-      if (!transcription) {
-        throw new Error("Transcription failed. The audio might be silent.");
+      if (!result || !result.transcription) {
+         throw new Error("Analysis failed. The audio might be silent or unclear.");
       }
-
-      // Step 3: Predict mood from the transcription
-      const moodResult = await predictUserMood({ journalEntry: transcription });
-      const { mood } = moodResult;
-
-      // Step 4: Upload audio file to storage (can be done in parallel)
+      
+      // While AI was working, start the upload
       const audioFileName = `voice-journals/${user.uid}/${Date.now()}.webm`;
       const storageRef = ref(storage, audioFileName);
       const uploadTask = uploadBytes(storageRef, audioBlob);
-
-      // In a real app, you might generate solutions based on mood here.
-      // For now, we'll use placeholder solutions.
-      const solutions = [
-          `Acknowledge that it's okay to feel ${mood}.`,
-          "Consider a short walk to clear your head.",
-          "Practice mindful breathing for a few minutes.",
-      ];
-
       const downloadURL = await getDownloadURL(await uploadTask);
 
-      // Step 5: Save everything to Firestore
+      // Save everything to Firestore
       await addDoc(collection(db, 'journalEntries'), {
         userId: user.uid,
         userEmail: user.email,
         type: 'voice',
-        mood,
-        transcription,
-        solutions,
+        mood: result.mood,
+        transcription: result.transcription,
+        solutions: result.solutions,
         audioUrl: downloadURL,
         createdAt: serverTimestamp(),
         reviewed: false,
         doctorReport: null,
       });
       
-      const finalResult: AnalysisResult = { mood, transcription, solutions };
-
-      // 6. Update the UI
-      setAnalysisResult(finalResult);
+      // Update the UI
+      setAnalysisResult(result);
       toast({
         title: "Analysis Complete & Saved",
         description: "Your voice journal has been successfully saved.",
