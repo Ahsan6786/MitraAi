@@ -8,7 +8,7 @@ import { collection, query, where, onSnapshot, orderBy, Timestamp } from 'fireba
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, MessageSquareText, Mic, PenSquare } from 'lucide-react';
+import { Loader2, MessageSquareText, Mic, PenSquare, CheckCircle2 } from 'lucide-react';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 
 interface JournalEntry {
@@ -82,14 +82,15 @@ export default function ReportsPage() {
                              return (
                                 <AccordionItem value={entry.id} key={entry.id} className="border rounded-lg bg-card">
                                     <AccordionTrigger className="p-4 hover:no-underline text-left">
-                                        <div className="flex items-center gap-4">
+                                        <div className="flex items-center gap-4 w-full">
                                             {entry.type === 'text' ? <PenSquare className="w-5 h-5 text-primary" /> : <Mic className="w-5 h-5 text-primary" />}
-                                            <div>
+                                            <div className="flex-1">
                                                 <div className="font-semibold">
                                                 {entry.type === 'text' ? 'Text Journal' : 'Voice Journal'} - {entry.createdAt.toDate().toLocaleDateString()}
                                                 </div>
                                                 <Badge variant="outline" className="mt-1 capitalize">{entry.mood}</Badge>
                                             </div>
+                                            <CheckCircle2 className="w-5 h-5 text-green-600" />
                                         </div>
                                     </AccordionTrigger>
                                     <AccordionContent className="p-4 border-t">
