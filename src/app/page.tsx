@@ -61,10 +61,21 @@ export default function LandingPage() {
                   MitraAI is your compassionate AI companion, here to listen, understand, and support you on your mental health journey.
                 </p>
               </div>
-              <div className="flex flex-col gap-2 min-[400px]:flex-row">
+              <div className="flex items-center gap-4">
                 <Button size="lg" asChild>
                   <Link href="/signup" prefetch={false}>
                     Get Started for Free
+                  </Link>
+                </Button>
+                <Button variant="outline" size="icon" asChild>
+                  <Link 
+                    href="https://www.instagram.com/mitraai1?igsh=MThuMDBkYnE5cGl1dQ%3D%3D&utm_source=qr"
+                    prefetch={false}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <Instagram className="h-5 w-5" />
+                    <span className="sr-only">Instagram</span>
                   </Link>
                 </Button>
               </div>
