@@ -1,111 +1,45 @@
 
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { analyzeVoiceJournal } from '@/ai/flows/analyze-voice-journal';
-import { Loader2, Mic, Square, Trash2, Lightbulb, ListChecks, Quote } from 'lucide-react';
+import { Loader2, Mic, Square, Lightbulb, ListChecks } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/use-auth';
-import { db, storage } from '@/lib/firebase';
+import { db } from '@/lib/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { SidebarTrigger } from '@/components/ui/sidebar';
+import { Textarea } from '@/components/ui/textarea';
 import { useMusic } from '@/hooks/use-music';
 
-type RecordingStatus = 'idle' | 'recording' | 'stopped';
+const SpeechRecognition =
+  (typeof window !== 'undefined' && (window.SpeechRecognition || window.webkitSpeechRecognition));
 
 interface AnalysisResult {
     mood: string;
-    transcription: string;
     solutions: string[];
 }
 
 export default function VoiceJournalPage() {
-  const [recordingStatus, setRecordingStatus] = useState<RecordingStatus>('idle');
-  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
-  const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const [isRecording, setIsRecording] = useState(false);
+  const [transcript, setTranscript] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
-  
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const audioChunksRef = useRef<Blob[]>([]);
+
+  const recognitionRef = useRef<any | null>(null);
+  const silenceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const finalTranscriptRef = useRef('');
+
   const { toast } = useToast();
   const { user } = useAuth();
   const { pauseMusic, resumeMusic } = useMusic();
 
-  const startRecording = async () => {
-    try {
-      pauseMusic();
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      
-      const options = { mimeType: 'audio/webm' };
-      mediaRecorderRef.current = MediaRecorder.isTypeSupported(options.mimeType)
-        ? new MediaRecorder(stream, options)
-        : new MediaRecorder(stream);
-      
-      audioChunksRef.current = [];
-
-      mediaRecorderRef.current.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          audioChunksRef.current.push(event.data);
-        }
-      };
-
-      mediaRecorderRef.current.onstop = () => {
-        const blob = new Blob(audioChunksRef.current, { type: mediaRecorderRef.current?.mimeType });
-        setAudioBlob(blob);
-        setAudioUrl(URL.createObjectURL(blob));
-        stream.getTracks().forEach(track => track.stop());
-        resumeMusic();
-      };
-
-      mediaRecorderRef.current.start();
-      setRecordingStatus('recording');
-      setAnalysisResult(null);
-      setAudioBlob(null);
-      setAudioUrl(null);
-    } catch (err) {
-      console.error('Error accessing microphone:', err);
-      toast({
-        title: 'Microphone Error',
-        description: 'Could not access microphone. Please check permissions.',
-        variant: 'destructive',
-      });
-      resumeMusic();
-    }
-  };
-
-  const stopRecording = () => {
-    if (mediaRecorderRef.current && recordingStatus === 'recording') {
-      mediaRecorderRef.current.stop();
-      setRecordingStatus('stopped');
-    }
-  };
-
-  const resetRecording = () => {
-    setRecordingStatus('idle');
-    setAudioBlob(null);
-    setAudioUrl(null);
-    setAnalysisResult(null);
-  };
-
-  const convertBlobToDataURI = (blob: Blob): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onerror = reject;
-      reader.onload = () => {
-        resolve(reader.result as string);
-      };
-      reader.readAsDataURL(blob);
-    });
-  }
-
-  const handleAnalyze = async () => {
-    if (!audioBlob) {
-      toast({ title: 'No Audio', description: 'Please record audio first.', variant: 'destructive' });
+   const handleAnalyze = async (transcription: string) => {
+    if (!transcription.trim()) {
+      toast({ title: 'Empty Journal', description: 'No speech was detected to analyze.', variant: 'destructive' });
       return;
     }
     if (!user) {
@@ -117,36 +51,20 @@ export default function VoiceJournalPage() {
     setAnalysisResult(null);
 
     try {
-      const audioDataUri = await convertBlobToDataURI(audioBlob);
-
-      // Single call to the unified AI flow
-      const result = await analyzeVoiceJournal({ audioDataUri });
-
-      if (!result || !result.transcription) {
-         throw new Error("Analysis failed. The audio might be silent or unclear.");
-      }
+      const result = await analyzeVoiceJournal({ transcription });
       
-      // While AI was working, start the upload
-      const audioFileName = `voice-journals/${user.uid}/${Date.now()}.webm`;
-      const storageRef = ref(storage, audioFileName);
-      const uploadTask = uploadBytes(storageRef, audioBlob);
-      const downloadURL = await getDownloadURL(await uploadTask);
-
-      // Save everything to Firestore
       await addDoc(collection(db, 'journalEntries'), {
         userId: user.uid,
         userEmail: user.email,
         type: 'voice',
         mood: result.mood,
-        transcription: result.transcription,
+        transcription: transcription,
         solutions: result.solutions,
-        audioUrl: downloadURL,
         createdAt: serverTimestamp(),
         reviewed: false,
         doctorReport: null,
       });
       
-      // Update the UI
       setAnalysisResult(result);
       toast({
         title: "Analysis Complete & Saved",
@@ -157,7 +75,7 @@ export default function VoiceJournalPage() {
       console.error('Error during analysis or save:', error);
       toast({
         title: 'Analysis Failed',
-        description: error.message || 'Sorry, we could not process your audio right now. Please try again.',
+        description: error.message || 'Sorry, we could not process your journal right now.',
         variant: 'destructive',
       });
     } finally {
@@ -165,10 +83,94 @@ export default function VoiceJournalPage() {
     }
   };
 
+  const stopRecording = useCallback(() => {
+    if (recognitionRef.current) {
+      recognitionRef.current.stop();
+      recognitionRef.current = null;
+      setIsRecording(false);
+      resumeMusic();
+
+      const finalTranscript = finalTranscriptRef.current.trim();
+      if (finalTranscript) {
+         handleAnalyze(finalTranscript);
+      }
+    }
+  }, [resumeMusic, user]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const startRecording = () => {
+     if (!SpeechRecognition) {
+      toast({
+        title: "Browser Not Supported",
+        description: "Your browser does not support live transcription.",
+        variant: "destructive",
+      });
+      return;
+    }
+    pauseMusic();
+    setTranscript('');
+    finalTranscriptRef.current = '';
+    setAnalysisResult(null);
+    setIsRecording(true);
+
+    recognitionRef.current = new SpeechRecognition();
+    recognitionRef.current.continuous = true;
+    recognitionRef.current.interimResults = true;
+    recognitionRef.current.lang = 'en-US';
+
+    recognitionRef.current.onresult = (event: any) => {
+        if (silenceTimeoutRef.current) clearTimeout(silenceTimeoutRef.current);
+        
+        let interimTranscript = '';
+        let finalTranscript = '';
+
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+            if (event.results[i].isFinal) {
+                finalTranscript += event.results[i][0].transcript;
+            } else {
+                interimTranscript += event.results[i][0].transcript;
+            }
+        }
+        
+        finalTranscriptRef.current += finalTranscript;
+        setTranscript(finalTranscriptRef.current + interimTranscript);
+
+        silenceTimeoutRef.current = setTimeout(() => {
+            stopRecording();
+        }, 1500); // Stop after 1.5 seconds of silence
+    };
+
+    recognitionRef.current.onerror = (event: any) => {
+        console.error('Speech recognition error:', event.error);
+        toast({ title: 'Voice Error', description: 'There was an error with voice recognition.', variant: 'destructive' });
+        setIsRecording(false);
+        resumeMusic();
+    };
+
+    recognitionRef.current.onend = () => {
+        if (recognitionRef.current) {
+            stopRecording();
+        }
+    };
+    
+    recognitionRef.current.start();
+  };
+
+  useEffect(() => {
+    return () => {
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
+      }
+      if (silenceTimeoutRef.current) {
+        clearTimeout(silenceTimeoutRef.current);
+      }
+    };
+  }, []);
+
+
   return (
     <div className="h-full flex flex-col bg-muted/20">
       <header className="border-b bg-background p-3 md:p-4 flex items-center gap-2">
-        <SidebarTrigger className="md:hidden" />
+        <SidebarTrigger className="md-hidden" />
         <div>
           <h1 className="text-lg md:text-xl font-bold">Voice Journal</h1>
           <p className="text-sm text-muted-foreground">Speak your mind, discover your mood.</p>
@@ -177,52 +179,50 @@ export default function VoiceJournalPage() {
       <div className="flex-1 overflow-auto p-2 sm:p-4 md:p-6 space-y-6">
         <Card>
           <CardHeader>
-            <CardTitle>Record Your Thoughts</CardTitle>
-            <CardDescription>Press the microphone to start recording. Speak freely about your day or how you're feeling.</CardDescription>
+            <CardTitle>Speak Your Mind</CardTitle>
+            <CardDescription>
+                {isRecording 
+                    ? "I'm listening... Speak freely. I'll stop and analyze when you pause."
+                    : "Press the mic to start. Your words will appear here as you talk."
+                }
+            </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col items-center justify-center gap-4 py-8">
-            {recordingStatus === 'recording' && (
+             <Textarea
+              placeholder="Your live transcription will appear here..."
+              value={transcript}
+              readOnly
+              rows={6}
+              className="resize-none text-base italic w-full max-w-lg"
+            />
+            {isRecording && (
                <div className="text-primary flex items-center gap-2">
                   <div className="w-3 h-3 rounded-full bg-red-500 animate-pulse"></div>
-                  <span>Recording...</span>
-              </div>
-            )}
-            
-            {recordingStatus === 'idle' && (
-              <Button onClick={startRecording} size="lg" className="rounded-full w-20 h-20">
-                <Mic className="w-8 h-8" />
-              </Button>
-            )}
-
-            {recordingStatus === 'recording' && (
-              <Button onClick={stopRecording} size="lg" variant="destructive" className="rounded-full w-20 h-20">
-                <Square className="w-8 h-8" />
-              </Button>
-            )}
-
-            {recordingStatus === 'stopped' && audioUrl && (
-              <div className="w-full space-y-4">
-                <audio controls src={audioUrl} className="w-full" />
-                <div className="flex flex-col sm:flex-row justify-center gap-2">
-                   <Button onClick={handleAnalyze} disabled={isLoading}>
-                      {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                      {isLoading ? 'Analyzing & Saving...' : 'Analyze & Save Journal'}
-                   </Button>
-                   <Button onClick={resetRecording} variant="outline" disabled={isLoading}>
-                      <Trash2 className="mr-2 h-4 w-4"/> Discard
-                   </Button>
-                </div>
+                  <span>Listening...</span>
               </div>
             )}
           </CardContent>
+           <CardFooter className="flex-col gap-4">
+             <Button 
+                onClick={isRecording ? stopRecording : startRecording} 
+                size="lg" 
+                variant={isRecording ? 'destructive' : 'default'}
+                className="rounded-full w-20 h-20 shadow-lg"
+                disabled={isLoading}
+             >
+                {isRecording ? <Square className="w-8 h-8" /> : <Mic className="w-8 h-8" />}
+             </Button>
+              <p className="text-sm text-muted-foreground h-5">
+                {isLoading ? (
+                    <span className="flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin"/>Analyzing...</span>
+                ) : isRecording ? (
+                    'Press button to stop manually'
+                ) : (
+                    analysisResult ? 'Recording complete. See results below.' : 'Press the mic to start speaking'
+                )}
+             </p>
+           </CardFooter>
         </Card>
-
-        {isLoading && !analysisResult && (
-            <div className="text-center p-10">
-                <Loader2 className="mx-auto h-12 w-12 animate-spin text-primary"/>
-                <p className="mt-4 text-muted-foreground">Analyzing your voice journal...</p>
-            </div>
-        )}
 
         {analysisResult && (
           <div className="space-y-4">
@@ -239,17 +239,6 @@ export default function VoiceJournalPage() {
                         </div>
                     </div>
                 </CardHeader>
-            </Card>
-             <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-                       <Quote className="w-5 h-5 text-primary"/>
-                       Transcription
-                    </CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <p className="text-muted-foreground italic">"{analysisResult.transcription}"</p>
-                </CardContent>
             </Card>
              <Card>
                 <CardHeader>
