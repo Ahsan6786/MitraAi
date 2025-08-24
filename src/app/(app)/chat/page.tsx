@@ -17,8 +17,6 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
 import { detectCrisis } from '@/ai/flows/detect-crisis';
 import CrisisAlertModal from '@/components/crisis-alert-modal';
-import { db } from '@/lib/firebase';
-import { doc, getDoc } from 'firebase/firestore';
 
 interface Message {
   sender: 'user' | 'ai';
@@ -36,7 +34,6 @@ export default function ChatPage() {
   const [language, setLanguage] = useState('English');
   const [isRecording, setIsRecording] = useState(false);
   const [showCrisisModal, setShowCrisisModal] = useState(false);
-  const [userName, setUserName] = useState('friend');
   
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any | null>(null);
@@ -53,20 +50,6 @@ export default function ChatPage() {
       });
     }
   }, [messages]);
-
-  useEffect(() => {
-    async function fetchUserName() {
-      if (user) {
-        const userDoc = await getDoc(doc(db, 'users', user.uid));
-        if (userDoc.exists() && userDoc.data().name) {
-          setUserName(userDoc.data().name);
-        } else {
-          setUserName('friend');
-        }
-      }
-    }
-    fetchUserName();
-  }, [user]);
 
   const handleSendMessage = async (messageText: string) => {
     if (!messageText.trim() || isLoading || !user) return;
@@ -86,7 +69,7 @@ export default function ChatPage() {
         return;
       }
 
-      const chatResult = await chatEmpatheticTone({ message: messageText, language, userName });
+      const chatResult = await chatEmpatheticTone({ message: messageText, language });
       
       const aiMessage: Message = { sender: 'ai', text: chatResult.response };
       setMessages((prev) => [...prev, aiMessage]);
@@ -205,7 +188,7 @@ export default function ChatPage() {
             {messages.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full pt-10 md:pt-20 text-center">
                  <Logo className="w-16 h-16 md:w-20 md:h-20 text-primary mb-6" />
-                 <h2 className="text-xl md:text-2xl font-semibold">Hello, {userName}! How are you feeling?</h2>
+                 <h2 className="text-xl md:text-2xl font-semibold">Hello! How are you feeling?</h2>
                  <p className="text-muted-foreground mt-2 max-w-xs sm:max-w-sm">I'm here to listen. Share anything on your mind, and we can talk through it together.</p>
               </div>
             ) : (

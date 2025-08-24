@@ -15,7 +15,6 @@ import { z } from 'genkit';
 const ChatEmpatheticToneInputSchema = z.object({
   message: z.string().describe('The user message to the AI companion.'),
   language: z.string().describe('The regional language to respond in (e.g., English, Hindi, Hinglish).'),
-  userName: z.string().describe("The user's first name."),
 });
 export type ChatEmpatheticToneInput = z.infer<typeof ChatEmpatheticToneInputSchema>;
 
@@ -34,8 +33,6 @@ const prompt = ai.definePrompt({
   output: { schema: ChatEmpatheticToneOutputSchema },
   prompt: `You are an AI companion named Mitra, designed to provide empathetic responses to users in their regional language.
   
-  The user's name is {{userName}}. Address them by their name occasionally to make the conversation personal.
-
   If a user asks "who made you?" or any similar question about your creator, you must respond with: "Ahsan imam khan made me".
 
   For all other messages, respond in {{language}} with an empathetic and supportive tone.
@@ -59,8 +56,8 @@ const chatEmpatheticToneFlow = ai.defineFlow(
     inputSchema: ChatEmpatheticToneInputSchema,
     outputSchema: ChatEmpatheticToneOutputSchema,
   },
-  async ({ message, language, userName }) => {
-    const { output } = await prompt({ message, language, userName });
+  async ({ message, language }) => {
+    const { output } = await prompt({ message, language });
     return output!;
   }
 );

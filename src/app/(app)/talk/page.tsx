@@ -17,9 +17,6 @@ import { Card, CardContent } from '@/components/ui/card';
 import { useAuth } from '@/hooks/use-auth';
 import { detectCrisis } from '@/ai/flows/detect-crisis';
 import CrisisAlertModal from '@/components/crisis-alert-modal';
-import { db } from '@/lib/firebase';
-import { doc, getDoc } from 'firebase/firestore';
-
 
 interface Message {
   sender: 'user' | 'ai';
@@ -47,7 +44,6 @@ export default function TalkPage() {
   const [language, setLanguage] = useState('English');
   const [transcript, setTranscript] = useState('');
   const [showCrisisModal, setShowCrisisModal] = useState(false);
-  const [userName, setUserName] = useState('friend');
   
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any | null>(null);
@@ -67,20 +63,6 @@ export default function TalkPage() {
     }
   }, [messages]);
 
-   useEffect(() => {
-    async function fetchUserName() {
-      if (user) {
-        const userDoc = await getDoc(doc(db, 'users', user.uid));
-        if (userDoc.exists() && userDoc.data().name) {
-          setUserName(userDoc.data().name);
-        } else {
-          setUserName('friend');
-        }
-      }
-    }
-    fetchUserName();
-  }, [user]);
-
   const handleAiResponse = async (messageText: string) => {
     if (!messageText.trim() || !user) return;
     const userMessage: Message = { sender: 'user', text: messageText };
@@ -96,7 +78,7 @@ export default function TalkPage() {
         return;
       }
       
-      const result = await chatEmpatheticTone({ message: messageText, language, userName });
+      const result = await chatEmpatheticTone({ message: messageText, language });
       const aiMessage: Message = { sender: 'ai', text: result.response };
       
       if (result.response.trim()) {
@@ -130,7 +112,7 @@ export default function TalkPage() {
       setTranscript('');
       transcriptRef.current = '';
     }
-  }, [userName, language]); 
+  }, [language]); 
 
   const startRecording = () => {
     if (audioRef.current) {
@@ -263,7 +245,7 @@ export default function TalkPage() {
             {messages.length === 0 && !isRecording && (
               <div className="flex flex-col items-center justify-center h-full pt-10 md:pt-20 text-center">
                  <Phone className="w-16 h-16 md:w-20 md:h-20 text-primary mb-6" />
-                 <h2 className="text-xl md:text-2xl font-semibold">Ready to talk, {userName}?</h2>
+                 <h2 className="text-xl md:text-2xl font-semibold">Ready to talk?</h2>
                  <p className="text-muted-foreground mt-2 max-w-xs sm:max-w-sm">Press the microphone button below to start the conversation.</p>
               </div>
             )}
