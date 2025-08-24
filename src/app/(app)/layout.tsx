@@ -200,7 +200,14 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
         </SidebarFooter>
       </Sidebar>
       <SidebarInset>
-        {children}
+        <div className="flex flex-col h-full">
+          <div className="flex-1">
+            {children}
+          </div>
+          <footer className="p-4 border-t text-center text-xs text-muted-foreground bg-background">
+            <strong>A Gentle Reminder:</strong> MitraAI is a supportive friend, not a substitute for professional medical advice, diagnosis, or treatment. Its analysis may not be 100% correct. Always seek the advice of a qualified health provider for any medical questions.
+          </footer>
+        </div>
         <MusicPlayer />
       </SidebarInset>
     </>
