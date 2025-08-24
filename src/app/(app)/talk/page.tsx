@@ -34,7 +34,12 @@ export default function TalkPage() {
   const recognitionRef = useRef<any | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const silenceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const transcriptRef = useRef(''); // Use a ref to hold the latest transcript
   const { toast } = useToast();
+
+  useEffect(() => {
+    transcriptRef.current = transcript;
+  }, [transcript]);
 
   useEffect(() => {
     if (scrollAreaRef.current) {
@@ -42,19 +47,8 @@ export default function TalkPage() {
     }
   }, [messages]);
 
-  const stopRecording = useCallback(() => {
-    if (recognitionRef.current) {
-        recognitionRef.current.stop();
-        recognitionRef.current = null;
-        setIsRecording(false);
-        if (transcript.trim()) {
-            handleAiResponse(transcript);
-        }
-        setTranscript('');
-    }
-  }, [transcript]); // Add dependencies here
-
   const handleAiResponse = async (messageText: string) => {
+    if (!messageText.trim()) return;
     const userMessage: Message = { sender: 'user', text: messageText };
     setMessages((prev) => [...prev, userMessage]);
     setIsLoading(true);
@@ -77,6 +71,21 @@ export default function TalkPage() {
     }
   };
 
+  const stopRecording = useCallback(() => {
+    if (recognitionRef.current) {
+      recognitionRef.current.stop();
+      recognitionRef.current = null;
+      setIsRecording(false);
+      
+      const finalTranscript = transcriptRef.current;
+      if (finalTranscript.trim()) {
+        handleAiResponse(finalTranscript);
+      }
+      setTranscript('');
+      transcriptRef.current = '';
+    }
+  }, []); // Removed transcript dependency
+
   const startRecording = () => {
     if (audioRef.current) {
       audioRef.current.pause();
@@ -89,6 +98,7 @@ export default function TalkPage() {
 
     setIsRecording(true);
     setTranscript('');
+    transcriptRef.current = '';
     recognitionRef.current = new SpeechRecognition();
     recognitionRef.current.continuous = true;
     recognitionRef.current.interimResults = true;
@@ -108,7 +118,8 @@ export default function TalkPage() {
           interimTranscript += event.results[i][0].transcript;
         }
       }
-      setTranscript(finalTranscript + interimTranscript);
+      const fullTranscript = finalTranscript + interimTranscript;
+      setTranscript(fullTranscript);
       
       // Reset the silence timer
       silenceTimeoutRef.current = setTimeout(() => {
@@ -130,9 +141,9 @@ export default function TalkPage() {
         if (silenceTimeoutRef.current) {
             clearTimeout(silenceTimeoutRef.current);
         }
-        // Ensure we are truly stopped if the recording ends unexpectedly
-        if (isRecording) {
-            stopRecording();
+        // Check if the recording was stopped intentionally or automatically
+        if (recognitionRef.current) {
+           stopRecording();
         }
     }
 
