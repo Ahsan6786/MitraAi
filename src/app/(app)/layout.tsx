@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { BookHeart, MessageSquare, MicVocal, Shield, LogOut, FileText, Puzzle, Phone, LayoutDashboard, Info, HeartPulse } from 'lucide-react';
+import { BookHeart, MessageSquare, MicVocal, ShieldCheck, LogOut, FileText, Puzzle, Phone, LayoutDashboard, Info, HeartPulse } from 'lucide-react';
 import {
   SidebarProvider,
   Sidebar,
@@ -27,11 +27,14 @@ import { signOut } from 'firebase/auth';
 import { MusicProvider } from '@/hooks/use-music';
 import MusicPlayer from '@/components/music-player';
 
+const ADMIN_EMAIL = 'ahsan.khan@mitwpu.edu.in';
+
 function AppLayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { user, loading } = useAuth();
   const router = useRouter();
   const sidebar = useSidebar();
+  const isAdmin = user?.email === ADMIN_EMAIL;
 
   useEffect(() => {
     if (!loading && !user) {
@@ -76,6 +79,16 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
         </SidebarHeader>
         <SidebarContent>
           <SidebarMenu>
+            {isAdmin && (
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={pathname === '/admin'}>
+                  <Link href="/admin" onClick={handleLinkClick}>
+                    <ShieldCheck />
+                    <span>Admin Panel</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            )}
             <SidebarMenuItem>
               <SidebarMenuButton asChild isActive={pathname === '/chat'}>
                 <Link href="/chat" onClick={handleLinkClick}>
