@@ -114,33 +114,33 @@ export default function VoiceJournalPage() {
     setAnalysisResult(null);
 
     try {
-        // 1. Convert audio blob to base64 first
         const base64Audio = await convertBlobToBase64(audioBlob);
 
-        // 2. Upload audio to Firebase Storage
-        const audioFileName = `voice-journals/${user.uid}/${Date.now()}.webm`;
-        const storageRef = ref(storage, audioFileName);
-        await uploadBytes(storageRef, audioBlob);
-        const downloadURL = await getDownloadURL(storageRef);
-
-        // 3. Get AI analysis
-        const result = await analyzeVoiceJournal({ audioDataUri: base64Audio });
+        // Perform AI analysis and file upload concurrently
+        const [analysisResult, downloadURL] = await Promise.all([
+          analyzeVoiceJournal({ audioDataUri: base64Audio }),
+          (async () => {
+            const audioFileName = `voice-journals/${user.uid}/${Date.now()}.webm`;
+            const storageRef = ref(storage, audioFileName);
+            await uploadBytes(storageRef, audioBlob);
+            return getDownloadURL(storageRef);
+          })()
+        ]);
         
-        // 4. Save everything to Firestore
         await addDoc(collection(db, 'journalEntries'), {
             userId: user.uid,
             userEmail: user.email,
             type: 'voice',
-            mood: result.mood,
-            transcription: result.transcription,
-            solutions: result.solutions,
-            audioUrl: downloadURL, // Save the audio URL
+            mood: analysisResult.mood,
+            transcription: analysisResult.transcription,
+            solutions: analysisResult.solutions,
+            audioUrl: downloadURL,
             createdAt: serverTimestamp(),
             reviewed: false,
             doctorReport: null,
         });
 
-        setAnalysisResult(result);
+        setAnalysisResult(analysisResult);
         toast({
             title: "Analysis Complete & Saved",
             description: "Your voice journal has been successfully saved.",
