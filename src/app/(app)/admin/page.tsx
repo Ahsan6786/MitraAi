@@ -111,29 +111,41 @@ export default function AdminPage() {
     }, [user, loading, isAdmin, router]);
 
     useEffect(() => {
-        if (loading || !isAdmin) return;
-
-        setIsLoadingEntries(true);
-        const q = query(collection(db, 'journalEntries'), orderBy('createdAt', 'desc'));
-        const unsubscribe = onSnapshot(q, (querySnapshot) => {
-            const entriesData = querySnapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-            } as JournalEntry));
-            setEntries(entriesData);
-            setIsLoadingEntries(false);
-        }, (error) => {
-            console.error("Error fetching journal entries: ", error);
-            toast({
-                title: "Error",
-                description: "Could not fetch journal entries. Please ensure Firestore rules and indexes are correct.",
-                variant: "destructive"
-            });
-            setIsLoadingEntries(false);
-        });
-
-        return () => unsubscribe();
-    }, [user, isAdmin, loading, toast]);
+        if (user && isAdmin) {
+            setIsLoadingEntries(true);
+            const q = query(
+              collection(db, 'journalEntries'),
+              orderBy('createdAt', 'desc')
+            );
+      
+            const unsubscribe = onSnapshot(
+              q,
+              (querySnapshot) => {
+                const entriesData = querySnapshot.docs.map(
+                  (doc) =>
+                    ({
+                      id: doc.id,
+                      ...doc.data(),
+                    } as JournalEntry)
+                );
+                setEntries(entriesData);
+                setIsLoadingEntries(false);
+              },
+              (error) => {
+                console.error('Error fetching journal entries: ', error);
+                toast({
+                  title: 'Error',
+                  description:
+                    'Could not fetch journal entries. Please ensure Firestore rules and indexes are correct.',
+                  variant: 'destructive',
+                });
+                setIsLoadingEntries(false);
+              }
+            );
+      
+            return () => unsubscribe();
+          }
+    }, [user, isAdmin, toast]);
 
 
     if (loading || !isAdmin) {
