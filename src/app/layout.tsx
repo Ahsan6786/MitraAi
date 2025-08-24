@@ -25,8 +25,7 @@ export default function RootLayout({
       <body className={`${poppins.variable} font-body antialiased`}>
         <ThemeProvider
           attribute="class"
-          defaultTheme="system"
-          enableSystem
+          defaultTheme="theme-green-dark"
           disableTransitionOnChange
           themes={['light', 'dark', 'theme-gold-dark', 'theme-pink-dark', 'theme-blue-dark', 'theme-gold-light', 'theme-pink-light', 'theme-blue-light', 'theme-green-light', 'theme-green-dark']}
         >
