@@ -5,24 +5,24 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Logo } from '@/components/icons';
-import { MessageSquare, BookHeart, MicVocal, FileText, Instagram, Mail, AlertTriangle } from 'lucide-react';
+import { Bot, HeartPulse, Mic, FileText, Instagram, Mail, AlertTriangle } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { ThemeProvider } from '@/components/theme-provider';
 
 function LandingPageContent() {
   const features = [
     {
-      icon: <MessageSquare className="w-8 h-8 text-primary" />,
+      icon: <Bot className="w-8 h-8 text-primary" />,
       title: 'AI Companion Chat',
       description: 'Talk about your feelings in a safe space with our empathetic AI, available in multiple languages.',
     },
     {
-      icon: <BookHeart className="w-8 h-8 text-primary" />,
+      icon: <HeartPulse className="w-8 h-8 text-primary" />,
       title: 'Mood Journal',
       description: 'Track your emotions by writing journal entries. Our AI helps you identify and understand your mood patterns.',
     },
     {
-      icon: <MicVocal className="w-8 h-8 text-primary" />,
+      icon: <Mic className="w-8 h-8 text-primary" />,
       title: 'Voice Journal',
       description: 'Simply speak your mind. Our technology transcribes and analyzes your voice notes to provide insights.',
     },
