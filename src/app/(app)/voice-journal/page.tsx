@@ -15,7 +15,6 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { useMusic } from '@/hooks/use-music';
 
-
 type RecordingStatus = 'idle' | 'recording' | 'stopped';
 
 export default function VoiceJournalPage() {
@@ -37,17 +36,16 @@ export default function VoiceJournalPage() {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       
       const options = { mimeType: 'audio/webm' };
-      if (MediaRecorder.isTypeSupported(options.mimeType)) {
-        mediaRecorderRef.current = new MediaRecorder(stream, options);
-      } else {
-        console.warn(`${options.mimeType} is not supported, using browser default.`);
-        mediaRecorderRef.current = new MediaRecorder(stream);
-      }
+      mediaRecorderRef.current = MediaRecorder.isTypeSupported(options.mimeType)
+        ? new MediaRecorder(stream, options)
+        : new MediaRecorder(stream);
       
       audioChunksRef.current = [];
 
       mediaRecorderRef.current.ondataavailable = (event) => {
-        audioChunksRef.current.push(event.data);
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
       };
 
       mediaRecorderRef.current.onstop = () => {
@@ -88,7 +86,7 @@ export default function VoiceJournalPage() {
     setAnalysisResult(null);
   };
 
-  const convertBlobToBase64 = (blob: Blob): Promise<string> => {
+  const convertBlobToDataURI = (blob: Blob): Promise<string> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onerror = reject;
@@ -100,56 +98,61 @@ export default function VoiceJournalPage() {
   }
 
   const handleAnalyze = async () => {
-    if (!audioBlob) return;
-     if (!user) {
-        toast({
-            title: "Not Authenticated",
-            description: "You must be logged in to save an entry.",
-            variant: "destructive",
-        });
-        return;
+    if (!audioBlob) {
+      toast({ title: 'No Audio', description: 'Please record audio first.', variant: 'destructive' });
+      return;
+    }
+    if (!user) {
+      toast({ title: 'Not Authenticated', description: 'You must be logged in.', variant: 'destructive' });
+      return;
     }
 
     setIsLoading(true);
     setAnalysisResult(null);
 
     try {
-        const base64Audio = await convertBlobToBase64(audioBlob);
-        const analysis = await analyzeVoiceJournal({ audioDataUri: base64Audio });
-        
-        const audioFileName = `voice-journals/${user.uid}/${Date.now()}.webm`;
-        const storageRef = ref(storage, audioFileName);
-        await uploadBytes(storageRef, audioBlob);
-        const downloadURL = await getDownloadURL(storageRef);
-        
-        await addDoc(collection(db, 'journalEntries'), {
-            userId: user.uid,
-            userEmail: user.email,
-            type: 'voice',
-            mood: analysis.mood,
-            transcription: analysis.transcription,
-            solutions: analysis.solutions,
-            audioUrl: downloadURL,
-            createdAt: serverTimestamp(),
-            reviewed: false,
-            doctorReport: null,
-        });
+      // 1. Convert audio to Data URI for the AI flow
+      const audioDataUri = await convertBlobToDataURI(audioBlob);
 
-        setAnalysisResult(analysis);
-        toast({
-            title: "Analysis Complete & Saved",
-            description: "Your voice journal has been successfully saved.",
-        });
+      // 2. Call the AI flow for analysis
+      const analysis = await analyzeVoiceJournal({ audioDataUri });
+      
+      // 3. Upload the audio blob to Firebase Storage
+      const audioFileName = `voice-journals/${user.uid}/${Date.now()}.webm`;
+      const storageRef = ref(storage, audioFileName);
+      await uploadBytes(storageRef, audioBlob);
+      const downloadURL = await getDownloadURL(storageRef);
+      
+      // 4. Save everything to Firestore
+      await addDoc(collection(db, 'journalEntries'), {
+        userId: user.uid,
+        userEmail: user.email,
+        type: 'voice',
+        mood: analysis.mood,
+        transcription: analysis.transcription,
+        solutions: analysis.solutions,
+        audioUrl: downloadURL,
+        createdAt: serverTimestamp(),
+        reviewed: false,
+        doctorReport: null,
+      });
+
+      // 5. Update the UI
+      setAnalysisResult(analysis);
+      toast({
+        title: "Analysis Complete & Saved",
+        description: "Your voice journal has been successfully saved.",
+      });
 
     } catch (error) {
-        console.error('Error during analysis or save:', error);
-        toast({
-            title: 'Analysis Failed',
-            description: 'Sorry, we could not process your audio right now. Please try again.',
-            variant: 'destructive',
-        });
+      console.error('Error during analysis or save:', error);
+      toast({
+        title: 'Analysis Failed',
+        description: 'Sorry, we could not process your audio right now. Please try again.',
+        variant: 'destructive',
+      });
     } finally {
-        setIsLoading(false);
+      setIsLoading(false);
     }
   };
 
