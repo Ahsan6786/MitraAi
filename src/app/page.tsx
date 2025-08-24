@@ -72,10 +72,11 @@ export default function LandingPage() {
                 </div>
               </div>
               <Image
-                src="/hero-image.jpg"
+                src="https://placehold.co/600x400.png"
                 width="600"
                 height="400"
                 alt="AI doctor and patient"
+                data-ai-hint="ai doctor"
                 className="mx-auto aspect-video overflow-hidden rounded-xl object-cover sm:w-full lg:order-last"
               />
             </div>
