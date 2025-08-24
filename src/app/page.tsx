@@ -72,7 +72,7 @@ export default function LandingPage() {
                 </div>
               </div>
               <Image
-                src="/hero-image.png"
+                src="/hero-image.jpg"
                 width="600"
                 height="400"
                 alt="AI doctor and patient"
