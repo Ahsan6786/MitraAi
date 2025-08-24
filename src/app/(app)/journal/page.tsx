@@ -49,7 +49,7 @@ export default function JournalPage() {
   useEffect(() => {
     if (user) {
       setIsLoadingEntries(true);
-      // This query specifically requires an index on userId and createdAt.
+      // This query specifically requires an index on userId (asc) and createdAt (desc).
       const q = query(
         collection(db, 'journalEntries'),
         where('userId', '==', user.uid),
@@ -62,7 +62,7 @@ export default function JournalPage() {
             id: doc.id,
             ...doc.data(),
           } as JournalEntry))
-          .filter(entry => entry.type === 'text'); // We still filter for text entries on the client.
+          .filter(entry => entry.type === 'text'); // Filter for text entries on the client.
 
         setEntries(entriesData);
         setIsLoadingEntries(false);
