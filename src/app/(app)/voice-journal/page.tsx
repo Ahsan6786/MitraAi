@@ -88,6 +88,17 @@ export default function VoiceJournalPage() {
     setAnalysisResult(null);
   };
 
+  const convertBlobToBase64 = (blob: Blob): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onerror = reject;
+      reader.onload = () => {
+        resolve(reader.result as string);
+      };
+      reader.readAsDataURL(blob);
+    });
+  }
+
   const handleAnalyze = async () => {
     if (!audioBlob) return;
      if (!user) {
@@ -103,67 +114,46 @@ export default function VoiceJournalPage() {
     setAnalysisResult(null);
 
     try {
-        // 1. Upload audio to Firebase Storage
+        // 1. Convert audio blob to base64 first
+        const base64Audio = await convertBlobToBase64(audioBlob);
+
+        // 2. Upload audio to Firebase Storage
         const audioFileName = `voice-journals/${user.uid}/${Date.now()}.webm`;
         const storageRef = ref(storage, audioFileName);
         await uploadBytes(storageRef, audioBlob);
         const downloadURL = await getDownloadURL(storageRef);
 
-        // 2. Get AI analysis
-        const reader = new FileReader();
-        reader.readAsDataURL(audioBlob);
-        reader.onloadend = async () => {
-            const base64Audio = reader.result as string;
-            try {
-                const result = await analyzeVoiceJournal({ audioDataUri: base64Audio });
-                
-                // 3. Save everything to Firestore
-                await addDoc(collection(db, 'journalEntries'), {
-                    userId: user.uid,
-                    userEmail: user.email,
-                    type: 'voice',
-                    mood: result.mood,
-                    transcription: result.transcription,
-                    solutions: result.solutions,
-                    audioUrl: downloadURL, // Save the audio URL
-                    createdAt: serverTimestamp(),
-                    reviewed: false,
-                    doctorReport: null,
-                });
+        // 3. Get AI analysis
+        const result = await analyzeVoiceJournal({ audioDataUri: base64Audio });
+        
+        // 4. Save everything to Firestore
+        await addDoc(collection(db, 'journalEntries'), {
+            userId: user.uid,
+            userEmail: user.email,
+            type: 'voice',
+            mood: result.mood,
+            transcription: result.transcription,
+            solutions: result.solutions,
+            audioUrl: downloadURL, // Save the audio URL
+            createdAt: serverTimestamp(),
+            reviewed: false,
+            doctorReport: null,
+        });
 
-                setAnalysisResult(result);
-                toast({
-                    title: "Analysis Complete & Saved",
-                    description: "Your voice journal has been successfully saved.",
-                });
-
-            } catch (error) {
-                console.error('Error analyzing or saving audio:', error);
-                toast({
-                    title: 'Analysis Failed',
-                    description: 'Sorry, we could not process your audio right now.',
-                    variant: 'destructive',
-                });
-            } finally {
-                setIsLoading(false);
-            }
-        };
-        reader.onerror = (error) => {
-            console.error('Error reading audio file:', error);
-            toast({
-                title: 'Processing Error',
-                description: 'There was an error processing your audio file.',
-                variant: 'destructive',
-            });
-            setIsLoading(false);
-        }
-    } catch (storageError) {
-        console.error('Error uploading to Firebase Storage:', storageError);
+        setAnalysisResult(result);
         toast({
-            title: 'Upload Failed',
-            description: 'Could not upload your voice recording. Please try again.',
+            title: "Analysis Complete & Saved",
+            description: "Your voice journal has been successfully saved.",
+        });
+
+    } catch (error) {
+        console.error('Error during analysis or save:', error);
+        toast({
+            title: 'Analysis Failed',
+            description: 'Sorry, we could not process your audio right now. Please try again.',
             variant: 'destructive',
         });
+    } finally {
         setIsLoading(false);
     }
   };
