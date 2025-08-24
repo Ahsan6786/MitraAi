@@ -1,11 +1,15 @@
 
+'use client';
+
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Logo } from '@/components/icons';
 import { MessageSquare, BookHeart, MicVocal, FileText, Instagram } from 'lucide-react';
+import { ThemeToggle } from '@/components/theme-toggle';
+import { ThemeProvider } from '@/components/theme-provider';
 
-export default function LandingPage() {
+function LandingPageContent() {
   const features = [
     {
       icon: <MessageSquare className="w-8 h-8 text-primary" />,
@@ -36,7 +40,8 @@ export default function LandingPage() {
           <Logo className="h-6 w-6 text-primary" />
           <span className="ml-2 text-lg font-semibold">MitraAI</span>
         </Link>
-        <nav className="ml-auto flex gap-4 sm:gap-6">
+        <nav className="ml-auto flex items-center gap-4 sm:gap-6">
+          <ThemeToggle />
           <Button variant="ghost" asChild>
             <Link href="/signin" prefetch={false}>
               Sign In
@@ -128,4 +133,18 @@ export default function LandingPage() {
       </footer>
     </div>
   );
+}
+
+
+export default function LandingPage() {
+    return (
+        <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+        >
+            <LandingPageContent />
+        </ThemeProvider>
+    )
 }
