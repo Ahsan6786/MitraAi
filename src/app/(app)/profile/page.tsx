@@ -51,17 +51,23 @@ export default function ProfilePage() {
         if (!user) return;
         setIsLoading(true);
         try {
+            // Fetch main profile document
             const userProfileRef = doc(db, 'userProfiles', user.uid);
             const userProfileSnap = await getDoc(userProfileRef);
 
             if (userProfileSnap.exists()) {
-                form.setValue('consentForAlerts', userProfileSnap.data().consentForAlerts || false);
+                const data = userProfileSnap.data();
+                form.reset({
+                    ...form.getValues(),
+                    consentForAlerts: data.consentForAlerts || false,
+                });
             }
             
+            // Fetch and subscribe to trusted contacts subcollection
             const contactsCollectionRef = collection(db, 'userProfiles', user.uid, 'trustedContacts');
             const unsubscribe = onSnapshot(contactsCollectionRef, (querySnapshot) => {
                 const contacts = querySnapshot.docs.map(doc => ({ email: doc.data().email }));
-                replace(contacts); // Use replace to update the field array
+                replace(contacts);
                 setIsLoading(false);
             }, (error) => {
                  console.error("Error fetching contacts:", error);
@@ -69,7 +75,7 @@ export default function ProfilePage() {
                  setIsLoading(false);
             });
 
-            return unsubscribe;
+            return unsubscribe; // Return the unsubscribe function for cleanup
 
         } catch (error) {
             console.error("Error loading profile data:", error);
@@ -78,12 +84,22 @@ export default function ProfilePage() {
         }
     }, [user, form, toast, replace]);
 
+
     useEffect(() => {
-        const unsubscribePromise = loadProfileData();
+        let unsubscribe: (() => void) | undefined;
+      
+        const init = async () => {
+          unsubscribe = await loadProfileData();
+        };
+      
+        init();
+      
         return () => {
-            unsubscribePromise?.then(unsubscribe => unsubscribe && unsubscribe());
-        }
-    }, [loadProfileData]);
+          if (unsubscribe) {
+            unsubscribe();
+          }
+        };
+      }, [loadProfileData]);
 
 
     const onSubmit: SubmitHandler<ProfileSafetyForm> = async (data) => {
@@ -92,7 +108,8 @@ export default function ProfilePage() {
         form.formState.isSubmitting = true;
 
         try {
-            // 1. Update the consent field in the user's profile document
+            // 1. Set the consent field in the user's profile document.
+            // Using setDoc with { merge: true } will create the doc if it doesn't exist, or update it if it does.
             const userProfileRef = doc(db, 'userProfiles', user.uid);
             await setDoc(userProfileRef, { consentForAlerts: data.consentForAlerts }, { merge: true });
 
@@ -100,7 +117,6 @@ export default function ProfilePage() {
             const contactsCollectionRef = collection(db, 'userProfiles', user.uid, 'trustedContacts');
             const contactsSnapshot = await getDocs(contactsCollectionRef);
             
-            // Start a batch write to delete old contacts and add new ones atomically
             const batch = writeBatch(db);
             
             // Delete all existing contacts
@@ -111,12 +127,11 @@ export default function ProfilePage() {
             // Add the new contacts from the form data
             data.trustedContacts.forEach((contact) => {
                 if (contact.email) { 
-                    const newContactRef = doc(contactsCollectionRef); // Create a new doc ref
+                    const newContactRef = doc(contactsCollectionRef);
                     batch.set(newContactRef, { email: contact.email });
                 }
             });
             
-            // Commit the batch write
             await batch.commit();
 
             toast({ title: "Success", description: "Your profile and safety settings have been updated." });
@@ -126,7 +141,6 @@ export default function ProfilePage() {
         } finally {
              // Manually setting isSubmitting to false in a timeout to ensure state update
             setTimeout(() => {
-                form.clearErrors();
                 const isSubmitting = 'isSubmitting' as keyof typeof form.formState;
                 (form.formState[isSubmitting] as boolean) = false;
                 form.trigger();
