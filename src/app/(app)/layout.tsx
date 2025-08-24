@@ -1,8 +1,9 @@
+
 'use client';
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { BookHeart, MessageSquare, MicVocal, Shield, LogOut, FileText, Puzzle } from 'lucide-react';
+import { BookHeart, MessageSquare, MicVocal, Shield, LogOut, FileText, Puzzle, Phone } from 'lucide-react';
 import {
   SidebarProvider,
   Sidebar,
@@ -76,6 +77,14 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
             
             {!isAdmin && (
               <>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild isActive={pathname === '/talk'}>
+                    <Link href="/talk">
+                      <Phone />
+                      <span>Talk to Mitra</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
                 <SidebarMenuItem>
                   <SidebarMenuButton asChild isActive={pathname === '/journal'}>
                     <Link href="/journal">
