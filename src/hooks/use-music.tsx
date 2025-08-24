@@ -12,7 +12,7 @@ interface MusicContextType {
 
 const MusicContext = createContext<MusicContextType | undefined>(undefined);
 
-const MUSIC_URL = 'https://www.chosic.com/wp-content/uploads/2021/04/purrple-cat-wondering.mp3';
+const MUSIC_URL = '/relaxing-music.mp3';
 
 export const MusicProvider = ({ children }: { children: ReactNode }) => {
   const [isPlaying, setIsPlaying] = useState(false);
