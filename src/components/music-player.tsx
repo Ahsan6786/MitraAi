@@ -20,14 +20,22 @@ export default function MusicPlayer() {
   const { playMusic, isPlaying } = useMusic();
 
   useEffect(() => {
-    // Don't show the prompt if music is already playing or has been offered.
-    if (isPlaying || sessionStorage.getItem('musicPrompted')) {
+    // Do not show the prompt if music is already playing
+    if (isPlaying) {
+      return;
+    }
+    
+    // Check if the prompt has been shown in this session
+    if (sessionStorage.getItem('musicPrompted')) {
       return;
     }
 
     const timer = setTimeout(() => {
-      setShowPrompt(true);
-      sessionStorage.setItem('musicPrompted', 'true');
+      // Final check before showing the prompt
+      if (!isPlaying && !sessionStorage.getItem('musicPrompted')) {
+        setShowPrompt(true);
+        sessionStorage.setItem('musicPrompted', 'true');
+      }
     }, 15000); // 15 seconds
 
     return () => clearTimeout(timer);
