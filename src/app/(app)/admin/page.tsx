@@ -181,7 +181,10 @@ export default function AdminPage() {
                                 <AccordionItem value={entry.id} key={entry.id} className="border rounded-lg bg-card">
                                     <AccordionTrigger className="p-4 hover:no-underline text-left">
                                         <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 w-full">
-                                            {entry.type === 'text' ? <PenSquare className="w-5 h-5 text-primary" /> : <Mic className="w-5 h-5 text-primary" />}
+                                            <div className="flex items-center gap-4">
+                                                <AlertTriangle className="w-5 h-5 text-yellow-500" />
+                                                {entry.type === 'text' ? <PenSquare className="w-5 h-5 text-primary" /> : <Mic className="w-5 h-5 text-primary" />}
+                                            </div>
                                             <div className="flex-1">
                                                 <div className="font-semibold">
                                                   {entry.userEmail}
