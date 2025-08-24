@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { BookHeart, MessageSquare, MicVocal, Shield, LogOut, FileText, Puzzle, Phone, LayoutDashboard, Info } from 'lucide-react';
+import { BookHeart, MessageSquare, MicVocal, Shield, LogOut, FileText, Puzzle, Phone, LayoutDashboard, Info, HeartPulse } from 'lucide-react';
 import {
   SidebarProvider,
   Sidebar,
@@ -118,6 +118,17 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
                 <Link href="/games">
                   <Puzzle />
                   <span>Mind Games</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+             <SidebarMenuItem>
+              <SidebarMenuButton
+                asChild
+                isActive={pathname === '/exercises'}
+              >
+                <Link href="/exercises">
+                  <HeartPulse />
+                  <span>Mindful Exercises</span>
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
