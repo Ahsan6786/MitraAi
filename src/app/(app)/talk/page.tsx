@@ -14,6 +14,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { textToSpeech } from '@/ai/flows/text-to-speech';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent } from '@/components/ui/card';
+import { useAuth } from '@/hooks/use-auth';
+
 
 interface Message {
   sender: 'user' | 'ai';
@@ -36,6 +38,7 @@ export default function TalkPage() {
   const silenceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const transcriptRef = useRef(''); // Use a ref to hold the latest transcript
   const { toast } = useToast();
+  const { user } = useAuth();
 
   useEffect(() => {
     transcriptRef.current = transcript;
@@ -48,13 +51,13 @@ export default function TalkPage() {
   }, [messages]);
 
   const handleAiResponse = async (messageText: string) => {
-    if (!messageText.trim()) return;
+    if (!messageText.trim() || !user) return;
     const userMessage: Message = { sender: 'user', text: messageText };
     setMessages((prev) => [...prev, userMessage]);
     setIsLoading(true);
 
     try {
-      const result = await chatEmpatheticTone({ message: messageText, language });
+      const result = await chatEmpatheticTone({ message: messageText, language, userId: user.uid });
       const aiMessage: Message = { sender: 'ai', text: result.response };
       
       const ttsResult = await textToSpeech({ text: result.response });
@@ -84,7 +87,7 @@ export default function TalkPage() {
       setTranscript('');
       transcriptRef.current = '';
     }
-  }, []); // Removed transcript dependency
+  }, []); 
 
   const startRecording = () => {
     if (audioRef.current) {

@@ -14,6 +14,7 @@ import { SidebarTrigger } from '@/components/ui/sidebar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { textToSpeech } from '@/ai/flows/text-to-speech';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/use-auth';
 
 interface Message {
   sender: 'user' | 'ai';
@@ -36,6 +37,7 @@ export default function ChatPage() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const { toast } = useToast();
+  const { user } = useAuth();
 
   useEffect(() => {
     if (scrollAreaRef.current) {
@@ -47,7 +49,7 @@ export default function ChatPage() {
   }, [messages]);
 
   const handleSendMessage = async (messageText: string) => {
-    if (!messageText.trim() || isLoading) return;
+    if (!messageText.trim() || isLoading || !user) return;
 
     const userMessage: Message = { sender: 'user', text: messageText };
     setMessages((prev) => [...prev, userMessage]);
@@ -55,7 +57,7 @@ export default function ChatPage() {
     setIsLoading(true);
 
     try {
-      const result = await chatEmpatheticTone({ message: messageText, language });
+      const result = await chatEmpatheticTone({ message: messageText, language, userId: user.uid });
       const aiMessage: Message = { sender: 'ai', text: result.response };
       setMessages((prev) => [...prev, aiMessage]);
 
