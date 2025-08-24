@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'use-strict';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { db } from '@/lib/firebase';
 import { collection, query, where, onSnapshot, orderBy, Timestamp } from 'firebase/firestore';
