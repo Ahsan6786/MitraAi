@@ -28,6 +28,7 @@ interface JournalEntry {
     mood: string;
     content?: string; // For text journals
     transcription?: string; // For voice journals
+    audioUrl?: string; // For voice journals
     reviewed: boolean;
     doctorReport?: string;
 }
@@ -88,16 +89,24 @@ function ReportDialog({ entry }: { entry: JournalEntry }) {
                    {entry.reviewed ? 'Edit Report' : 'Add Report'}
                 </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="max-w-md md:max-w-lg">
                 <DialogHeader>
                     <DialogTitle>Doctor's Report for {entry.userEmail}</DialogTitle>
                     <DialogDescription>
                         Review the user's entry and provide your feedback below. You can also use AI to generate a draft.
                     </DialogDescription>
                 </DialogHeader>
-                <div className="py-4 space-y-4">
+                <div className="py-4 space-y-4 max-h-[60vh] overflow-y-auto pr-2">
+                     {entry.type === 'voice' && entry.audioUrl && (
+                        <div className="mb-2">
+                             <h4 className="font-semibold text-sm mb-2">Voice Recording:</h4>
+                             <audio controls src={entry.audioUrl} className="w-full">
+                                Your browser does not support the audio element.
+                             </audio>
+                        </div>
+                     )}
                      <div className="mb-2">
-                        <h4 className="font-semibold text-sm">User's Entry:</h4>
+                        <h4 className="font-semibold text-sm">AI Transcription:</h4>
                         <p className="text-sm text-muted-foreground italic p-2 bg-muted rounded-md max-h-40 overflow-y-auto">
                            "{entryContent}"
                         </p>

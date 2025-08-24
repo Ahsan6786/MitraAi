@@ -9,8 +9,9 @@ import { Loader2, Mic, Square, Trash2, Lightbulb, ListChecks, Quote } from 'luci
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/use-auth';
-import { db } from '@/lib/firebase';
+import { db, storage } from '@/lib/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 
 
@@ -96,48 +97,66 @@ export default function VoiceJournalPage() {
     setIsLoading(true);
     setAnalysisResult(null);
 
-    const reader = new FileReader();
-    reader.readAsDataURL(audioBlob);
-    reader.onloadend = async () => {
-      const base64Audio = reader.result as string;
-      try {
-        const result = await analyzeVoiceJournal({ audioDataUri: base64Audio });
-        
-        // Save analysis to Firestore
-        await addDoc(collection(db, 'journalEntries'), {
-          userId: user.uid,
-          userEmail: user.email,
-          type: 'voice',
-          mood: result.mood,
-          transcription: result.transcription,
-          solutions: result.solutions,
-          createdAt: serverTimestamp(),
-          reviewed: false,
-          doctorReport: null,
-        });
+    try {
+        // 1. Upload audio to Firebase Storage
+        const audioFileName = `voice-journals/${user.uid}/${Date.now()}.webm`;
+        const storageRef = ref(storage, audioFileName);
+        await uploadBytes(storageRef, audioBlob);
+        const downloadURL = await getDownloadURL(storageRef);
 
-        setAnalysisResult(result); // Keep results on screen
-        toast({
-          title: "Analysis Complete & Saved",
-          description: "Your voice journal transcript has been saved.",
-        });
+        // 2. Get AI analysis
+        const reader = new FileReader();
+        reader.readAsDataURL(audioBlob);
+        reader.onloadend = async () => {
+            const base64Audio = reader.result as string;
+            try {
+                const result = await analyzeVoiceJournal({ audioDataUri: base64Audio });
+                
+                // 3. Save everything to Firestore
+                await addDoc(collection(db, 'journalEntries'), {
+                    userId: user.uid,
+                    userEmail: user.email,
+                    type: 'voice',
+                    mood: result.mood,
+                    transcription: result.transcription,
+                    solutions: result.solutions,
+                    audioUrl: downloadURL, // Save the audio URL
+                    createdAt: serverTimestamp(),
+                    reviewed: false,
+                    doctorReport: null,
+                });
 
-      } catch (error) {
-         console.error('Error analyzing or saving audio:', error);
-         toast({
-          title: 'Analysis Failed',
-          description: 'Sorry, we could not process your audio right now.',
-          variant: 'destructive',
-        });
-      } finally {
-          setIsLoading(false);
-      }
-    };
-    reader.onerror = (error) => {
-        console.error('Error reading audio file:', error);
+                setAnalysisResult(result);
+                toast({
+                    title: "Analysis Complete & Saved",
+                    description: "Your voice journal has been successfully saved.",
+                });
+
+            } catch (error) {
+                console.error('Error analyzing or saving audio:', error);
+                toast({
+                    title: 'Analysis Failed',
+                    description: 'Sorry, we could not process your audio right now.',
+                    variant: 'destructive',
+                });
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        reader.onerror = (error) => {
+            console.error('Error reading audio file:', error);
+            toast({
+                title: 'Processing Error',
+                description: 'There was an error processing your audio file.',
+                variant: 'destructive',
+            });
+            setIsLoading(false);
+        }
+    } catch (storageError) {
+        console.error('Error uploading to Firebase Storage:', storageError);
         toast({
-            title: 'Processing Error',
-            description: 'There was an error processing your audio file.',
+            title: 'Upload Failed',
+            description: 'Could not upload your voice recording. Please try again.',
             variant: 'destructive',
         });
         setIsLoading(false);
@@ -185,7 +204,7 @@ export default function VoiceJournalPage() {
                 <div className="flex flex-col sm:flex-row justify-center gap-2">
                    <Button onClick={handleAnalyze} disabled={isLoading}>
                       {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                      {isLoading ? 'Analyzing & Saving...' : 'Analyze & Save Transcript'}
+                      {isLoading ? 'Analyzing & Saving...' : 'Analyze & Save Journal'}
                    </Button>
                    <Button onClick={resetRecording} variant="outline" disabled={isLoading}>
                       <Trash2 className="mr-2 h-4 w-4"/> Discard
