@@ -3,8 +3,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Logo } from '@/components/icons';
-import { MessageSquare, BookHeart, MicVocal, FileText } from 'lucide-react';
-import Image from 'next/image';
+import { MessageSquare, BookHeart, MicVocal, FileText, Instagram } from 'lucide-react';
 
 export default function LandingPage() {
   const features = [
@@ -103,6 +102,18 @@ export default function LandingPage() {
       </main>
       <footer className="flex flex-col gap-2 sm:flex-row py-6 w-full shrink-0 items-center px-4 md:px-6 border-t">
         <p className="text-xs text-muted-foreground">&copy; 2024 MitraAI. All rights reserved.</p>
+        <nav className="sm:ml-auto flex gap-4 sm:gap-6">
+            <Link 
+              href="https://www.instagram.com/mitraai1?igsh=MThuMDBkYnE5cGl1dQ%3D%3D&utm_source=qr"
+              className="text-muted-foreground hover:text-foreground"
+              prefetch={false}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <Instagram className="h-5 w-5" />
+              <span className="sr-only">Instagram</span>
+            </Link>
+        </nav>
       </footer>
     </div>
   );
