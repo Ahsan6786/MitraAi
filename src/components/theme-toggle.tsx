@@ -37,6 +37,9 @@ export function ThemeToggle() {
          <DropdownMenuItem onClick={() => setTheme("theme-pink-light")}>
           Pink
         </DropdownMenuItem>
+         <DropdownMenuItem onClick={() => setTheme("theme-green-light")}>
+          Green
+        </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuLabel>Dark Themes</DropdownMenuLabel>
         <DropdownMenuItem onClick={() => setTheme("dark")}>
@@ -47,6 +50,9 @@ export function ThemeToggle() {
         </DropdownMenuItem>
          <DropdownMenuItem onClick={() => setTheme("theme-pink-dark")}>
           Pink Black
+        </DropdownMenuItem>
+         <DropdownMenuItem onClick={() => setTheme("theme-green-dark")}>
+          Green Black
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={() => setTheme("system")}>
