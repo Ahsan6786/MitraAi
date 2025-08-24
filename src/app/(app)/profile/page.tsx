@@ -4,7 +4,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { db } from '@/lib/firebase';
-import { doc, getDoc, collection, onSnapshot, addDoc, deleteDoc, writeBatch, getDocs } from 'firebase/firestore';
+import { doc, getDoc, collection, onSnapshot, addDoc, deleteDoc, writeBatch, getDocs, setDoc } from 'firebase/firestore';
 import { useForm, useFieldArray, SubmitHandler } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -42,7 +42,7 @@ export default function ProfilePage() {
         },
     });
 
-    const { fields, append, remove } = useFieldArray({
+    const { fields, append, remove, replace } = useFieldArray({
         control: form.control,
         name: "trustedContacts",
     });
@@ -55,42 +55,35 @@ export default function ProfilePage() {
             const userProfileSnap = await getDoc(userProfileRef);
 
             if (userProfileSnap.exists()) {
-                const data = userProfileSnap.data();
-                // We only set the consent here, contacts are handled by the listener
-                form.setValue('consentForAlerts', data.consentForAlerts || false);
+                form.setValue('consentForAlerts', userProfileSnap.data().consentForAlerts || false);
             }
-        } catch (error) {
-            console.error("Error loading profile data:", error);
-            toast({ title: "Error", description: "Could not load your profile settings.", variant: "destructive" });
-        } finally {
-           // Loading state is managed by the snapshot listener
-        }
-    }, [user, form, toast]);
-
-    useEffect(() => {
-        loadProfileData();
-    }, [loadProfileData]);
-    
-    useEffect(() => {
-        if (user) {
+            
             const contactsCollectionRef = collection(db, 'userProfiles', user.uid, 'trustedContacts');
             const unsubscribe = onSnapshot(contactsCollectionRef, (querySnapshot) => {
                 const contacts = querySnapshot.docs.map(doc => ({ email: doc.data().email }));
-                // Use reset to update the entire form state with new contacts while preserving consent value
-                form.reset({ 
-                    consentForAlerts: form.getValues('consentForAlerts'), 
-                    trustedContacts: contacts 
-                });
+                replace(contacts); // Use replace to update the field array
                 setIsLoading(false);
             }, (error) => {
                  console.error("Error fetching contacts:", error);
-                 toast({ title: "Error", description: "Could not fetch trusted contacts. Check Firestore rules.", variant: "destructive" });
+                 toast({ title: "Error", description: "Could not fetch trusted contacts.", variant: "destructive" });
                  setIsLoading(false);
             });
 
-            return () => unsubscribe();
+            return unsubscribe;
+
+        } catch (error) {
+            console.error("Error loading profile data:", error);
+            toast({ title: "Error", description: "Could not load your profile settings.", variant: "destructive" });
+            setIsLoading(false);
         }
-    }, [user, form, toast]);
+    }, [user, form, toast, replace]);
+
+    useEffect(() => {
+        const unsubscribePromise = loadProfileData();
+        return () => {
+            unsubscribePromise?.then(unsubscribe => unsubscribe && unsubscribe());
+        }
+    }, [loadProfileData]);
 
 
     const onSubmit: SubmitHandler<ProfileSafetyForm> = async (data) => {
@@ -99,35 +92,45 @@ export default function ProfilePage() {
         form.formState.isSubmitting = true;
 
         try {
-            const batch = writeBatch(db);
+            // 1. Update the consent field in the user's profile document
             const userProfileRef = doc(db, 'userProfiles', user.uid);
-            
-            // 1. Update consent
-            batch.set(userProfileRef, { consentForAlerts: data.consentForAlerts }, { merge: true });
+            await setDoc(userProfileRef, { consentForAlerts: data.consentForAlerts }, { merge: true });
 
-            // 2. Sync trusted contacts
+            // 2. Sync the trusted contacts subcollection
             const contactsCollectionRef = collection(db, 'userProfiles', user.uid, 'trustedContacts');
             const contactsSnapshot = await getDocs(contactsCollectionRef);
             
+            // Start a batch write to delete old contacts and add new ones atomically
+            const batch = writeBatch(db);
+            
             // Delete all existing contacts
-            contactsSnapshot.docs.forEach((doc) => batch.delete(doc.ref));
+            contactsSnapshot.docs.forEach((doc) => {
+                batch.delete(doc.ref);
+            });
 
-            // Add the new/updated contacts
+            // Add the new contacts from the form data
             data.trustedContacts.forEach((contact) => {
-                if (contact.email) { // Ensure we don't add empty contacts
-                    const newContactRef = doc(contactsCollectionRef);
+                if (contact.email) { 
+                    const newContactRef = doc(contactsCollectionRef); // Create a new doc ref
                     batch.set(newContactRef, { email: contact.email });
                 }
             });
             
+            // Commit the batch write
             await batch.commit();
 
             toast({ title: "Success", description: "Your profile and safety settings have been updated." });
         } catch (error) {
             console.error("Error updating settings:", error);
-            toast({ title: "Error", description: "Failed to update your settings. Check permissions.", variant: "destructive" });
+            toast({ title: "Error", description: "Failed to update your settings. Please try again.", variant: "destructive" });
         } finally {
-            form.formState.isSubmitting = false;
+             // Manually setting isSubmitting to false in a timeout to ensure state update
+            setTimeout(() => {
+                form.clearErrors();
+                const isSubmitting = 'isSubmitting' as keyof typeof form.formState;
+                (form.formState[isSubmitting] as boolean) = false;
+                form.trigger();
+            }, 500);
         }
     };
     
@@ -246,5 +249,3 @@ export default function ProfilePage() {
         </div>
     );
 }
-
-    
