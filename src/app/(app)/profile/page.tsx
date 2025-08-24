@@ -4,7 +4,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { db } from '@/lib/firebase';
-import { doc, getDoc, collection, onSnapshot, addDoc, deleteDoc, writeBatch } from 'firebase/firestore';
+import { doc, getDoc, collection, onSnapshot, addDoc, deleteDoc, writeBatch, getDocs } from 'firebase/firestore';
 import { useForm, useFieldArray, SubmitHandler } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -47,7 +47,6 @@ export default function ProfilePage() {
         name: "trustedContacts",
     });
 
-    // We use useCallback to memoize this function
     const loadProfileData = useCallback(async () => {
         if (!user) return;
         setIsLoading(true);
@@ -63,38 +62,41 @@ export default function ProfilePage() {
             console.error("Error loading profile data:", error);
             toast({ title: "Error", description: "Could not load your profile settings.", variant: "destructive" });
         } finally {
-            setIsLoading(false);
+           // This is handled by the snapshot listener
         }
     }, [user, form, toast]);
 
-    // Effect for initial load
     useEffect(() => {
         loadProfileData();
     }, [loadProfileData]);
     
-    // Effect for listening to contacts changes
     useEffect(() => {
         if (user) {
             const contactsCollectionRef = collection(db, 'userProfiles', user.uid, 'trustedContacts');
             const unsubscribe = onSnapshot(contactsCollectionRef, (querySnapshot) => {
                 const contacts = querySnapshot.docs.map(doc => ({ email: doc.data().email }));
-                form.reset({ ...form.getValues(), trustedContacts: contacts });
+                // Use reset to update the entire form state with new contacts
+                form.reset({ 
+                    consentForAlerts: form.getValues('consentForAlerts'), 
+                    trustedContacts: contacts 
+                });
                 setIsLoading(false);
             }, (error) => {
                  console.error("Error fetching contacts:", error);
-                 // Don't show a toast here as it might be a rules issue we can't fix
+                 toast({ title: "Error", description: "Could not fetch trusted contacts. Check Firestore rules.", variant: "destructive" });
                  setIsLoading(false);
             });
 
             return () => unsubscribe();
         }
-    }, [user, form]);
+    }, [user, form, toast]);
 
 
     const onSubmit: SubmitHandler<ProfileSafetyForm> = async (data) => {
         if (!user) return;
-        setIsLoading(true);
         
+        form.formState.isSubmitting = true;
+
         try {
             const batch = writeBatch(db);
             const userProfileRef = doc(db, 'userProfiles', user.uid);
@@ -104,18 +106,17 @@ export default function ProfilePage() {
 
             // 2. Sync trusted contacts
             const contactsCollectionRef = collection(db, 'userProfiles', user.uid, 'trustedContacts');
-            const contactsSnapshot = await getDoc(userProfileRef); // Re-fetch to be safe
+            const contactsSnapshot = await getDocs(contactsCollectionRef);
             
-            // This logic is simplified to just clear and re-add. 
-            // It's less efficient but much safer against permission issues.
-            const existingContactsQuery = await getDoc(collection(db, 'userProfiles', user.uid, 'trustedContacts') as any);
-            if (existingContactsQuery instanceof require('firebase/firestore').QuerySnapshot) {
-              existingContactsQuery.docs.forEach((doc) => batch.delete(doc.ref));
-            }
-            
+            // Delete all existing contacts
+            contactsSnapshot.docs.forEach((doc) => batch.delete(doc.ref));
+
+            // Add the new/updated contacts
             data.trustedContacts.forEach((contact) => {
-                const newContactRef = doc(contactsCollectionRef);
-                batch.set(newContactRef, { email: contact.email });
+                if (contact.email) { // Ensure we don't add empty contacts
+                    const newContactRef = doc(contactsCollectionRef);
+                    batch.set(newContactRef, { email: contact.email });
+                }
             });
             
             await batch.commit();
@@ -123,13 +124,13 @@ export default function ProfilePage() {
             toast({ title: "Success", description: "Your profile and safety settings have been updated." });
         } catch (error) {
             console.error("Error updating settings:", error);
-            toast({ title: "Error", description: "Failed to update your settings.", variant: "destructive" });
+            toast({ title: "Error", description: "Failed to update your settings. Check permissions.", variant: "destructive" });
         } finally {
-            setIsLoading(false);
+            form.formState.isSubmitting = false;
         }
     };
     
-    if (isLoading && !form.formState.isDirty) {
+    if (isLoading) {
         return (
             <div className="h-full flex flex-col items-center justify-center">
                  <Loader2 className="w-10 h-10 animate-spin text-primary" />
@@ -222,7 +223,7 @@ export default function ProfilePage() {
                                     <PlusCircle className="mr-2 h-4 w-4" />
                                     Add Contact
                                 </Button>
-                                <FormMessage>{form.formState.errors.trustedContacts?.message}</FormMessage>
+                                <FormMessage>{form.formState.errors.trustedContacts?.root?.message}</FormMessage>
                                 
                                 {form.getValues('consentForAlerts') && fields.length === 0 && (
                                      <div className="flex items-start text-sm text-destructive bg-destructive/10 p-3 rounded-md border border-destructive/20">
