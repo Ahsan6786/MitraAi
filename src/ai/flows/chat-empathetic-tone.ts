@@ -42,6 +42,10 @@ const prompt = ai.definePrompt({
   - If the language is 'Hinglish', you must respond in a mix of Hindi and English using the Roman script.
   - If the language is 'Hindi', you must respond in Hindi using the Devanagari script.
   - If the language is 'English', you must respond in English.
+  - If the language is 'Bhojpuri', you must respond in Bhojpuri.
+  - If the language is 'Arabic', you must respond in Arabic.
+  - If the language is 'French', you must respond in French.
+  - If the language is 'German', you must respond in German.
 
   User Message: {{{message}}}
 
