@@ -7,3 +7,5 @@ import '@/ai/flows/chat-empathetic-tone.ts';
 import '@/ai/flows/analyze-voice-journal.ts';
 import '@/ai/flows/text-to-speech.ts';
 import '@/ai/flows/detect-crisis.ts';
+import '@/ai/flows/transcribe-audio.ts';
+

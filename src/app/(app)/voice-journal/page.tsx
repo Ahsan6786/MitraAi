@@ -4,7 +4,8 @@
 import { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { analyzeVoiceJournal, AnalyzeVoiceJournalOutput } from '@/ai/flows/analyze-voice-journal';
+import { transcribeAudio } from '@/ai/flows/transcribe-audio';
+import { predictUserMood } from '@/ai/flows/predict-user-mood';
 import { Loader2, Mic, Square, Trash2, Lightbulb, ListChecks, Quote } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
@@ -17,12 +18,18 @@ import { useMusic } from '@/hooks/use-music';
 
 type RecordingStatus = 'idle' | 'recording' | 'stopped';
 
+interface AnalysisResult {
+    mood: string;
+    transcription: string;
+    solutions: string[];
+}
+
 export default function VoiceJournalPage() {
   const [recordingStatus, setRecordingStatus] = useState<RecordingStatus>('idle');
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [analysisResult, setAnalysisResult] = useState<AnalyzeVoiceJournalOutput | null>(null);
+  const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
   
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -111,44 +118,64 @@ export default function VoiceJournalPage() {
     setAnalysisResult(null);
 
     try {
-      // 1. Convert audio to Data URI for the AI flow
+      // Step 1: Convert audio to Data URI
       const audioDataUri = await convertBlobToDataURI(audioBlob);
 
-      // 2. Call the AI flow for analysis
-      const analysis = await analyzeVoiceJournal({ audioDataUri });
-      
-      // 3. Upload the audio blob to Firebase Storage
+      // Step 2: Transcribe the audio to text
+      const transcriptionResult = await transcribeAudio({ audioDataUri });
+      const { transcription } = transcriptionResult;
+
+      if (!transcription) {
+        throw new Error("Transcription failed. The audio might be silent.");
+      }
+
+      // Step 3: Predict mood from the transcription
+      const moodResult = await predictUserMood({ journalEntry: transcription });
+      const { mood } = moodResult;
+
+      // Step 4: Upload audio file to storage (can be done in parallel)
       const audioFileName = `voice-journals/${user.uid}/${Date.now()}.webm`;
       const storageRef = ref(storage, audioFileName);
-      await uploadBytes(storageRef, audioBlob);
-      const downloadURL = await getDownloadURL(storageRef);
-      
-      // 4. Save everything to Firestore
+      const uploadTask = uploadBytes(storageRef, audioBlob);
+
+      // In a real app, you might generate solutions based on mood here.
+      // For now, we'll use placeholder solutions.
+      const solutions = [
+          `Acknowledge that it's okay to feel ${mood}.`,
+          "Consider a short walk to clear your head.",
+          "Practice mindful breathing for a few minutes.",
+      ];
+
+      const downloadURL = await getDownloadURL(await uploadTask);
+
+      // Step 5: Save everything to Firestore
       await addDoc(collection(db, 'journalEntries'), {
         userId: user.uid,
         userEmail: user.email,
         type: 'voice',
-        mood: analysis.mood,
-        transcription: analysis.transcription,
-        solutions: analysis.solutions,
+        mood,
+        transcription,
+        solutions,
         audioUrl: downloadURL,
         createdAt: serverTimestamp(),
         reviewed: false,
         doctorReport: null,
       });
+      
+      const finalResult: AnalysisResult = { mood, transcription, solutions };
 
-      // 5. Update the UI
-      setAnalysisResult(analysis);
+      // 6. Update the UI
+      setAnalysisResult(finalResult);
       toast({
         title: "Analysis Complete & Saved",
         description: "Your voice journal has been successfully saved.",
       });
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error during analysis or save:', error);
       toast({
         title: 'Analysis Failed',
-        description: 'Sorry, we could not process your audio right now. Please try again.',
+        description: error.message || 'Sorry, we could not process your audio right now. Please try again.',
         variant: 'destructive',
       });
     } finally {
