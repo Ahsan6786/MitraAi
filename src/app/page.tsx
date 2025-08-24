@@ -63,7 +63,7 @@ function LandingPageContent() {
                   Your Personal Path to Mental Wellness
                 </h1>
                 <p className="max-w-[600px] text-muted-foreground text-base sm:text-lg md:text-xl">
-                  MitraAI is your compassionate AI companion, here to listen, understand, and support you on your mental health journey.
+                  MitraAI is your compassionate AI companion, here to listen and support you 24/7. While a doctor provides professional guidance, your AI friend is always here for you, anytime, anywhere.
                 </p>
               </div>
               <div className="flex flex-col sm:flex-row items-center gap-4">
@@ -127,6 +127,7 @@ function LandingPageContent() {
                       {feature.icon}
                     </div>
                     <CardTitle className="mt-4 text-xl">{feature.title}</CardTitle>
+
                   </CardHeader>
                   <CardContent>
                     <p className="text-sm text-muted-foreground">{feature.description}</p>
