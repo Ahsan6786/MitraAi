@@ -50,6 +50,7 @@ export default function TalkPage() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const silenceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const transcriptRef = useRef(''); // Use a ref to hold the latest transcript
+  const audioUnlockedRef = useRef(false); // Ref to track if audio context is unlocked
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -87,7 +88,7 @@ export default function TalkPage() {
             setMessages((prev) => [...prev, aiMessage]);
             const audio = new Audio(ttsResult.audioDataUri);
             audioRef.current = audio;
-            audio.play();
+            audio.play().catch(e => console.error("Error playing audio:", e));
         }
       }
     } catch (error) {
@@ -112,7 +113,7 @@ export default function TalkPage() {
       setTranscript('');
       transcriptRef.current = '';
     }
-  }, [language]); 
+  }, []); 
 
   const startRecording = () => {
     if (audioRef.current) {
@@ -177,6 +178,15 @@ export default function TalkPage() {
 
     recognitionRef.current.start();
   };
+  
+  // Function to unlock audio context on mobile
+  const unlockAudio = () => {
+    if (audioUnlockedRef.current) return;
+    const silentAudio = new Audio('/silent.mp3');
+    silentAudio.play().catch(() => {}); // Play and ignore errors (e.g., if already unlocked)
+    audioUnlockedRef.current = true;
+  };
+
 
   const handleMicClick = () => {
     if (!SpeechRecognition) {
@@ -187,6 +197,8 @@ export default function TalkPage() {
       });
       return;
     }
+    
+    unlockAudio(); // Unlock audio on the first user interaction
 
     if (isRecording) {
       stopRecording();
