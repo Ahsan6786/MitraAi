@@ -6,10 +6,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
-import { Loader2, Mic, Send, User } from 'lucide-react';
+import { Languages, Loader2, Mic, Send, User } from 'lucide-react';
 import { chatEmpatheticTone } from '@/ai/flows/chat-empathetic-tone';
 import { Logo } from '@/components/icons';
 import { SidebarTrigger } from '@/components/ui/sidebar';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface Message {
   sender: 'user' | 'ai';
@@ -20,6 +21,7 @@ export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [language, setLanguage] = useState('English');
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -41,7 +43,7 @@ export default function ChatPage() {
     setIsLoading(true);
 
     try {
-      const result = await chatEmpatheticTone({ message: input, language: 'Hindi' });
+      const result = await chatEmpatheticTone({ message: input, language });
       const aiMessage: Message = { sender: 'ai', text: result.response };
       setMessages((prev) => [...prev, aiMessage]);
     } catch (error) {
@@ -55,11 +57,26 @@ export default function ChatPage() {
 
   return (
     <div className="h-full flex flex-col bg-muted/20">
-      <header className="border-b bg-background p-3 md:p-4 flex items-center gap-2">
-        <SidebarTrigger className="md:hidden" />
-        <div>
-          <h1 className="text-lg md:text-xl font-bold font-headline">AI Companion</h1>
-          <p className="text-sm text-muted-foreground">Chat with MitraAI in Hindi</p>
+      <header className="border-b bg-background p-3 md:p-4 flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <SidebarTrigger className="md:hidden" />
+          <div>
+            <h1 className="text-lg md:text-xl font-bold font-headline">AI Companion</h1>
+            <p className="text-sm text-muted-foreground">Chat with MitraAI</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+           <Languages className="w-5 h-5 text-muted-foreground hidden sm:block"/>
+            <Select value={language} onValueChange={setLanguage}>
+                <SelectTrigger className="w-full sm:w-[120px]">
+                    <SelectValue placeholder="Language" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="English">English</SelectItem>
+                    <SelectItem value="Hindi">Hindi</SelectItem>
+                    <SelectItem value="Hinglish">Hinglish</SelectItem>
+                </SelectContent>
+            </Select>
         </div>
       </header>
       <main className="flex-1 overflow-hidden">

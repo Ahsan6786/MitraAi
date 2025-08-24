@@ -15,7 +15,7 @@ import {z} from 'genkit';
 
 const ChatEmpatheticToneInputSchema = z.object({
   message: z.string().describe('The user message to the AI companion.'),
-  language: z.string().describe('The regional language to respond in (e.g., Hindi).'),
+  language: z.string().describe('The regional language to respond in (e.g., English, Hindi, Hinglish).'),
 });
 export type ChatEmpatheticToneInput = z.infer<typeof ChatEmpatheticToneInputSchema>;
 
@@ -34,7 +34,10 @@ const prompt = ai.definePrompt({
   output: {schema: ChatEmpatheticToneOutputSchema},
   prompt: `You are an AI companion designed to provide empathetic responses to users in their regional language.
 
-  The user will provide a message in any language, and you will respond in {{language}} with an empathetic and supportive tone.
+  The user will provide a message, and you will respond in {{language}} with an empathetic and supportive tone.
+  - If the language is 'Hinglish', you must respond in a mix of Hindi and English using the Roman script.
+  - If the language is 'Hindi', you must respond in Hindi using the Devanagari script.
+  - If the language is 'English', you must respond in English.
 
   User Message: {{{message}}}
 

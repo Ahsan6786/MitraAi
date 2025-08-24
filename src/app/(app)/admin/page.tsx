@@ -11,9 +11,11 @@ import { db } from '@/lib/firebase';
 import { collection, query, onSnapshot, orderBy, Timestamp, doc, updateDoc } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { Loader2, MessageSquarePlus } from 'lucide-react';
+import { Loader2, MessageSquarePlus, Sparkles } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { SidebarTrigger } from '@/components/ui/sidebar';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { chatEmpatheticTone } from '@/ai/flows/chat-empathetic-tone';
 
 interface JournalEntry {
     id: string;
@@ -32,6 +34,8 @@ function ReportDialog({ entry }: { entry: JournalEntry }) {
     const [report, setReport] = useState(entry.doctorReport || '');
     const [isOpen, setIsOpen] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
+    const [isGenerating, setIsGenerating] = useState(false);
+    const [language, setLanguage] = useState('English');
     const { toast } = useToast();
 
     const handleSave = async () => {
@@ -51,6 +55,26 @@ function ReportDialog({ entry }: { entry: JournalEntry }) {
             setIsSaving(false);
         }
     };
+    
+    const handleGenerateReport = async () => {
+        setIsGenerating(true);
+        try {
+            const prompt = `Based on the following journal entry and mood, please draft a supportive and professional doctor's report. Address the user's feelings and suggest potential next steps or points for discussion.
+            
+            Mood: ${entry.mood}
+            Entry: "${entryContent}"
+            
+            Draft the report in ${language}.`;
+
+            const result = await chatEmpatheticTone({ message: prompt, language });
+            setReport(result.response);
+        } catch (error) {
+            console.error("Error generating report:", error);
+            toast({ title: "Error", description: "Failed to generate AI report.", variant: "destructive" });
+        } finally {
+            setIsGenerating(false);
+        }
+    };
 
     const entryContent = entry.content || entry.transcription || 'No content available.';
 
@@ -66,18 +90,38 @@ function ReportDialog({ entry }: { entry: JournalEntry }) {
                 <DialogHeader>
                     <DialogTitle>Doctor's Report for {entry.userEmail}</DialogTitle>
                     <DialogDescription>
-                        Review the user's entry and provide your feedback below.
+                        Review the user's entry and provide your feedback below. You can also use AI to generate a draft.
                     </DialogDescription>
                 </DialogHeader>
-                <div className="py-4">
-                     <div className="mb-4">
+                <div className="py-4 space-y-4">
+                     <div className="mb-2">
                         <h4 className="font-semibold text-sm">User's Entry:</h4>
                         <p className="text-sm text-muted-foreground italic p-2 bg-muted rounded-md max-h-40 overflow-y-auto">
                            "{entryContent}"
                         </p>
                     </div>
+                     <div className="flex items-center gap-2">
+                        <Select value={language} onValueChange={setLanguage}>
+                            <SelectTrigger className="w-full sm:w-[180px]">
+                                <SelectValue placeholder="Select Language" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="English">English</SelectItem>
+                                <SelectItem value="Hindi">Hindi</SelectItem>
+                                <SelectItem value="Hinglish">Hinglish</SelectItem>
+                            </SelectContent>
+                        </Select>
+                        <Button
+                            variant="outline"
+                            onClick={handleGenerateReport}
+                            disabled={isGenerating}
+                        >
+                            {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Sparkles className="mr-2 h-4 w-4"/>}
+                            Generate Report
+                        </Button>
+                     </div>
                     <Textarea
-                        placeholder="Write your report here..."
+                        placeholder="Write your report here, or generate one with AI."
                         value={report}
                         onChange={(e) => setReport(e.target.value)}
                         rows={8}
@@ -113,7 +157,7 @@ export default function AdminPage() {
     useEffect(() => {
         if (user && isAdmin) {
             setIsLoadingEntries(true);
-            const q = query(
+             const q = query(
               collection(db, 'journalEntries'),
               orderBy('createdAt', 'desc')
             );
@@ -136,7 +180,7 @@ export default function AdminPage() {
                 toast({
                   title: 'Error',
                   description:
-                    'Could not fetch journal entries. Please ensure Firestore rules and indexes are correct.',
+                    'Could not fetch journal entries. Please check Firestore security rules and indexes.',
                   variant: 'destructive',
                 });
                 setIsLoadingEntries(false);
@@ -196,7 +240,7 @@ export default function AdminPage() {
                                     {entries.map(entry => (
                                         <TableRow key={entry.id}>
                                             <TableCell className="font-medium">
-                                                <div className="truncate max-w-28 sm:max-w-none">{entry.userEmail}</div>
+                                                <div className="truncate max-w-[150px] sm:max-w-none">{entry.userEmail}</div>
                                             </TableCell>
                                             <TableCell className="hidden sm:table-cell"><Badge variant={entry.type === 'text' ? 'secondary' : 'outline'}>{entry.type}</Badge></TableCell>
                                             <TableCell className="hidden lg:table-cell">{entry.createdAt?.toDate().toLocaleString()}</TableCell>
