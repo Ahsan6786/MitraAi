@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Moon, Sun } from "lucide-react"
+import { Moon, Sun, Palette } from "lucide-react"
 import { useTheme } from "next-themes"
 
 import { Button } from "@/components/ui/button"
@@ -10,6 +10,8 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
+  DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu"
 
 export function ThemeToggle() {
@@ -25,12 +27,28 @@ export function ThemeToggle() {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
+        <DropdownMenuLabel>Light Themes</DropdownMenuLabel>
         <DropdownMenuItem onClick={() => setTheme("light")}>
-          Light
+          Blue (Default)
         </DropdownMenuItem>
+         <DropdownMenuItem onClick={() => setTheme("theme-gold-light")}>
+          Gold
+        </DropdownMenuItem>
+         <DropdownMenuItem onClick={() => setTheme("theme-pink-light")}>
+          Pink
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuLabel>Dark Themes</DropdownMenuLabel>
         <DropdownMenuItem onClick={() => setTheme("dark")}>
-          Dark
+          Blue (Default)
         </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setTheme("theme-gold-dark")}>
+          Golden Black
+        </DropdownMenuItem>
+         <DropdownMenuItem onClick={() => setTheme("theme-pink-dark")}>
+          Pink Black
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
         <DropdownMenuItem onClick={() => setTheme("system")}>
           System
         </DropdownMenuItem>
