@@ -15,6 +15,8 @@ import { textToSpeech } from '@/ai/flows/text-to-speech';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent } from '@/components/ui/card';
 import { useAuth } from '@/hooks/use-auth';
+import { detectCrisis } from '@/ai/flows/detect-crisis';
+import CrisisAlertModal from '@/components/crisis-alert-modal';
 
 
 interface Message {
@@ -31,6 +33,7 @@ export default function TalkPage() {
   const [isRecording, setIsRecording] = useState(false);
   const [language, setLanguage] = useState('English');
   const [transcript, setTranscript] = useState('');
+  const [showCrisisModal, setShowCrisisModal] = useState(false);
   
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any | null>(null);
@@ -57,7 +60,15 @@ export default function TalkPage() {
     setIsLoading(true);
 
     try {
-      const result = await chatEmpatheticTone({ message: messageText, language, userId: user.uid });
+       // First, check for crisis
+      const crisisResult = await detectCrisis({ message: messageText });
+      if (crisisResult.isCrisis) {
+        setShowCrisisModal(true);
+        setIsLoading(false);
+        return;
+      }
+
+      const result = await chatEmpatheticTone({ message: messageText, language });
       const aiMessage: Message = { sender: 'ai', text: result.response };
       
       const ttsResult = await textToSpeech({ text: result.response });
@@ -184,6 +195,10 @@ export default function TalkPage() {
 
   return (
     <div className="h-full flex flex-col bg-muted/20">
+       <CrisisAlertModal
+        isOpen={showCrisisModal}
+        onClose={() => setShowCrisisModal(false)}
+      />
       <header className="border-b bg-background p-3 md:p-4 flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <SidebarTrigger className="md:hidden" />

@@ -15,6 +15,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { textToSpeech } from '@/ai/flows/text-to-speech';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
+import { detectCrisis } from '@/ai/flows/detect-crisis';
+import CrisisAlertModal from '@/components/crisis-alert-modal';
 
 interface Message {
   sender: 'user' | 'ai';
@@ -31,6 +33,7 @@ export default function ChatPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [language, setLanguage] = useState('English');
   const [isRecording, setIsRecording] = useState(false);
+  const [showCrisisModal, setShowCrisisModal] = useState(false);
   
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any | null>(null);
@@ -57,6 +60,15 @@ export default function ChatPage() {
     setIsLoading(true);
 
     try {
+      // First, check for crisis
+      const crisisResult = await detectCrisis({ message: messageText });
+      if (crisisResult.isCrisis) {
+        setShowCrisisModal(true);
+        // We can stop here and not get a regular chat response
+        setIsLoading(false);
+        return;
+      }
+
       const chatResult = await chatEmpatheticTone({ message: messageText, language });
       
       const aiMessage: Message = { sender: 'ai', text: chatResult.response };
@@ -136,6 +148,10 @@ export default function ChatPage() {
 
   return (
     <div className="h-full flex flex-col bg-muted/20">
+      <CrisisAlertModal
+        isOpen={showCrisisModal}
+        onClose={() => setShowCrisisModal(false)}
+      />
       <header className="border-b bg-background p-3 md:p-4 flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <SidebarTrigger className="md:hidden" />
