@@ -61,6 +61,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
   }
 
   return (
+    <>
       <Sidebar>
         <SidebarHeader>
            <div className="flex items-center justify-between">
@@ -181,6 +182,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
         </SidebarFooter>
       </Sidebar>
       <SidebarInset>{children}</SidebarInset>
+    </>
   );
 }
 
