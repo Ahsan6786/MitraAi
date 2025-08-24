@@ -32,8 +32,7 @@ export default function ReportsPage() {
             const q = query(
                 collection(db, 'journalEntries'),
                 where('reviewed', '==', true),
-                where('userId', '==', user.uid),
-                orderBy('createdAt', 'desc')
+                where('userId', '==', user.uid)
             );
 
             const unsubscribe = onSnapshot(q, (querySnapshot) => {
@@ -41,6 +40,10 @@ export default function ReportsPage() {
                     id: doc.id,
                     ...doc.data(),
                 } as JournalEntry));
+                
+                // Sort entries by date client-side to avoid complex index
+                entriesData.sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis());
+
                 setEntries(entriesData);
                 setIsLoading(false);
             }, (error) => {
@@ -85,12 +88,14 @@ export default function ReportsPage() {
                                         <div className="flex items-center gap-4 w-full">
                                             {entry.type === 'text' ? <PenSquare className="w-5 h-5 text-primary" /> : <Mic className="w-5 h-5 text-primary" />}
                                             <div className="flex-1">
-                                                <div className="font-semibold">
-                                                {entry.type === 'text' ? 'Text Journal' : 'Voice Journal'} - {entry.createdAt.toDate().toLocaleDateString()}
+                                                <div className="font-semibold flex items-center gap-2">
+                                                    <span>
+                                                        {entry.type === 'text' ? 'Text Journal' : 'Voice Journal'} - {entry.createdAt.toDate().toLocaleDateString()}
+                                                    </span>
+                                                    <CheckCircle2 className="w-5 h-5 text-green-600" />
                                                 </div>
                                                 <Badge variant="outline" className="mt-1 capitalize">{entry.mood}</Badge>
                                             </div>
-                                            <CheckCircle2 className="w-5 h-5 text-green-600" />
                                         </div>
                                     </AccordionTrigger>
                                     <AccordionContent className="p-4 border-t">
