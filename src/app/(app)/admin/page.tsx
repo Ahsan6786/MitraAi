@@ -121,12 +121,16 @@ export default function AdminPage() {
     }
 
 
-    if (loading || (!loading && (!user || user.email !== ADMIN_EMAIL))) {
+    if (loading || (!user && !loading)) {
         return (
              <div className="flex justify-center items-center h-screen">
                 <Loader2 className="w-10 h-10 animate-spin text-primary" />
             </div>
         )
+    }
+
+    if (!user || user.email !== ADMIN_EMAIL) {
+        return null;
     }
 
     return (
