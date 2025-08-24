@@ -56,13 +56,14 @@ export default function ProfilePage() {
 
             if (userProfileSnap.exists()) {
                 const data = userProfileSnap.data();
+                // We only set the consent here, contacts are handled by the listener
                 form.setValue('consentForAlerts', data.consentForAlerts || false);
             }
         } catch (error) {
             console.error("Error loading profile data:", error);
             toast({ title: "Error", description: "Could not load your profile settings.", variant: "destructive" });
         } finally {
-           // This is handled by the snapshot listener
+           // Loading state is managed by the snapshot listener
         }
     }, [user, form, toast]);
 
@@ -75,7 +76,7 @@ export default function ProfilePage() {
             const contactsCollectionRef = collection(db, 'userProfiles', user.uid, 'trustedContacts');
             const unsubscribe = onSnapshot(contactsCollectionRef, (querySnapshot) => {
                 const contacts = querySnapshot.docs.map(doc => ({ email: doc.data().email }));
-                // Use reset to update the entire form state with new contacts
+                // Use reset to update the entire form state with new contacts while preserving consent value
                 form.reset({ 
                     consentForAlerts: form.getValues('consentForAlerts'), 
                     trustedContacts: contacts 
@@ -245,3 +246,5 @@ export default function ProfilePage() {
         </div>
     );
 }
+
+    
