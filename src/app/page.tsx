@@ -94,20 +94,6 @@ function LandingPageContent() {
           </div>
         </section>
 
-        <section id="disclaimer" className="w-full py-12 md:py-24">
-           <div className="container px-4 md:px-6">
-              <div className="mx-auto max-w-3xl text-center">
-                 <div className="flex justify-center mb-4">
-                    <AlertTriangle className="w-10 h-10 text-amber-500" />
-                 </div>
-                 <h2 className="text-2xl font-bold tracking-tighter sm:text-3xl">A Gentle Reminder</h2>
-                 <p className="text-muted-foreground md:text-lg/relaxed mt-4">
-                    MitraAI is here to be a supportive friend on your journey of self-discovery. It's a safe space to explore your thoughts and talk with someone when you are alone. However, please remember that this app is not a substitute for professional medical advice, diagnosis, or treatment, and its analysis may not be 100% correct. Always seek the advice of a qualified health provider with any questions you may have regarding a medical condition.
-                 </p>
-              </div>
-           </div>
-        </section>
-
         <section id="features" className="w-full py-12 md:py-24 lg:py-32 bg-muted/20">
           <div className="container px-4 md:px-6">
             <div className="flex flex-col items-center justify-center space-y-4 text-center">
@@ -137,6 +123,21 @@ function LandingPageContent() {
             </div>
           </div>
         </section>
+
+        <section id="disclaimer" className="w-full py-12 md:py-24">
+           <div className="container px-4 md:px-6">
+              <div className="mx-auto max-w-3xl text-center">
+                 <div className="flex justify-center mb-4">
+                    <AlertTriangle className="w-10 h-10 text-amber-500" />
+                 </div>
+                 <h2 className="text-2xl font-bold tracking-tighter sm:text-3xl">A Gentle Reminder</h2>
+                 <p className="text-muted-foreground md:text-lg/relaxed mt-4">
+                    MitraAI is here to be a supportive friend on your journey of self-discovery. It's a safe space to explore your thoughts and talk with someone when you are alone. However, please remember that this app is not a substitute for professional medical advice, diagnosis, or treatment, and its analysis may not be 100% correct. Always seek the advice of a qualified health provider with any questions you may have regarding a medical condition.
+                 </p>
+              </div>
+           </div>
+        </section>
+
       </main>
       <footer className="flex flex-col gap-2 sm:flex-row py-6 w-full shrink-0 items-center px-4 md:px-6 border-t">
         <p className="text-xs text-muted-foreground">&copy; 2025 MitraAI. All rights reserved.</p>
