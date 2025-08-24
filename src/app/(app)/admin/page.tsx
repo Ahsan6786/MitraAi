@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/hooks/use-auth';
 import { db } from '@/lib/firebase';
-import { collection, query, onSnapshot, orderBy, Timestamp, doc, updateDoc, getDoc } from 'firebase/firestore';
+import { collection, query, onSnapshot, orderBy, Timestamp, doc, updateDoc } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { ArrowLeft, Loader2, MessageSquarePlus, Sparkles } from 'lucide-react';
@@ -19,15 +19,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { chatEmpatheticTone } from '@/ai/flows/chat-empathetic-tone';
 import Link from 'next/link';
 
-interface UserProfile {
-    firstName?: string;
-    lastName?: string;
-}
-
 interface JournalEntry {
     id: string;
     userId: string;
-    userName?: string; // Will be populated
+    userEmail: string; // Using email which is already on the entry
     type: 'text' | 'voice';
     createdAt: Timestamp;
     mood: string;
@@ -67,7 +62,7 @@ function ReportDialog({ entry }: { entry: JournalEntry }) {
     const handleGenerateReport = async () => {
         setIsGenerating(true);
         try {
-            const prompt = `Based on the following journal entry and mood, please draft a supportive and professional doctor's report for ${entry.userName || 'the user'}. Address the user's feelings and suggest potential next steps or points for discussion.
+            const prompt = `Based on the following journal entry and mood, please draft a supportive and professional doctor's report for the user. Address the user's feelings and suggest potential next steps or points for discussion.
             
             Mood: ${entry.mood}
             Entry: "${entryContent}"
@@ -96,7 +91,7 @@ function ReportDialog({ entry }: { entry: JournalEntry }) {
             </DialogTrigger>
             <DialogContent className="max-w-md md:max-w-lg">
                 <DialogHeader>
-                    <DialogTitle>Doctor's Report for {entry.userName}</DialogTitle>
+                    <DialogTitle>Doctor's Report for {entry.userEmail}</DialogTitle>
                     <DialogDescription>
                         Review the user's entry and provide your feedback below. You can also use AI to generate a draft.
                     </DialogDescription>
@@ -181,29 +176,17 @@ export default function AdminPage() {
       
             const unsubscribe = onSnapshot(
               q,
-              async (querySnapshot) => {
-                const entriesDataPromises = querySnapshot.docs.map(
-                  async (entryDoc) => {
-                    const entryData = entryDoc.data() as JournalEntry;
-                    entryData.id = entryDoc.id;
-
-                    // Fetch user profile to get the name
-                    const userDocRef = doc(db, 'users', entryData.userId);
-                    const userDoc = await getDoc(userDocRef);
-
-                    if (userDoc.exists()) {
-                        const userData = userDoc.data() as UserProfile;
-                        entryData.userName = `${userData.firstName || ''} ${userData.lastName || ''}`.trim();
-                    } else {
-                        // Fallback to email if profile doesn't exist
-                        entryData.userName = entryDoc.data().userEmail;
-                    }
-                    return entryData;
+              (querySnapshot) => {
+                const entriesData = querySnapshot.docs.map(
+                  (entryDoc) => {
+                    const entryData = entryDoc.data() as Omit<JournalEntry, 'id'>;
+                    return {
+                        id: entryDoc.id,
+                        ...entryData,
+                    } as JournalEntry;
                   }
                 );
-
-                const resolvedEntries = await Promise.all(entriesDataPromises);
-                setEntries(resolvedEntries);
+                setEntries(entriesData);
                 setIsLoadingEntries(false);
               },
               (error) => {
@@ -279,7 +262,7 @@ export default function AdminPage() {
                                     {entries.map(entry => (
                                         <TableRow key={entry.id}>
                                             <TableCell className="font-medium">
-                                                <div className="truncate max-w-[120px] sm:max-w-none">{entry.userName}</div>
+                                                <div className="truncate max-w-[120px] sm:max-w-none">{entry.userEmail}</div>
                                             </TableCell>
                                             <TableCell className="hidden sm:table-cell"><Badge variant={entry.type === 'text' ? 'secondary' : 'outline'}>{entry.type}</Badge></TableCell>
                                             <TableCell className="hidden lg:table-cell">{entry.createdAt?.toDate().toLocaleString()}</TableCell>
