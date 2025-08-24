@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -61,6 +62,11 @@ const textToSpeechFlow = ai.defineFlow(
     outputSchema: TextToSpeechOutputSchema,
   },
   async ({ text }) => {
+    // Gracefully handle empty or whitespace-only strings to prevent TTS model errors.
+    if (!text || !text.trim()) {
+      return { audioDataUri: '' };
+    }
+
     const { media } = await ai.generate({
       model: googleAI.model('gemini-2.5-flash-preview-tts'),
       config: {
@@ -75,7 +81,8 @@ const textToSpeechFlow = ai.defineFlow(
     });
 
     if (!media) {
-      throw new Error('No media returned from TTS model');
+      console.warn('No media returned from TTS model for input:', text);
+      return { audioDataUri: '' }; // Return empty to prevent crash
     }
 
     const audioBuffer = Buffer.from(
