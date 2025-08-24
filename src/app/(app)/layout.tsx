@@ -79,7 +79,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
         </SidebarHeader>
         <SidebarContent>
           <SidebarMenu>
-            {isAdmin && (
+            {isAdmin ? (
               <SidebarMenuItem>
                 <SidebarMenuButton asChild isActive={pathname === '/admin'}>
                   <Link href="/admin" onClick={handleLinkClick}>
@@ -88,95 +88,98 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
+            ) : (
+              <>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild isActive={pathname === '/chat'}>
+                    <Link href="/chat" onClick={handleLinkClick}>
+                      <MessageSquare />
+                      <span>Chat</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild isActive={pathname === '/talk'}>
+                    <Link href="/talk" onClick={handleLinkClick}>
+                      <Phone />
+                      <span>Talk to Mitra</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                 <SidebarMenuItem>
+                  <SidebarMenuButton asChild isActive={pathname === '/dashboard'}>
+                    <Link href="/dashboard" onClick={handleLinkClick}>
+                      <LayoutDashboard />
+                      <span>Dashboard</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild isActive={pathname === '/journal'}>
+                    <Link href="/journal" onClick={handleLinkClick}>
+                      <BookHeart />
+                      <span>Journal</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={pathname === '/voice-journal'}
+                  >
+                    <Link href="/voice-journal" onClick={handleLinkClick}>
+                      <MicVocal />
+                      <span>Voice Journal</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                 <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={pathname === '/games'}
+                  >
+                    <Link href="/games" onClick={handleLinkClick}>
+                      <Puzzle />
+                      <span>Mind Games</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                 <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={pathname === '/exercises'}
+                  >
+                    <Link href="/exercises" onClick={handleLinkClick}>
+                      <HeartPulse />
+                      <span>Mindful Exercises</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={pathname === '/reports'}
+                  >
+                    <Link href="/reports" onClick={handleLinkClick}>
+                      <FileText />
+                      <span>Doctor's Reports</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                 <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={pathname === '/about'}
+                  >
+                    <Link href="/about" onClick={handleLinkClick}>
+                      <Info />
+                      <span>About MitraAI</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </>
             )}
-            <SidebarMenuItem>
-              <SidebarMenuButton asChild isActive={pathname === '/chat'}>
-                <Link href="/chat" onClick={handleLinkClick}>
-                  <MessageSquare />
-                  <span>Chat</span>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-            
-            <SidebarMenuItem>
-              <SidebarMenuButton asChild isActive={pathname === '/talk'}>
-                <Link href="/talk" onClick={handleLinkClick}>
-                  <Phone />
-                  <span>Talk to Mitra</span>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-             <SidebarMenuItem>
-              <SidebarMenuButton asChild isActive={pathname === '/dashboard'}>
-                <Link href="/dashboard" onClick={handleLinkClick}>
-                  <LayoutDashboard />
-                  <span>Dashboard</span>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-              <SidebarMenuButton asChild isActive={pathname === '/journal'}>
-                <Link href="/journal" onClick={handleLinkClick}>
-                  <BookHeart />
-                  <span>Journal</span>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-              <SidebarMenuButton
-                asChild
-                isActive={pathname === '/voice-journal'}
-              >
-                <Link href="/voice-journal" onClick={handleLinkClick}>
-                  <MicVocal />
-                  <span>Voice Journal</span>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-             <SidebarMenuItem>
-              <SidebarMenuButton
-                asChild
-                isActive={pathname === '/games'}
-              >
-                <Link href="/games" onClick={handleLinkClick}>
-                  <Puzzle />
-                  <span>Mind Games</span>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-             <SidebarMenuItem>
-              <SidebarMenuButton
-                asChild
-                isActive={pathname === '/exercises'}
-              >
-                <Link href="/exercises" onClick={handleLinkClick}>
-                  <HeartPulse />
-                  <span>Mindful Exercises</span>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-              <SidebarMenuButton
-                asChild
-                isActive={pathname === '/reports'}
-              >
-                <Link href="/reports" onClick={handleLinkClick}>
-                  <FileText />
-                  <span>Doctor's Reports</span>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-             <SidebarMenuItem>
-              <SidebarMenuButton
-                asChild
-                isActive={pathname === '/about'}
-              >
-                <Link href="/about" onClick={handleLinkClick}>
-                  <Info />
-                  <span>About MitraAI</span>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
           </SidebarMenu>
         </SidebarContent>
         <SidebarFooter>
