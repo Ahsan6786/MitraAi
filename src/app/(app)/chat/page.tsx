@@ -171,6 +171,10 @@ export default function ChatPage() {
                     <SelectItem value="English">English</SelectItem>
                     <SelectItem value="Hindi">Hindi</SelectItem>
                     <SelectItem value="Hinglish">Hinglish</SelectItem>
+                    <SelectItem value="Bhojpuri">Bhojpuri</SelectItem>
+                    <SelectItem value="Arabic">Arabic</SelectItem>
+                    <SelectItem value="French">French</SelectItem>
+                    <SelectItem value="German">German</SelectItem>
                 </SelectContent>
             </Select>
         </div>
@@ -265,3 +269,5 @@ export default function ChatPage() {
     </div>
   );
 }
+
+    

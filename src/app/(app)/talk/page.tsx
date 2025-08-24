@@ -26,6 +26,17 @@ interface Message {
 
 const SpeechRecognition =
   (typeof window !== 'undefined' && (window.SpeechRecognition || window.webkitSpeechRecognition));
+  
+const languageToSpeechCode: Record<string, string> = {
+    English: 'en-US',
+    Hindi: 'hi-IN',
+    Hinglish: 'en-IN',
+    Arabic: 'ar-SA',
+    French: 'fr-FR',
+    German: 'de-DE',
+    Bhojpuri: 'en-IN', // No specific code, fallback to a regional one
+};
+
 
 export default function TalkPage() {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -67,8 +78,9 @@ export default function TalkPage() {
         setIsLoading(false);
         return;
       }
-
-      const result = await chatEmpatheticTone({ message: messageText, language });
+      
+      const userName = user.email?.split('@')[0] || 'friend';
+      const result = await chatEmpatheticTone({ message: messageText, language, userName });
       const aiMessage: Message = { sender: 'ai', text: result.response };
       
       const ttsResult = await textToSpeech({ text: result.response });
@@ -116,7 +128,7 @@ export default function TalkPage() {
     recognitionRef.current = new SpeechRecognition();
     recognitionRef.current.continuous = true;
     recognitionRef.current.interimResults = true;
-    recognitionRef.current.lang = language === 'Hindi' ? 'hi-IN' : 'en-US';
+    recognitionRef.current.lang = languageToSpeechCode[language] || 'en-US';
 
     recognitionRef.current.onresult = (event: any) => {
       if (silenceTimeoutRef.current) {
@@ -217,6 +229,10 @@ export default function TalkPage() {
                     <SelectItem value="English">English</SelectItem>
                     <SelectItem value="Hindi">Hindi</SelectItem>
                     <SelectItem value="Hinglish">Hinglish</SelectItem>
+                    <SelectItem value="Bhojpuri">Bhojpuri</SelectItem>
+                    <SelectItem value="Arabic">Arabic</SelectItem>
+                    <SelectItem value="French">French</SelectItem>
+                    <SelectItem value="German">German</SelectItem>
                 </SelectContent>
             </Select>
         </div>
@@ -242,7 +258,11 @@ export default function TalkPage() {
                     <p>{message.text}</p>
                   </div>
                    {message.sender === 'user' && (
-                    <Avatar className="w-8 h-8 md:w-9 md:h-9 border"><AvatarFallback><User className="w-4 h-4 md:w-5 md:h-5"/></AvatarFallback></Avatar>
+                    <Avatar className="w-8 h-8 md:w-9 md:h-9 border">
+                        <AvatarFallback>
+                         {user?.email ? user.email[0].toUpperCase() : <User className="w-4 h-4 md:w-5 md:h-5" />}
+                      </AvatarFallback>
+                    </Avatar>
                   )}
                 </div>
             ))}
@@ -281,3 +301,5 @@ export default function TalkPage() {
     </div>
   );
 }
+
+    
