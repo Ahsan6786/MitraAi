@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 import { db } from '@/lib/firebase';
-import { collection, query, where, onSnapshot, orderBy, Timestamp, doc, updateDoc } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, Timestamp, doc, updateDoc } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Badge } from '@/components/ui/badge';
@@ -41,32 +41,46 @@ export default function AdminPage() {
     const { toast } = useToast();
 
     useEffect(() => {
-        if (!loading) {
-            if (!user || user.email !== ADMIN_EMAIL) {
-                router.push('/chat'); // Redirect non-admins
-            } else {
-                 const q = query(
-                    collection(db, 'journalEntries'),
-                    where('reviewed', '==', false),
-                    orderBy('createdAt', 'desc')
-                );
-
-                const unsubscribe = onSnapshot(q, (querySnapshot) => {
-                    const entriesData = querySnapshot.docs.map(doc => ({
-                        id: doc.id,
-                        ...doc.data(),
-                    } as JournalEntry));
-                    setEntries(entriesData);
-                    setIsLoading(false);
-                }, (error) => {
-                    console.error("Error fetching entries for admin: ", error);
-                    setIsLoading(false);
-                });
-
-                return () => unsubscribe();
-            }
+        if (loading) {
+          return;
         }
-    }, [user, loading, router]);
+        if (!user) {
+          router.push('/signin');
+          return;
+        }
+        if (user.email !== ADMIN_EMAIL) {
+          router.push('/chat');
+          return;
+        }
+
+        const q = query(
+            collection(db, 'journalEntries'),
+            where('reviewed', '==', false)
+        );
+
+        const unsubscribe = onSnapshot(q, (querySnapshot) => {
+            const entriesData = querySnapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data(),
+            } as JournalEntry));
+            
+            // Sort entries by date client-side to avoid complex index
+            entriesData.sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis());
+
+            setEntries(entriesData);
+            setIsLoading(false);
+        }, (error) => {
+            console.error("Error fetching entries for admin: ", error);
+            toast({
+                title: "Error Fetching Data",
+                description: "Could not fetch journal entries. Please try again later.",
+                variant: "destructive"
+            });
+            setIsLoading(false);
+        });
+
+        return () => unsubscribe();
+    }, [user, loading, router, toast]);
     
     const handleReportChange = (id: string, value: string) => {
         setReports(prev => ({ ...prev, [id]: value }));
@@ -121,15 +135,15 @@ export default function AdminPage() {
     }
 
 
-    if (loading || (!user && !loading)) {
+    if (loading || !user) {
         return (
              <div className="flex justify-center items-center h-screen">
                 <Loader2 className="w-10 h-10 animate-spin text-primary" />
             </div>
         )
     }
-
-    if (!user || user.email !== ADMIN_EMAIL) {
+    
+    if (user.email !== ADMIN_EMAIL) {
         return null;
     }
 
