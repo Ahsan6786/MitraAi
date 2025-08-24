@@ -13,6 +13,7 @@ import { db, storage } from '@/lib/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { SidebarTrigger } from '@/components/ui/sidebar';
+import { useMusic } from '@/hooks/use-music';
 
 
 type RecordingStatus = 'idle' | 'recording' | 'stopped';
@@ -28,9 +29,11 @@ export default function VoiceJournalPage() {
   const audioChunksRef = useRef<Blob[]>([]);
   const { toast } = useToast();
   const { user } = useAuth();
+  const { pauseMusic, resumeMusic } = useMusic();
 
   const startRecording = async () => {
     try {
+      pauseMusic();
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       
       const options = { mimeType: 'audio/webm' };
@@ -52,6 +55,7 @@ export default function VoiceJournalPage() {
         setAudioBlob(blob);
         setAudioUrl(URL.createObjectURL(blob));
         stream.getTracks().forEach(track => track.stop());
+        resumeMusic();
       };
 
       mediaRecorderRef.current.start();
@@ -66,6 +70,7 @@ export default function VoiceJournalPage() {
         description: 'Could not access microphone. Please check permissions.',
         variant: 'destructive',
       });
+      resumeMusic();
     }
   };
 

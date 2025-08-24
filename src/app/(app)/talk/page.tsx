@@ -17,6 +17,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { useAuth } from '@/hooks/use-auth';
 import { detectCrisis } from '@/ai/flows/detect-crisis';
 import CrisisAlertModal from '@/components/crisis-alert-modal';
+import { useMusic } from '@/hooks/use-music';
 
 interface Message {
   sender: 'user' | 'ai';
@@ -53,6 +54,7 @@ export default function TalkPage() {
   const audioUnlockedRef = useRef(false); // Ref to track if audio context is unlocked
   const { toast } = useToast();
   const { user } = useAuth();
+  const { pauseMusic, resumeMusic } = useMusic();
 
   useEffect(() => {
     transcriptRef.current = transcript;
@@ -76,6 +78,7 @@ export default function TalkPage() {
       if (crisisResult.isCrisis) {
         setShowCrisisModal(true);
         setIsLoading(false);
+        resumeMusic();
         return;
       }
       
@@ -88,13 +91,19 @@ export default function TalkPage() {
             setMessages((prev) => [...prev, aiMessage]);
             const audio = new Audio(ttsResult.audioDataUri);
             audioRef.current = audio;
+            audio.onended = () => resumeMusic(); // Resume music after AI finishes speaking
             audio.play().catch(e => console.error("Error playing audio:", e));
+        } else {
+             resumeMusic();
         }
+      } else {
+        resumeMusic();
       }
     } catch (error) {
       console.error('Error getting AI response:', error);
       const errorMessage: Message = { sender: 'ai', text: 'Sorry, I encountered an error. Please try again.' };
       setMessages((prev) => [...prev, errorMessage]);
+      resumeMusic();
     } finally {
       setIsLoading(false);
     }
@@ -109,13 +118,16 @@ export default function TalkPage() {
       const finalTranscript = transcriptRef.current;
       if (finalTranscript.trim()) {
         handleAiResponse(finalTranscript);
+      } else {
+        resumeMusic(); // Resume music if no speech was detected
       }
       setTranscript('');
       transcriptRef.current = '';
     }
-  }, []); 
+  }, [resumeMusic]); 
 
   const startRecording = () => {
+    pauseMusic();
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current = null;
@@ -164,6 +176,7 @@ export default function TalkPage() {
             variant: "destructive",
         });
         setIsRecording(false);
+        resumeMusic();
     };
     
     recognitionRef.current.onend = () => {

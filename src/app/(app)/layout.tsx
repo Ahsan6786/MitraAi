@@ -24,6 +24,8 @@ import { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { auth } from '@/lib/firebase';
 import { signOut } from 'firebase/auth';
+import { MusicProvider } from '@/hooks/use-music';
+import MusicPlayer from '@/components/music-player';
 
 function AppLayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -181,7 +183,10 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
           </div>
         </SidebarFooter>
       </Sidebar>
-      <SidebarInset>{children}</SidebarInset>
+      <SidebarInset>
+        {children}
+        <MusicPlayer />
+      </SidebarInset>
     </>
   );
 }
@@ -191,7 +196,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
      <AuthProvider>
         <SidebarProvider>
-          <AppLayoutContent>{children}</AppLayoutContent>
+          <MusicProvider>
+            <AppLayoutContent>{children}</AppLayoutContent>
+          </MusicProvider>
         </SidebarProvider>
     </AuthProvider>
   );
