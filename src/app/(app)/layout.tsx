@@ -15,6 +15,7 @@ import {
   SidebarFooter,
   SidebarInset,
   SidebarTrigger,
+  useSidebar,
 } from '@/components/ui/sidebar';
 import { Logo } from '@/components/icons';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -28,6 +29,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { user, loading } = useAuth();
   const router = useRouter();
+  const sidebar = useSidebar();
 
   useEffect(() => {
     if (!loading && !user) {
@@ -38,6 +40,12 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
   const handleSignOut = async () => {
     await signOut(auth);
     router.push('/signin');
+  };
+
+  const handleLinkClick = () => {
+    if (sidebar?.isMobile) {
+      sidebar.setOpenMobile(false);
+    }
   };
 
   if (loading) {
@@ -53,7 +61,6 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <SidebarProvider>
       <Sidebar>
         <SidebarHeader>
            <div className="flex items-center justify-between">
@@ -68,7 +75,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
           <SidebarMenu>
             <SidebarMenuItem>
               <SidebarMenuButton asChild isActive={pathname === '/chat'}>
-                <Link href="/chat">
+                <Link href="/chat" onClick={handleLinkClick}>
                   <MessageSquare />
                   <span>Chat</span>
                 </Link>
@@ -77,7 +84,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
             
             <SidebarMenuItem>
               <SidebarMenuButton asChild isActive={pathname === '/talk'}>
-                <Link href="/talk">
+                <Link href="/talk" onClick={handleLinkClick}>
                   <Phone />
                   <span>Talk to Mitra</span>
                 </Link>
@@ -85,7 +92,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
             </SidebarMenuItem>
              <SidebarMenuItem>
               <SidebarMenuButton asChild isActive={pathname === '/dashboard'}>
-                <Link href="/dashboard">
+                <Link href="/dashboard" onClick={handleLinkClick}>
                   <LayoutDashboard />
                   <span>Dashboard</span>
                 </Link>
@@ -93,7 +100,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
             </SidebarMenuItem>
             <SidebarMenuItem>
               <SidebarMenuButton asChild isActive={pathname === '/journal'}>
-                <Link href="/journal">
+                <Link href="/journal" onClick={handleLinkClick}>
                   <BookHeart />
                   <span>Journal</span>
                 </Link>
@@ -104,7 +111,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
                 asChild
                 isActive={pathname === '/voice-journal'}
               >
-                <Link href="/voice-journal">
+                <Link href="/voice-journal" onClick={handleLinkClick}>
                   <MicVocal />
                   <span>Voice Journal</span>
                 </Link>
@@ -115,7 +122,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
                 asChild
                 isActive={pathname === '/games'}
               >
-                <Link href="/games">
+                <Link href="/games" onClick={handleLinkClick}>
                   <Puzzle />
                   <span>Mind Games</span>
                 </Link>
@@ -126,7 +133,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
                 asChild
                 isActive={pathname === '/exercises'}
               >
-                <Link href="/exercises">
+                <Link href="/exercises" onClick={handleLinkClick}>
                   <HeartPulse />
                   <span>Mindful Exercises</span>
                 </Link>
@@ -137,7 +144,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
                 asChild
                 isActive={pathname === '/reports'}
               >
-                <Link href="/reports">
+                <Link href="/reports" onClick={handleLinkClick}>
                   <FileText />
                   <span>Doctor's Reports</span>
                 </Link>
@@ -148,7 +155,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
                 asChild
                 isActive={pathname === '/about'}
               >
-                <Link href="/about">
+                <Link href="/about" onClick={handleLinkClick}>
                   <Info />
                   <span>About MitraAI</span>
                 </Link>
@@ -174,7 +181,6 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
         </SidebarFooter>
       </Sidebar>
       <SidebarInset>{children}</SidebarInset>
-    </SidebarProvider>
   );
 }
 
@@ -182,7 +188,9 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
      <AuthProvider>
-        <AppLayoutContent>{children}</AppLayoutContent>
+        <SidebarProvider>
+          <AppLayoutContent>{children}</AppLayoutContent>
+        </SidebarProvider>
     </AuthProvider>
   );
 }
