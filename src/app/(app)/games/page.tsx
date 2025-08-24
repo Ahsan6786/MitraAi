@@ -6,10 +6,12 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { CheckCircle, Lightbulb, Gamepad2, Hand, Scissors, Gem, RotateCcw } from 'lucide-react';
+import { CheckCircle, Lightbulb, Gamepad2, Hand, Scissors, Gem, RotateCcw, User, Bot } from 'lucide-react';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Label } from '@/components/ui/label';
 
 // --- Guess the Number Game ---
 function GuessTheNumberGame() {
@@ -108,7 +110,7 @@ function GuessTheNumberGame() {
 function Square({ value, onSquareClick }: { value: string | null; onSquareClick: () => void; }) {
   return (
     <button
-      className="w-16 h-16 sm:w-20 sm:h-20 bg-muted text-3xl font-bold flex items-center justify-center rounded-md hover:bg-muted/80"
+      className="w-16 h-16 sm:w-20 sm:h-20 bg-muted text-3xl font-bold flex items-center justify-center rounded-md hover:bg-muted/80 transition-colors"
       onClick={onSquareClick}
     >
       {value}
@@ -117,25 +119,44 @@ function Square({ value, onSquareClick }: { value: string | null; onSquareClick:
 }
 
 function TicTacToeGame() {
-  const [squares, setSquares] = useState(Array(9).fill(null));
+  const [squares, setSquares] = useState<(string | null)[]>(Array(9).fill(null));
   const [xIsNext, setXIsNext] = useState(true);
+  const [gameMode, setGameMode] = useState<'human' | 'ai'>('human');
+  const winner = calculateWinner(squares);
+
+  useEffect(() => {
+    if (gameMode === 'ai' && !xIsNext && !winner) {
+      const aiMove = findBestMove(squares);
+      if (aiMove !== -1) {
+        setTimeout(() => {
+            handleClick(aiMove);
+        }, 500); // Small delay to simulate thinking
+      }
+    }
+  }, [xIsNext, squares, gameMode, winner]);
+
 
   function handleClick(i: number) {
-    if (calculateWinner(squares) || squares[i]) {
+    if (winner || squares[i]) {
       return;
     }
+
     const nextSquares = squares.slice();
     nextSquares[i] = xIsNext ? 'X' : 'O';
     setSquares(nextSquares);
     setXIsNext(!xIsNext);
   }
-  
+
   const handleReset = () => {
     setSquares(Array(9).fill(null));
     setXIsNext(true);
   }
+  
+  const handleModeChange = (mode: 'human' | 'ai') => {
+    setGameMode(mode);
+    handleReset();
+  }
 
-  const winner = calculateWinner(squares);
   let status;
   if (winner) {
     status = 'Winner: ' + winner;
@@ -154,11 +175,22 @@ function TicTacToeGame() {
                     Tic-Tac-Toe
                 </CardTitle>
                 <CardDescription>
-                   A classic game for two. Get three in a row to win!
+                   Get three in a row to win. Play against a friend or the AI.
                 </CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col items-center justify-center gap-4">
-               <div className="text-lg font-semibold">{status}</div>
+                <RadioGroup defaultValue="human" onValueChange={handleModeChange} className="flex gap-4">
+                    <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="human" id="human" />
+                        <Label htmlFor="human" className="flex items-center gap-2 cursor-pointer"><User className="w-4 h-4"/> Play vs Human</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="ai" id="ai" />
+                        <Label htmlFor="ai" className="flex items-center gap-2 cursor-pointer"><Bot className="w-4 h-4"/> Play vs AI</Label>
+                    </div>
+                </RadioGroup>
+
+               <div className="text-lg font-semibold my-2">{status}</div>
                 <div className="grid grid-cols-3 gap-2">
                     {squares.map((_, i) => (
                         <Square key={i} value={squares[i]} onSquareClick={() => handleClick(i)} />
@@ -188,6 +220,47 @@ function calculateWinner(squares: (string | null)[]) {
     }
   }
   return null;
+}
+
+// Simple AI logic for Tic-Tac-Toe
+function findBestMove(squares: (string | null)[]) {
+    // 1. Check if AI ('O') can win
+    for (let i = 0; i < 9; i++) {
+        if (!squares[i]) {
+            const tempSquares = squares.slice();
+            tempSquares[i] = 'O';
+            if (calculateWinner(tempSquares) === 'O') {
+                return i;
+            }
+        }
+    }
+    // 2. Check if player ('X') can win and block
+     for (let i = 0; i < 9; i++) {
+        if (!squares[i]) {
+            const tempSquares = squares.slice();
+            tempSquares[i] = 'X';
+            if (calculateWinner(tempSquares) === 'X') {
+                return i;
+            }
+        }
+    }
+    // 3. Take center if available
+    if (!squares[4]) {
+        return 4;
+    }
+    // 4. Take a random corner
+    const corners = [0, 2, 6, 8];
+    const availableCorners = corners.filter(i => !squares[i]);
+    if (availableCorners.length > 0) {
+        return availableCorners[Math.floor(Math.random() * availableCorners.length)];
+    }
+    // 5. Take any available square
+    const availableSquares = squares.map((sq, i) => sq === null ? i : -1).filter(i => i !== -1);
+     if (availableSquares.length > 0) {
+        return availableSquares[Math.floor(Math.random() * availableSquares.length)];
+    }
+
+    return -1; // Should not happen
 }
 
 
