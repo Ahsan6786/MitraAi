@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -12,6 +13,8 @@ import { auth } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 
+const ADMIN_EMAIL = 'ahsan.khan@mitwpu.edu.in';
+
 function SignInForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -23,8 +26,12 @@ function SignInForm() {
     e.preventDefault();
     setIsLoading(true);
     try {
-      await signInWithEmailAndPassword(auth, email, password);
-      router.push('/chat');
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      if (userCredential.user.email === ADMIN_EMAIL) {
+        router.push('/admin');
+      } else {
+        router.push('/chat');
+      }
     } catch (error: any) {
        toast({
         title: "Sign In Failed",
