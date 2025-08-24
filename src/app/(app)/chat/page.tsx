@@ -61,14 +61,14 @@ export default function ChatPage() {
         <div className="flex items-center gap-2">
           <SidebarTrigger className="md:hidden" />
           <div>
-            <h1 className="text-lg md:text-xl font-bold font-headline">AI Companion</h1>
+            <h1 className="text-lg md:text-xl font-bold">AI Companion</h1>
             <p className="text-sm text-muted-foreground">Chat with MitraAI</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
            <Languages className="w-5 h-5 text-muted-foreground hidden sm:block"/>
             <Select value={language} onValueChange={setLanguage}>
-                <SelectTrigger className="w-full sm:w-[120px]">
+                <SelectTrigger className="w-[100px] sm:w-[120px]">
                     <SelectValue placeholder="Language" />
                 </SelectTrigger>
                 <SelectContent>

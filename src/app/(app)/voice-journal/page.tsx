@@ -31,13 +31,12 @@ export default function VoiceJournalPage() {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       
-      // Prefer 'audio/webm' as it is widely supported by AI models, but allow browser to fall back.
       const options = { mimeType: 'audio/webm' };
-      if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+      if (MediaRecorder.isTypeSupported(options.mimeType)) {
+        mediaRecorderRef.current = new MediaRecorder(stream, options);
+      } else {
         console.warn(`${options.mimeType} is not supported, using browser default.`);
         mediaRecorderRef.current = new MediaRecorder(stream);
-      } else {
-        mediaRecorderRef.current = new MediaRecorder(stream, options);
       }
       
       audioChunksRef.current = [];
@@ -47,7 +46,6 @@ export default function VoiceJournalPage() {
       };
 
       mediaRecorderRef.current.onstop = () => {
-        // Use the mimeType provided by the recorder
         const blob = new Blob(audioChunksRef.current, { type: mediaRecorderRef.current?.mimeType });
         setAudioBlob(blob);
         setAudioUrl(URL.createObjectURL(blob));
@@ -150,11 +148,11 @@ export default function VoiceJournalPage() {
       <header className="border-b bg-background p-3 md:p-4 flex items-center gap-2">
         <SidebarTrigger className="md:hidden" />
         <div>
-          <h1 className="text-lg md:text-xl font-bold font-headline">Voice Journal</h1>
+          <h1 className="text-lg md:text-xl font-bold">Voice Journal</h1>
           <p className="text-sm text-muted-foreground">Speak your mind, discover your mood.</p>
         </div>
       </header>
-      <div className="flex-1 overflow-auto p-4 md:p-6 space-y-6">
+      <div className="flex-1 overflow-auto p-2 sm:p-4 md:p-6 space-y-6">
         <Card>
           <CardHeader>
             <CardTitle>Record Your Thoughts</CardTitle>
@@ -206,7 +204,7 @@ export default function VoiceJournalPage() {
 
         {analysisResult && (
           <div className="space-y-4">
-            <h2 className="text-lg font-semibold font-headline">Last Analysis Results</h2>
+            <h2 className="text-lg font-semibold">Last Analysis Results</h2>
             <Card>
                 <CardHeader>
                     <div className="flex justify-between items-start">

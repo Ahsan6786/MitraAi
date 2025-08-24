@@ -49,7 +49,6 @@ export default function JournalPage() {
   useEffect(() => {
     if (user) {
       setIsLoadingEntries(true);
-      // This query specifically requires an index on userId (asc) and createdAt (desc).
       const q = query(
         collection(db, 'journalEntries'),
         where('userId', '==', user.uid),
@@ -62,7 +61,7 @@ export default function JournalPage() {
             id: doc.id,
             ...doc.data(),
           } as JournalEntry))
-          .filter(entry => entry.type === 'text'); // Filter for text entries on the client.
+          .filter(entry => entry.type === 'text');
 
         setEntries(entriesData);
         setIsLoadingEntries(false);
@@ -139,11 +138,11 @@ export default function JournalPage() {
        <header className="border-b bg-background p-3 md:p-4 flex items-center gap-2">
         <SidebarTrigger className="md:hidden" />
         <div>
-          <h1 className="text-lg md:text-xl font-bold font-headline">Daily Mood Journal</h1>
+          <h1 className="text-lg md:text-xl font-bold">Daily Mood Journal</h1>
           <p className="text-sm text-muted-foreground">Reflect on your day, understand your emotions.</p>
         </div>
       </header>
-      <div className="flex-1 overflow-auto p-4 md:p-6 space-y-6">
+      <div className="flex-1 overflow-auto p-2 sm:p-4 md:p-6 space-y-6">
         <Card>
           <CardHeader>
             <CardTitle>How are you feeling today?</CardTitle>
@@ -168,7 +167,7 @@ export default function JournalPage() {
         </Card>
 
         <div className="space-y-4">
-            <h2 className="text-lg font-semibold font-headline">Recent Entries</h2>
+            <h2 className="text-lg font-semibold">Recent Entries</h2>
              {isLoadingEntries ? (
                 <div className="flex justify-center items-center py-10">
                     <Loader2 className="w-8 h-8 animate-spin text-primary" />

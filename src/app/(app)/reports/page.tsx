@@ -52,19 +52,19 @@ export default function ReportsPage() {
 
     return (
         <div className="h-full flex flex-col">
-            <header className="border-b p-4">
-                <h1 className="text-xl font-bold font-headline">Doctor's Reports</h1>
+            <header className="border-b p-3 md:p-4">
+                <h1 className="text-lg md:text-xl font-bold">Doctor's Reports</h1>
                 <p className="text-sm text-muted-foreground">
                     View feedback from your doctor on your journal entries.
                 </p>
             </header>
-            <main className="flex-1 overflow-auto p-4 md:p-6">
+            <main className="flex-1 overflow-auto p-2 sm:p-4 md:p-6">
                 {isLoading ? (
                     <div className="flex justify-center items-center h-full">
                         <Loader2 className="w-10 h-10 animate-spin text-primary" />
                     </div>
                 ) : entries.length === 0 ? (
-                    <Card className="text-center p-10">
+                    <Card className="text-center p-6 md:p-10">
                          <CardTitle>No Reports Yet</CardTitle>
                         <CardDescription className="mt-2">
                             Once a doctor reviews your journal entries, their reports will appear here.
@@ -76,7 +76,7 @@ export default function ReportsPage() {
                              const entryContent = entry.type === 'text' ? entry.content : entry.transcription;
                              return (
                                 <AccordionItem value={entry.id} key={entry.id} className="border rounded-lg bg-card">
-                                    <AccordionTrigger className="p-4 hover:no-underline">
+                                    <AccordionTrigger className="p-4 hover:no-underline text-left">
                                         <div className="flex items-center gap-4">
                                             {entry.type === 'text' ? <PenSquare className="w-5 h-5 text-primary" /> : <Mic className="w-5 h-5 text-primary" />}
                                             <div>

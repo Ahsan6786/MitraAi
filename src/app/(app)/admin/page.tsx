@@ -101,7 +101,7 @@ function ReportDialog({ entry }: { entry: JournalEntry }) {
                            "{entryContent}"
                         </p>
                     </div>
-                     <div className="flex items-center gap-2">
+                     <div className="flex flex-col sm:flex-row items-center gap-2">
                         <Select value={language} onValueChange={setLanguage}>
                             <SelectTrigger className="w-full sm:w-[180px]">
                                 <SelectValue placeholder="Select Language" />
@@ -113,6 +113,7 @@ function ReportDialog({ entry }: { entry: JournalEntry }) {
                             </SelectContent>
                         </Select>
                         <Button
+                            className="w-full sm:w-auto"
                             variant="outline"
                             onClick={handleGenerateReport}
                             disabled={isGenerating}
@@ -207,7 +208,7 @@ export default function AdminPage() {
                 <div className="flex items-center gap-2">
                     <SidebarTrigger className="md:hidden" />
                     <div>
-                        <h1 className="text-lg md:text-xl font-bold font-headline">Admin Panel</h1>
+                        <h1 className="text-lg md:text-xl font-bold">Admin Panel</h1>
                         <p className="text-sm text-muted-foreground">Review user journal entries.</p>
                     </div>
                 </div>
@@ -218,7 +219,7 @@ export default function AdminPage() {
                     </Link>
                 </Button>
             </header>
-            <main className="flex-1 overflow-auto p-4 md:p-6">
+            <main className="flex-1 overflow-auto p-2 sm:p-4 md:p-6">
                 <Card>
                     <CardHeader>
                         <CardTitle>User Journal Entries</CardTitle>
@@ -249,7 +250,7 @@ export default function AdminPage() {
                                     {entries.map(entry => (
                                         <TableRow key={entry.id}>
                                             <TableCell className="font-medium">
-                                                <div className="truncate max-w-[150px] sm:max-w-none">{entry.userEmail}</div>
+                                                <div className="truncate max-w-[120px] sm:max-w-none">{entry.userEmail}</div>
                                             </TableCell>
                                             <TableCell className="hidden sm:table-cell"><Badge variant={entry.type === 'text' ? 'secondary' : 'outline'}>{entry.type}</Badge></TableCell>
                                             <TableCell className="hidden lg:table-cell">{entry.createdAt?.toDate().toLocaleString()}</TableCell>
