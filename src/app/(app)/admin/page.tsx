@@ -11,11 +11,12 @@ import { db } from '@/lib/firebase';
 import { collection, query, onSnapshot, orderBy, Timestamp, doc, updateDoc } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { Loader2, MessageSquarePlus, Sparkles } from 'lucide-react';
+import { ArrowLeft, Loader2, MessageSquarePlus, Sparkles } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { chatEmpatheticTone } from '@/ai/flows/chat-empathetic-tone';
+import Link from 'next/link';
 
 interface JournalEntry {
     id: string;
@@ -202,12 +203,20 @@ export default function AdminPage() {
 
     return (
         <div className="h-full flex flex-col">
-            <header className="border-b bg-background p-3 md:p-4 flex items-center gap-2">
-                <SidebarTrigger className="md:hidden" />
-                <div>
-                  <h1 className="text-lg md:text-xl font-bold font-headline">Admin Panel</h1>
-                  <p className="text-sm text-muted-foreground">Review user journal entries.</p>
+            <header className="border-b bg-background p-3 md:p-4 flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                    <SidebarTrigger className="md:hidden" />
+                    <div>
+                        <h1 className="text-lg md:text-xl font-bold font-headline">Admin Panel</h1>
+                        <p className="text-sm text-muted-foreground">Review user journal entries.</p>
+                    </div>
                 </div>
+                 <Button variant="outline" asChild>
+                    <Link href="/chat">
+                        <ArrowLeft className="mr-2 h-4 w-4" />
+                        Back to Chat
+                    </Link>
+                </Button>
             </header>
             <main className="flex-1 overflow-auto p-4 md:p-6">
                 <Card>
