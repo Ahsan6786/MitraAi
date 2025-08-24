@@ -79,78 +79,63 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
               </SidebarMenuButton>
             </SidebarMenuItem>
             
-            {!isAdmin && (
-              <>
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild isActive={pathname === '/talk'}>
-                    <Link href="/talk">
-                      <Phone />
-                      <span>Talk to Mitra</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                 <SidebarMenuItem>
-                  <SidebarMenuButton asChild isActive={pathname === '/dashboard'}>
-                    <Link href="/dashboard">
-                      <LayoutDashboard />
-                      <span>Dashboard</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild isActive={pathname === '/journal'}>
-                    <Link href="/journal">
-                      <BookHeart />
-                      <span>Journal</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={pathname === '/voice-journal'}
-                  >
-                    <Link href="/voice-journal">
-                      <MicVocal />
-                      <span>Voice Journal</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                 <SidebarMenuItem>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={pathname === '/games'}
-                  >
-                    <Link href="/games">
-                      <Puzzle />
-                      <span>Mind Games</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={pathname === '/reports'}
-                  >
-                    <Link href="/reports">
-                      <FileText />
-                      <span>Doctor's Reports</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              </>
-            )}
-
-            {isAdmin && (
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={pathname === '/admin'}>
-                  <Link href="/admin">
-                    <Shield />
-                    <span>Admin Panel</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            )}
+            <SidebarMenuItem>
+              <SidebarMenuButton asChild isActive={pathname === '/talk'}>
+                <Link href="/talk">
+                  <Phone />
+                  <span>Talk to Mitra</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+             <SidebarMenuItem>
+              <SidebarMenuButton asChild isActive={pathname === '/dashboard'}>
+                <Link href="/dashboard">
+                  <LayoutDashboard />
+                  <span>Dashboard</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton asChild isActive={pathname === '/journal'}>
+                <Link href="/journal">
+                  <BookHeart />
+                  <span>Journal</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                asChild
+                isActive={pathname === '/voice-journal'}
+              >
+                <Link href="/voice-journal">
+                  <MicVocal />
+                  <span>Voice Journal</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+             <SidebarMenuItem>
+              <SidebarMenuButton
+                asChild
+                isActive={pathname === '/games'}
+              >
+                <Link href="/games">
+                  <Puzzle />
+                  <span>Mind Games</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                asChild
+                isActive={pathname === '/reports'}
+              >
+                <Link href="/reports">
+                  <FileText />
+                  <span>Doctor's Reports</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
           </SidebarMenu>
         </SidebarContent>
         <SidebarFooter>
