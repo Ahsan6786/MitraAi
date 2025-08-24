@@ -28,7 +28,7 @@ export default function MusicPlayer() {
     const timer = setTimeout(() => {
       setShowPrompt(true);
       sessionStorage.setItem('musicPrompted', 'true');
-    }, 30000); // 30 seconds
+    }, 15000); // 15 seconds
 
     return () => clearTimeout(timer);
   }, [isPlaying]);
