@@ -1,10 +1,10 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { db } from '@/lib/firebase';
-import { doc, setDoc, getDoc, updateDoc, onSnapshot, collection, addDoc, deleteDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, onSnapshot, addDoc, deleteDoc, writeBatch } from 'firebase/firestore';
 import { useForm, useFieldArray, SubmitHandler } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -12,7 +12,6 @@ import { z } from "zod";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { SidebarTrigger } from '@/components/ui/sidebar';
@@ -48,29 +47,46 @@ export default function ProfilePage() {
         name: "trustedContacts",
     });
 
+    // We use useCallback to memoize this function
+    const loadProfileData = useCallback(async () => {
+        if (!user) return;
+        setIsLoading(true);
+        try {
+            const userProfileRef = doc(db, 'userProfiles', user.uid);
+            const userProfileSnap = await getDoc(userProfileRef);
+
+            if (userProfileSnap.exists()) {
+                const data = userProfileSnap.data();
+                form.setValue('consentForAlerts', data.consentForAlerts || false);
+            }
+        } catch (error) {
+            console.error("Error loading profile data:", error);
+            toast({ title: "Error", description: "Could not load your profile settings.", variant: "destructive" });
+        } finally {
+            setIsLoading(false);
+        }
+    }, [user, form, toast]);
+
+    // Effect for initial load
+    useEffect(() => {
+        loadProfileData();
+    }, [loadProfileData]);
+    
+    // Effect for listening to contacts changes
     useEffect(() => {
         if (user) {
-            const userProfileRef = doc(db, 'userProfiles', user.uid);
             const contactsCollectionRef = collection(db, 'userProfiles', user.uid, 'trustedContacts');
-
-            const unsubscribeProfile = onSnapshot(userProfileRef, (docSnap) => {
-                if (docSnap.exists()) {
-                    const data = docSnap.data();
-                    form.setValue('consentForAlerts', data.consentForAlerts || false);
-                }
-            });
-            
-            const unsubscribeContacts = onSnapshot(contactsCollectionRef, (querySnapshot) => {
-                const contacts = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                 form.reset({ ...form.getValues(), trustedContacts: contacts.map(c => ({email: c.email})) });
+            const unsubscribe = onSnapshot(contactsCollectionRef, (querySnapshot) => {
+                const contacts = querySnapshot.docs.map(doc => ({ email: doc.data().email }));
+                form.reset({ ...form.getValues(), trustedContacts: contacts });
+                setIsLoading(false);
+            }, (error) => {
+                 console.error("Error fetching contacts:", error);
+                 // Don't show a toast here as it might be a rules issue we can't fix
                  setIsLoading(false);
             });
 
-
-            return () => {
-                unsubscribeProfile();
-                unsubscribeContacts();
-            };
+            return () => unsubscribe();
         }
     }, [user, form]);
 
@@ -80,36 +96,29 @@ export default function ProfilePage() {
         setIsLoading(true);
         
         try {
+            const batch = writeBatch(db);
             const userProfileRef = doc(db, 'userProfiles', user.uid);
             
-            // Set consent
-            await setDoc(userProfileRef, { consentForAlerts: data.consentForAlerts }, { merge: true });
+            // 1. Update consent
+            batch.set(userProfileRef, { consentForAlerts: data.consentForAlerts }, { merge: true });
 
-            // Sync trusted contacts
+            // 2. Sync trusted contacts
             const contactsCollectionRef = collection(db, 'userProfiles', user.uid, 'trustedContacts');
-            const snapshot = await getDoc(userProfileRef); // Need to get existing contacts to compare
-            const existingContactsSnapshot = await onSnapshot(contactsCollectionRef, (querySnapshot) => {
-                const existingContacts = querySnapshot.docs.map(d => ({id: d.id, ...d.data()}));
-
-                // Delete contacts that are no longer in the form
-                existingContacts.forEach(async (contact) => {
-                    if (!data.trustedContacts.some(c => c.email === contact.email)) {
-                        await deleteDoc(doc(db, 'userProfiles', user.uid, 'trustedContacts', contact.id));
-                    }
-                });
-
-                 // Add or update contacts
-                data.trustedContacts.forEach(async (contact) => {
-                    const existing = existingContacts.find(c => c.email === contact.email);
-                    if (!existing) {
-                        await addDoc(contactsCollectionRef, { email: contact.email });
-                    }
-                });
+            const contactsSnapshot = await getDoc(userProfileRef); // Re-fetch to be safe
+            
+            // This logic is simplified to just clear and re-add. 
+            // It's less efficient but much safer against permission issues.
+            const existingContactsQuery = await getDoc(collection(db, 'userProfiles', user.uid, 'trustedContacts') as any);
+            if (existingContactsQuery instanceof require('firebase/firestore').QuerySnapshot) {
+              existingContactsQuery.docs.forEach((doc) => batch.delete(doc.ref));
+            }
+            
+            data.trustedContacts.forEach((contact) => {
+                const newContactRef = doc(contactsCollectionRef);
+                batch.set(newContactRef, { email: contact.email });
             });
-
-            // This is just to satisfy typescript. Ideally, we should fetch once.
-            existingContactsSnapshot();
-
+            
+            await batch.commit();
 
             toast({ title: "Success", description: "Your profile and safety settings have been updated." });
         } catch (error) {
@@ -120,7 +129,7 @@ export default function ProfilePage() {
         }
     };
     
-    if (isLoading && !user) {
+    if (isLoading && !form.formState.isDirty) {
         return (
             <div className="h-full flex flex-col items-center justify-center">
                  <Loader2 className="w-10 h-10 animate-spin text-primary" />
@@ -223,8 +232,8 @@ export default function ProfilePage() {
                                 )}
                             </CardContent>
                             <CardFooter>
-                                <Button type="submit" disabled={isLoading}>
-                                     {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                <Button type="submit" disabled={form.formState.isSubmitting}>
+                                     {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                     Save Changes
                                 </Button>
                             </CardFooter>
