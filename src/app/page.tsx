@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Logo } from '@/components/icons';
-import { MessageSquare, BookHeart, MicVocal, FileText, Instagram } from 'lucide-react';
+import { MessageSquare, BookHeart, MicVocal, FileText, Instagram, Mail } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { ThemeProvider } from '@/components/theme-provider';
 
@@ -83,6 +83,12 @@ function LandingPageContent() {
                     <span className="sr-only">Instagram</span>
                   </Link>
                 </Button>
+                 <Button variant="outline" size="icon" asChild>
+                  <Link href="mailto:mitraai0001@gmail.com" prefetch={false}>
+                    <Mail className="h-5 w-5" />
+                    <span className="sr-only">Email</span>
+                  </Link>
+                </Button>
               </div>
             </div>
           </div>
@@ -128,6 +134,14 @@ function LandingPageContent() {
             >
               <Instagram className="h-5 w-5" />
               <span className="sr-only">Instagram</span>
+            </Link>
+            <Link 
+              href="mailto:mitraai0001@gmail.com"
+              className="text-muted-foreground hover:text-foreground"
+              prefetch={false}
+            >
+              <Mail className="h-5 w-5" />
+              <span className="sr-only">Email</span>
             </Link>
         </nav>
       </footer>
