@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -33,6 +33,7 @@ export default function TalkPage() {
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const silenceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -40,7 +41,19 @@ export default function TalkPage() {
       scrollAreaRef.current.scrollTo({ top: scrollAreaRef.current.scrollHeight, behavior: 'smooth' });
     }
   }, [messages]);
-  
+
+  const stopRecording = useCallback(() => {
+    if (recognitionRef.current) {
+        recognitionRef.current.stop();
+        recognitionRef.current = null;
+        setIsRecording(false);
+        if (transcript.trim()) {
+            handleAiResponse(transcript);
+        }
+        setTranscript('');
+    }
+  }, [transcript]); // Add dependencies here
+
   const handleAiResponse = async (messageText: string) => {
     const userMessage: Message = { sender: 'user', text: messageText };
     setMessages((prev) => [...prev, userMessage]);
@@ -69,14 +82,23 @@ export default function TalkPage() {
       audioRef.current.pause();
       audioRef.current = null;
     }
+
+    if (silenceTimeoutRef.current) {
+        clearTimeout(silenceTimeoutRef.current);
+    }
+
     setIsRecording(true);
     setTranscript('');
     recognitionRef.current = new SpeechRecognition();
     recognitionRef.current.continuous = true;
     recognitionRef.current.interimResults = true;
-    recognitionRef.current.lang = 'en-US'; 
+    recognitionRef.current.lang = language === 'Hindi' ? 'hi-IN' : 'en-US';
 
     recognitionRef.current.onresult = (event: any) => {
+      if (silenceTimeoutRef.current) {
+        clearTimeout(silenceTimeoutRef.current);
+      }
+      
       let finalTranscript = '';
       let interimTranscript = '';
       for (let i = 0; i < event.results.length; ++i) {
@@ -87,6 +109,11 @@ export default function TalkPage() {
         }
       }
       setTranscript(finalTranscript + interimTranscript);
+      
+      // Reset the silence timer
+      silenceTimeoutRef.current = setTimeout(() => {
+          stopRecording();
+      }, 1500); // Stop after 1.5 seconds of silence
     };
     
     recognitionRef.current.onerror = (event: any) => {
@@ -99,19 +126,17 @@ export default function TalkPage() {
         setIsRecording(false);
     };
     
-    recognitionRef.current.start();
-  };
-
-  const stopRecording = () => {
-    if (recognitionRef.current) {
-        recognitionRef.current.stop();
-        recognitionRef.current = null;
-        setIsRecording(false);
-        if (transcript.trim()) {
-            handleAiResponse(transcript);
+    recognitionRef.current.onend = () => {
+        if (silenceTimeoutRef.current) {
+            clearTimeout(silenceTimeoutRef.current);
         }
-        setTranscript('');
+        // Ensure we are truly stopped if the recording ends unexpectedly
+        if (isRecording) {
+            stopRecording();
+        }
     }
+
+    recognitionRef.current.start();
   };
 
   const handleMicClick = () => {
@@ -130,6 +155,18 @@ export default function TalkPage() {
       startRecording();
     }
   };
+
+  // Cleanup on component unmount
+  useEffect(() => {
+    return () => {
+      if (silenceTimeoutRef.current) {
+        clearTimeout(silenceTimeoutRef.current);
+      }
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
+      }
+    };
+  }, []);
 
   return (
     <div className="h-full flex flex-col bg-muted/20">
@@ -158,7 +195,7 @@ export default function TalkPage() {
       <main className="flex-1 overflow-hidden p-2 sm:p-4 md:p-6 flex flex-col">
         <ScrollArea className="flex-1" ref={scrollAreaRef}>
           <div className="p-2 md:p-4 space-y-6">
-            {messages.length === 0 && (
+            {messages.length === 0 && !isRecording && (
               <div className="flex flex-col items-center justify-center h-full pt-10 md:pt-20 text-center">
                  <Phone className="w-16 h-16 md:w-20 md:h-20 text-primary mb-6" />
                  <h2 className="text-xl md:text-2xl font-semibold">Ready to talk?</h2>
@@ -194,7 +231,7 @@ export default function TalkPage() {
             <Card className="w-full max-w-xl h-24">
                 <CardContent className="p-4 h-full">
                     <p className="text-sm text-muted-foreground italic">
-                        {isRecording ? transcript || 'Listening...' : 'Press the mic to speak.'}
+                        {isRecording ? transcript || 'Listening...' : messages.length === 0 ? 'Press the mic to speak.' : 'Press the mic to reply.'}
                     </p>
                 </CardContent>
             </Card>
@@ -208,7 +245,7 @@ export default function TalkPage() {
                 {isRecording ? <Square className="w-8 h-8" /> : <Mic className="w-8 h-8" />}
             </Button>
             <p className="text-sm text-muted-foreground">
-                {isRecording ? 'Press to stop' : 'Press to talk'}
+                {isRecording ? 'Listening for you to speak...' : 'Press to talk'}
             </p>
         </div>
       </main>
