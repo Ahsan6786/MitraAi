@@ -7,23 +7,35 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
-import { Languages, Loader2, Mic, Send, User } from 'lucide-react';
+import { Languages, Loader2, Mic, Send, User, Square } from 'lucide-react';
 import { chatEmpatheticTone } from '@/ai/flows/chat-empathetic-tone';
 import { Logo } from '@/components/icons';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { textToSpeech } from '@/ai/flows/text-to-speech';
+import { useToast } from '@/hooks/use-toast';
 
 interface Message {
   sender: 'user' | 'ai';
   text: string;
 }
 
+// Check for SpeechRecognition API
+const SpeechRecognition =
+  (typeof window !== 'undefined' && (window.SpeechRecognition || window.webkitSpeechRecognition));
+
 export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [language, setLanguage] = useState('English');
+  const [isRecording, setIsRecording] = useState(false);
+  
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const recognitionRef = useRef<any | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  const { toast } = useToast();
 
   useEffect(() => {
     if (scrollAreaRef.current) {
@@ -33,26 +45,89 @@ export default function ChatPage() {
       });
     }
   }, [messages]);
-  
-  const handleSendMessage = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!input.trim() || isLoading) return;
 
-    const userMessage: Message = { sender: 'user', text: input };
+  const handleSendMessage = async (messageText: string) => {
+    if (!messageText.trim() || isLoading) return;
+
+    const userMessage: Message = { sender: 'user', text: messageText };
     setMessages((prev) => [...prev, userMessage]);
     setInput('');
     setIsLoading(true);
 
     try {
-      const result = await chatEmpatheticTone({ message: input, language });
+      const result = await chatEmpatheticTone({ message: messageText, language });
       const aiMessage: Message = { sender: 'ai', text: result.response };
       setMessages((prev) => [...prev, aiMessage]);
+
+      // If voice was used, convert AI response to speech
+      if (isRecording) {
+        const ttsResult = await textToSpeech({ text: result.response });
+        const audio = new Audio(ttsResult.audioDataUri);
+        audioRef.current = audio;
+        audio.play();
+      }
+
     } catch (error) {
       console.error('Error getting AI response:', error);
       const errorMessage: Message = { sender: 'ai', text: 'Sorry, I encountered an error. Please try again.' };
       setMessages((prev) => [...prev, errorMessage]);
     } finally {
       setIsLoading(false);
+      // Only set isRecording to false if it was a voice message
+      if (recognitionRef.current) {
+        setIsRecording(false);
+      }
+    }
+  };
+
+  const handleFormSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    handleSendMessage(input);
+  };
+  
+  const handleVoiceButtonClick = () => {
+    if (!SpeechRecognition) {
+      toast({
+        title: "Browser Not Supported",
+        description: "Your browser does not support the Web Speech API for voice recognition.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (isRecording) {
+       recognitionRef.current?.stop();
+       setIsRecording(false);
+    } else {
+        setIsRecording(true);
+        recognitionRef.current = new SpeechRecognition();
+        recognitionRef.current.continuous = false;
+        recognitionRef.current.interimResults = false;
+        recognitionRef.current.lang = 'en-US';
+
+        recognitionRef.current.onresult = (event: any) => {
+            const transcript = event.results[0][0].transcript;
+            handleSendMessage(transcript);
+        };
+        
+        recognitionRef.current.onerror = (event: any) => {
+            console.error('Speech recognition error:', event.error);
+            toast({
+                title: "Voice Error",
+                description: "There was an error with voice recognition. Please try again.",
+                variant: "destructive",
+            });
+            setIsRecording(false);
+        };
+        
+         recognitionRef.current.onend = () => {
+            // Check if it ended naturally or was stopped manually
+            if (recognitionRef.current) {
+               setIsRecording(false);
+            }
+        };
+
+        recognitionRef.current.start();
     }
   };
 
@@ -107,7 +182,7 @@ export default function ChatPage() {
                   )}
                   <div
                     className={cn(
-                      'max-w-[80%] md:max-w-md lg:max-w-lg rounded-xl px-4 py-3 text-sm md:text-base shadow-sm',
+                      'max-w-[80%] rounded-xl px-4 py-3 text-sm md:text-base shadow-sm md:max-w-md lg:max-w-lg',
                       message.sender === 'user'
                         ? 'bg-primary text-primary-foreground rounded-br-none'
                         : 'bg-background text-card-foreground rounded-bl-none border'
@@ -137,24 +212,31 @@ export default function ChatPage() {
                     </div>
                </div>
             )}
+            {isRecording && (
+                <div className="flex items-start gap-3 justify-center">
+                   <div className="bg-background text-card-foreground rounded-xl px-4 py-3 shadow-sm border flex items-center text-sm md:text-base">
+                       <div className="w-3 h-3 rounded-full bg-red-500 animate-pulse mr-2"></div> Listening...
+                    </div>
+                </div>
+            )}
           </div>
         </ScrollArea>
       </main>
       <footer className="border-t bg-background p-2 md:p-4">
-        <form onSubmit={handleSendMessage} className="flex items-center gap-2">
+        <form onSubmit={handleFormSubmit} className="flex items-center gap-2">
           <Input
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="Type your message..."
             className="flex-1"
-            disabled={isLoading}
+            disabled={isLoading || isRecording}
             autoComplete="off"
           />
-          <Button type="button" variant="ghost" size="icon" disabled>
-            <Mic className="w-5 h-5" />
-            <span className="sr-only">Use Voice</span>
+          <Button type="button" variant={isRecording ? 'destructive' : 'ghost'} size="icon" onClick={handleVoiceButtonClick} disabled={isLoading}>
+            {isRecording ? <Square className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+            <span className="sr-only">{isRecording ? 'Stop Recording' : 'Use Voice'}</span>
           </Button>
-          <Button type="submit" size="icon" disabled={isLoading || !input.trim()}>
+          <Button type="submit" size="icon" disabled={isLoading || isRecording || !input.trim()}>
             {isLoading ? <Loader2 className="w-5 h-5 animate-spin"/> : <Send className="w-5 h-5" />}
             <span className="sr-only">Send Message</span>
           </Button>
