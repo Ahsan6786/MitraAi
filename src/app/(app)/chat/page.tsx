@@ -9,12 +9,15 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { Languages, Loader2, Mic, Send, User, Square } from 'lucide-react';
 import { chatEmpatheticTone } from '@/ai/flows/chat-empathetic-tone';
+import { detectCrisis } from '@/ai/flows/detect-crisis';
 import { Logo } from '@/components/icons';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { textToSpeech } from '@/ai/flows/text-to-speech';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
+import { db } from '@/lib/firebase';
+import { collection, getDocs, doc, getDoc, addDoc, serverTimestamp } from 'firebase/firestore';
 
 interface Message {
   sender: 'user' | 'ai';
@@ -48,6 +51,41 @@ export default function ChatPage() {
     }
   }, [messages]);
 
+  const handleCrisisAlert = async (userId: string, message: string) => {
+    try {
+      const crisisCheck = await detectCrisis({ message });
+      if (crisisCheck.isCrisis) {
+        const userProfileRef = doc(db, 'userProfiles', userId);
+        const userProfileSnap = await getDoc(userProfileRef);
+
+        if (userProfileSnap.exists() && userProfileSnap.data().consentForAlerts) {
+          const contactsCollectionRef = collection(db, 'userProfiles', userId, 'trustedContacts');
+          const contactsSnapshot = await getDocs(contactsCollectionRef);
+          
+          if (!contactsSnapshot.empty) {
+            const contacts = contactsSnapshot.docs.map(doc => doc.data());
+            for (const contact of contacts) {
+              await addDoc(collection(db, 'alerts'), {
+                userId: userId,
+                triggeredAt: serverTimestamp(),
+                contactEmail: contact.email,
+                status: 'pending',
+              });
+            }
+            toast({
+              title: "Alert Sent",
+              description: "A trusted contact has been notified. Please reach out to someone you trust.",
+              variant: "destructive",
+            });
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Error in crisis alert logic:", error);
+      // We don't show a toast here to avoid alarming the user further
+    }
+  };
+
   const handleSendMessage = async (messageText: string) => {
     if (!messageText.trim() || isLoading || !user) return;
 
@@ -57,13 +95,18 @@ export default function ChatPage() {
     setIsLoading(true);
 
     try {
-      const result = await chatEmpatheticTone({ message: messageText, language, userId: user.uid });
-      const aiMessage: Message = { sender: 'ai', text: result.response };
+      // Run AI chat and crisis check in parallel
+      const [chatResult, _] = await Promise.all([
+        chatEmpatheticTone({ message: messageText, language, userId: user.uid }),
+        handleCrisisAlert(user.uid, messageText),
+      ]);
+      
+      const aiMessage: Message = { sender: 'ai', text: chatResult.response };
       setMessages((prev) => [...prev, aiMessage]);
 
       // If voice was used, convert AI response to speech
       if (isRecording) {
-        const ttsResult = await textToSpeech({ text: result.response });
+        const ttsResult = await textToSpeech({ text: chatResult.response });
         const audio = new Audio(ttsResult.audioDataUri);
         audioRef.current = audio;
         audio.play();

@@ -12,9 +12,6 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
-import { detectCrisis } from './detect-crisis';
-import { db } from '@/lib/firebase';
-import { collection, getDocs, doc, getDoc, addDoc, serverTimestamp } from 'firebase/firestore';
 
 const ChatEmpatheticToneInputSchema = z.object({
   message: z.string().describe('The user message to the AI companion.'),
@@ -58,37 +55,10 @@ const chatEmpatheticToneFlow = ai.defineFlow(
     outputSchema: ChatEmpatheticToneOutputSchema,
   },
   async ({ message, language, userId }) => {
-    // 1. Get the empathetic response from the AI
+    // This flow is now only responsible for generating the empathetic response.
+    // Crisis detection and alerting logic has been moved to the client-side
+    // to leverage the user's authenticated session for Firestore permissions.
     const { output } = await prompt({ message, language, userId });
-    const response = output!;
-
-    // 2. In parallel, check for a crisis
-    const crisisCheck = await detectCrisis({ message });
-
-    if (crisisCheck.isCrisis) {
-      // 3. If a crisis is detected, check user's consent and get trusted contacts
-      const userProfileRef = doc(db, 'userProfiles', userId);
-      const userProfileSnap = await getDoc(userProfileRef);
-
-      if (userProfileSnap.exists() && userProfileSnap.data().consentForAlerts) {
-        const contactsCollectionRef = collection(db, 'userProfiles', userId, 'trustedContacts');
-        const contactsSnapshot = await getDocs(contactsCollectionRef);
-        
-        if (!contactsSnapshot.empty) {
-          const contacts = contactsSnapshot.docs.map(doc => doc.data());
-          // 4. Create an alert for each contact
-          for (const contact of contacts) {
-            await addDoc(collection(db, 'alerts'), {
-              userId: userId,
-              triggeredAt: serverTimestamp(),
-              contactEmail: contact.email,
-              status: 'pending', // A backend process would pick this up
-            });
-          }
-        }
-      }
-    }
-
-    return response;
+    return output!;
   }
 );
