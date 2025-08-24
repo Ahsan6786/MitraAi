@@ -76,7 +76,6 @@ function GuessTheNumberGame() {
                             value={guess}
                             onChange={(e) => setGuess(e.target.value)}
                             disabled={isCorrect}
-                            className="text-base"
                         />
                         <Button type="submit" disabled={isCorrect}>
                             Guess
@@ -266,9 +265,9 @@ function findBestMove(squares: (string | null)[]) {
 
 // --- Rock Paper Scissors Game ---
 const choices = [
-  { name: 'rock', icon: <Gem className="w-8 h-8"/> },
-  { name: 'paper', icon: <Hand className="w-8 h-8"/> },
-  { name: 'scissors', icon: <Scissors className="w-8 h-8"/> },
+  { name: 'rock', icon: <Gem className="w-6 h-6 sm:w-8 sm:h-8"/> },
+  { name: 'paper', icon: <Hand className="w-6 h-6 sm:w-8 sm:h-8"/> },
+  { name: 'scissors', icon: <Scissors className="w-6 h-6 sm:w-8 sm:h-8"/> },
 ];
 
 function RockPaperScissorsGame() {
@@ -314,16 +313,16 @@ function RockPaperScissorsGame() {
                 </CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col items-center justify-center gap-6">
-                <div className="flex gap-4">
+                <div className="flex gap-2 sm:gap-4">
                     {choices.map(choice => (
-                        <Button key={choice.name} variant="outline" size="lg" onClick={() => handleUserChoice(choice.name)} disabled={!!result}>
+                        <Button key={choice.name} variant="outline" size="lg" onClick={() => handleUserChoice(choice.name)} disabled={!!result} className="w-20 h-20 sm:w-24 sm:h-24">
                             {choice.icon}
                         </Button>
                     ))}
                 </div>
                 {result && (
                     <div className="text-center space-y-4">
-                         <div className="flex items-center justify-center gap-8 text-lg font-semibold">
+                         <div className="flex items-center justify-center gap-4 sm:gap-8 text-lg font-semibold">
                             <div className="flex flex-col items-center gap-2">
                                 <span>You</span>
                                 {getIcon(userChoice)}
@@ -335,7 +334,7 @@ function RockPaperScissorsGame() {
                             </div>
                          </div>
                          <p className={cn(
-                            "text-2xl font-bold",
+                            "text-xl sm:text-2xl font-bold",
                              result === 'You win!' && 'text-green-600',
                              result === 'You lose!' && 'text-red-600',
                              result === "It's a draw!" && 'text-yellow-600',

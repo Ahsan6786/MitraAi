@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -154,7 +155,7 @@ export default function JournalPage() {
               value={journalText}
               onChange={(e) => setJournalText(e.target.value)}
               rows={8}
-              className="resize-none text-base"
+              className="resize-none"
               disabled={isLoading}
             />
           </CardContent>

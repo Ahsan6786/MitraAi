@@ -40,14 +40,14 @@ function LandingPageContent() {
           <Logo className="h-6 w-6 text-primary" />
           <span className="ml-2 text-lg font-semibold">MitraAI</span>
         </Link>
-        <nav className="ml-auto flex items-center gap-4 sm:gap-6">
+        <nav className="ml-auto flex items-center gap-2 sm:gap-4">
           <ThemeToggle />
-          <Button variant="ghost" asChild>
+          <Button variant="ghost" asChild size="sm">
             <Link href="/signin" prefetch={false}>
               Sign In
             </Link>
           </Button>
-          <Button asChild>
+          <Button asChild size="sm">
             <Link href="/signup" prefetch={false}>
               Sign Up
             </Link>
@@ -57,16 +57,16 @@ function LandingPageContent() {
       <main className="flex-1">
         <section className="w-full py-12 md:py-24 lg:py-32 xl:py-48 bg-muted/20">
           <div className="container px-4 md:px-6">
-            <div className="flex flex-col items-center space-y-4 text-center">
+            <div className="flex flex-col items-center space-y-6 text-center">
               <div className="space-y-2">
-                <h1 className="text-3xl font-bold tracking-tighter sm:text-5xl xl:text-6xl/none">
+                <h1 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl xl:text-6xl/none">
                   Your Personal Path to Mental Wellness
                 </h1>
-                <p className="max-w-[600px] text-muted-foreground md:text-xl">
+                <p className="max-w-[600px] text-muted-foreground text-base sm:text-lg md:text-xl">
                   MitraAI is your compassionate AI companion, here to listen, understand, and support you on your mental health journey.
                 </p>
               </div>
-              <div className="flex items-center gap-4">
+              <div className="flex flex-col sm:flex-row items-center gap-4">
                 <Button size="lg" asChild>
                   <Link href="/signup" prefetch={false}>
                     Get Started for Free
@@ -98,14 +98,14 @@ function LandingPageContent() {
                 </p>
               </div>
             </div>
-            <div className="mx-auto grid max-w-5xl items-start gap-8 sm:grid-cols-2 md:gap-12 lg:max-w-none lg:grid-cols-4 mt-12">
+            <div className="mx-auto grid max-w-5xl items-start gap-6 sm:grid-cols-2 md:gap-12 lg:max-w-none lg:grid-cols-4 mt-12">
               {features.map((feature) => (
                 <Card key={feature.title} className="text-center">
                   <CardHeader>
                     <div className="mx-auto bg-primary/10 rounded-full p-3 w-fit">
                       {feature.icon}
                     </div>
-                    <CardTitle className="mt-4">{feature.title}</CardTitle>
+                    <CardTitle className="mt-4 text-xl">{feature.title}</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <p className="text-sm text-muted-foreground">{feature.description}</p>

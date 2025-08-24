@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useRef } from 'react';
@@ -209,7 +210,7 @@ export default function VoiceJournalPage() {
                 <CardHeader>
                     <div className="flex justify-between items-start">
                         <div>
-                             <CardTitle className="flex items-center gap-2">
+                             <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
                                 <Lightbulb className="w-5 h-5 text-yellow-500"/>
                                 Your Mood
                             </CardTitle>
@@ -220,7 +221,7 @@ export default function VoiceJournalPage() {
             </Card>
              <Card>
                 <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
+                    <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
                        <Quote className="w-5 h-5 text-primary"/>
                        Transcription
                     </CardTitle>
@@ -231,7 +232,7 @@ export default function VoiceJournalPage() {
             </Card>
              <Card>
                 <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
+                    <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
                        <ListChecks className="w-5 h-5 text-green-500"/>
                        Suggestions for you
                     </CardTitle>
