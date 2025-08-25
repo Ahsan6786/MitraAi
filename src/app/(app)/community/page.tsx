@@ -14,9 +14,6 @@ import {
   doc,
   runTransaction,
   Timestamp,
-  where,
-  getDocs,
-  writeBatch,
 } from 'firebase/firestore';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { ThemeToggle } from '@/components/theme-toggle';
@@ -24,14 +21,11 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Loader2, MessageSquare, ThumbsUp, Send, UserPlus, Bell, Check, X } from 'lucide-react';
+import { Loader2, MessageSquare, ThumbsUp, Send } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { formatDistanceToNow } from 'date-fns';
 import { Separator } from '@/components/ui/separator';
 import { Input } from '@/components/ui/input';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface Post {
   id: string;
@@ -50,21 +44,6 @@ interface Comment {
   content: string;
   createdAt: Timestamp;
   likeCount: number;
-}
-
-interface FriendRequest {
-    id: string;
-    fromUserId: string;
-    fromUserName: string;
-    toUserId: string;
-    status: 'pending' | 'accepted' | 'declined';
-}
-
-interface Friend {
-    id: string;
-    friendId: string;
-    friendName?: string; 
-    since: Timestamp;
 }
 
 
@@ -99,36 +78,6 @@ function PostCard({ post }: { post: Post }) {
       setIsLiking(false);
     }
   };
-
-  const handleAddFriend = async () => {
-      if (!user || user.uid === post.authorId) return;
-
-      try {
-          const q = query(collection(db, 'friendRequests'), 
-              where('fromUserId', '==', user.uid),
-              where('toUserId', '==', post.authorId)
-          );
-          const querySnapshot = await getDocs(q);
-
-          if (!querySnapshot.empty) {
-              toast({ title: "Request already sent", description: "You have already sent a friend request to this user." });
-              return;
-          }
-
-          await addDoc(collection(db, 'friendRequests'), {
-              fromUserId: user.uid,
-              fromUserName: user.displayName || user.email,
-              toUserId: post.authorId,
-              toUserName: post.authorName,
-              status: 'pending',
-              createdAt: serverTimestamp(),
-          });
-          toast({ title: "Friend Request Sent", description: `Your request to ${post.authorName} has been sent.` });
-      } catch (error) {
-          console.error("Error sending friend request:", error);
-          toast({ title: "Error", description: "Could not send friend request.", variant: "destructive" });
-      }
-  };
   
   const authorInitial = post.authorName ? post.authorName[0].toUpperCase() : 'A';
 
@@ -145,11 +94,6 @@ function PostCard({ post }: { post: Post }) {
               {post.createdAt ? formatDistanceToNow(post.createdAt.toDate(), { addSuffix: true }) : 'Just now'}
             </CardDescription>
           </div>
-          {user && user.uid !== post.authorId && (
-              <Button variant="ghost" size="icon" onClick={handleAddFriend} title="Add Friend">
-                  <UserPlus className="w-5 h-5"/>
-              </Button>
-          )}
         </div>
       </CardHeader>
       <CardContent>
@@ -253,37 +197,6 @@ function CommentSection({ postId }: { postId: string }) {
         }
     }
 
-    const handleAddFriend = async (commenter: Comment) => {
-        if (!user || user.uid === commenter.authorId) return;
-
-        try {
-            const q = query(collection(db, 'friendRequests'), 
-                where('fromUserId', '==', user.uid),
-                where('toUserId', '==', commenter.authorId)
-            );
-            const querySnapshot = await getDocs(q);
-
-            if (!querySnapshot.empty) {
-                toast({ title: "Request already sent", description: "You have already sent a friend request to this user." });
-                return;
-            }
-
-            await addDoc(collection(db, 'friendRequests'), {
-                fromUserId: user.uid,
-                fromUserName: user.displayName || user.email,
-                toUserId: commenter.authorId,
-                toUserName: commenter.authorName,
-                status: 'pending',
-                createdAt: serverTimestamp(),
-            });
-            toast({ title: "Friend Request Sent", description: `Your request to ${commenter.authorName} has been sent.` });
-        } catch (error) {
-            console.error("Error sending friend request:", error);
-            toast({ title: "Error", description: "Could not send friend request.", variant: "destructive" });
-        }
-    };
-
-
     return (
         <div className="px-6 pb-6 pt-2">
             <Separator className="mb-4" />
@@ -298,16 +211,9 @@ function CommentSection({ postId }: { postId: string }) {
                         <div className="flex-1 bg-muted p-3 rounded-lg">
                            <div className="flex justify-between items-center">
                                 <p className="text-sm font-semibold">{comment.authorName}</p>
-                                <div className="flex items-center">
-                                    <p className="text-xs text-muted-foreground mr-2">
-                                        {comment.createdAt ? formatDistanceToNow(comment.createdAt.toDate(), { addSuffix: true }) : ''}
-                                    </p>
-                                    {user && user.uid !== comment.authorId && (
-                                        <Button variant="ghost" size="icon" onClick={() => handleAddFriend(comment)} title="Add Friend" className="h-6 w-6">
-                                            <UserPlus className="w-4 h-4"/>
-                                        </Button>
-                                    )}
-                                </div>
+                                <p className="text-xs text-muted-foreground mr-2">
+                                    {comment.createdAt ? formatDistanceToNow(comment.createdAt.toDate(), { addSuffix: true }) : ''}
+                                </p>
                            </div>
                             <p className="text-sm mt-1">{comment.content}</p>
                             <div className="mt-2">
@@ -333,155 +239,6 @@ function CommentSection({ postId }: { postId: string }) {
         </div>
     );
 }
-
-function FriendRequestNotifications() {
-    const { user } = useAuth();
-    const { toast } = useToast();
-    const [requests, setRequests] = useState<FriendRequest[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
-
-    useEffect(() => {
-        if (!user) return;
-        const q = query(
-            collection(db, 'friendRequests'),
-            where('toUserId', '==', user.uid),
-            where('status', '==', 'pending')
-        );
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-            const reqs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as FriendRequest));
-            setRequests(reqs);
-            setIsLoading(false);
-        });
-        return () => unsubscribe();
-    }, [user]);
-
-    const handleRequest = async (request: FriendRequest, newStatus: 'accepted' | 'declined') => {
-        if (!user) return;
-        try {
-            const batch = writeBatch(db);
-            const reqRef = doc(db, 'friendRequests', request.id);
-
-            if (newStatus === 'accepted') {
-                batch.update(reqRef, { status: 'accepted' });
-                
-                // Add friend to current user's friend list
-                const currentUserFriendRef = doc(collection(db, 'users', user.uid, 'friends'));
-                batch.set(currentUserFriendRef, { 
-                    friendId: request.fromUserId, 
-                    friendName: request.fromUserName, 
-                    since: serverTimestamp() 
-                });
-
-                // Add current user to the other user's friend list
-                const otherUserFriendRef = doc(collection(db, 'users', request.fromUserId, 'friends'));
-                batch.set(otherUserFriendRef, { 
-                    friendId: user.uid, 
-                    friendName: user.displayName || user.email, 
-                    since: serverTimestamp() 
-                });
-
-            } else {
-                 batch.update(reqRef, { status: 'declined' });
-            }
-            await batch.commit();
-            toast({ title: `Request ${newStatus}` });
-        } catch (error) {
-            console.error(`Error handling request:`, error);
-            toast({ title: "Error", description: "Could not process the request.", variant: "destructive" });
-        }
-    };
-    
-    return (
-         <Popover>
-            <PopoverTrigger asChild>
-                <Button variant="ghost" size="icon" className="relative">
-                    <Bell className="w-5 h-5" />
-                    {requests.length > 0 && (
-                        <Badge variant="destructive" className="absolute -top-1 -right-1 h-4 w-4 justify-center rounded-full p-0 text-xs">
-                            {requests.length}
-                        </Badge>
-                    )}
-                </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-80">
-                <div className="grid gap-4">
-                    <div className="space-y-2">
-                        <h4 className="font-medium leading-none">Friend Requests</h4>
-                        <p className="text-sm text-muted-foreground">
-                            Accept or decline requests.
-                        </p>
-                    </div>
-                    {isLoading ? <Loader2 className="mx-auto w-5 h-5 animate-spin"/> :
-                     requests.length === 0 ? <p className="text-sm text-muted-foreground">No new requests.</p> :
-                     <div className="grid gap-2">
-                        {requests.map(req => (
-                            <div key={req.id} className="flex items-center justify-between">
-                                <span className="text-sm">{req.fromUserName}</span>
-                                <div className="flex gap-1">
-                                    <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => handleRequest(req, 'accepted')}>
-                                        <Check className="h-4 w-4" />
-                                    </Button>
-                                    <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => handleRequest(req, 'declined')}>
-                                        <X className="h-4 w-4" />
-                                    </Button>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                    }
-                </div>
-            </PopoverContent>
-        </Popover>
-    )
-}
-
-function FriendsList() {
-    const { user } = useAuth();
-    const [friends, setFriends] = useState<Friend[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
-
-    useEffect(() => {
-        if (!user) return;
-        const q = query(collection(db, `users/${user.uid}/friends`), orderBy('since', 'desc'));
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-            const friendsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Friend));
-            setFriends(friendsData);
-            setIsLoading(false);
-        });
-        return () => unsubscribe();
-    }, [user]);
-    
-    if (isLoading) {
-        return <div className="flex justify-center py-10"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
-    }
-    
-    if (friends.length === 0) {
-        return <div className="text-center text-muted-foreground py-10"><p>You haven't added any friends yet.</p></div>
-    }
-
-    return (
-        <div className="space-y-4">
-            {friends.map(friend => (
-                <Card key={friend.id}>
-                    <CardHeader>
-                        <div className="flex items-center gap-3">
-                            <Avatar>
-                               <AvatarFallback>{friend.friendName ? friend.friendName[0].toUpperCase() : '?'}</AvatarFallback>
-                            </Avatar>
-                            <div>
-                                <CardTitle className="text-base font-semibold">{friend.friendName}</CardTitle>
-                                <CardDescription className="text-xs">
-                                    Friends since {friend.since ? formatDistanceToNow(friend.since.toDate()) : 'a while'} ago
-                                </CardDescription>
-                            </div>
-                        </div>
-                    </CardHeader>
-                </Card>
-            ))}
-        </div>
-    )
-}
-
 
 export default function CommunityPage() {
   const { user } = useAuth();
@@ -540,59 +297,47 @@ export default function CommunityPage() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-            <FriendRequestNotifications />
             <ThemeToggle />
         </div>
       </header>
       <main className="flex-1 overflow-auto p-2 sm:p-4 md:p-6">
-        <div className="max-w-2xl mx-auto">
-            <Tabs defaultValue="feed">
-                <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="feed">Feed</TabsTrigger>
-                    <TabsTrigger value="friends">My Friends</TabsTrigger>
-                </TabsList>
-                <TabsContent value="feed" className="mt-6 space-y-6">
-                     <Card>
-                        <form onSubmit={handleCreatePost}>
-                        <CardHeader>
-                            <CardTitle className="text-lg">Create a New Post</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <Textarea
-                            placeholder="What's on your mind?"
-                            rows={4}
-                            value={newPostContent}
-                            onChange={(e) => setNewPostContent(e.target.value)}
-                            disabled={isSubmitting}
-                            />
-                        </CardContent>
-                        <CardFooter>
-                            <Button type="submit" disabled={isSubmitting}>
-                            {isSubmitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                            Post
-                            </Button>
-                        </CardFooter>
-                        </form>
-                    </Card>
+        <div className="max-w-2xl mx-auto space-y-6">
+            <Card>
+                <form onSubmit={handleCreatePost}>
+                <CardHeader>
+                    <CardTitle className="text-lg">Create a New Post</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <Textarea
+                    placeholder="What's on your mind?"
+                    rows={4}
+                    value={newPostContent}
+                    onChange={(e) => setNewPostContent(e.target.value)}
+                    disabled={isSubmitting}
+                    />
+                </CardContent>
+                <CardFooter>
+                    <Button type="submit" disabled={isSubmitting}>
+                    {isSubmitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                    Post
+                    </Button>
+                </CardFooter>
+                </form>
+            </Card>
 
-                    {isLoading ? (
-                        <div className="flex justify-center py-10">
-                        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-                        </div>
-                    ) : posts.length === 0 ? (
-                        <div className="text-center text-muted-foreground py-10">
-                            <p>No posts yet. Be the first to share something!</p>
-                        </div>
-                    ) : (
-                        <div className="space-y-4">
-                        {posts.map(post => <PostCard key={post.id} post={post} />)}
-                        </div>
-                    )}
-                </TabsContent>
-                <TabsContent value="friends" className="mt-6">
-                    <FriendsList />
-                </TabsContent>
-            </Tabs>
+            {isLoading ? (
+                <div className="flex justify-center py-10">
+                <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                </div>
+            ) : posts.length === 0 ? (
+                <div className="text-center text-muted-foreground py-10">
+                    <p>No posts yet. Be the first to share something!</p>
+                </div>
+            ) : (
+                <div className="space-y-4">
+                {posts.map(post => <PostCard key={post.id} post={post} />)}
+                </div>
+            )}
         </div>
       </main>
     </div>

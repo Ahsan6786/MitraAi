@@ -1,48 +1,44 @@
 
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // Journal Entries: Users can only read/write their own entries.
+    // Journal Entries: Users can only access their own entries.
     match /journalEntries/{entryId} {
-      allow read, write: if request.auth != null && request.auth.uid == resource.data.userId;
-    }
-
-    // Posts: Any authenticated user can interact with posts.
-    match /posts/{postId} {
-      allow read, create, update: if request.auth != null;
-      
-      match /{subcollection}/{docId} {
-        allow read, create, update, delete: if request.auth != null;
-      }
-    }
-
-    // Friend Requests:
-    // - Any authenticated user can create a request.
-    // - Only the recipient can update (accept/decline) the request.
-    match /friendRequests/{requestId} {
-      allow create: if request.auth != null;
-      allow update: if request.auth != null && request.auth.uid == resource.data.toUserId;
-      allow read: if request.auth != null && (request.auth.uid == resource.data.fromUserId || request.auth.uid == resource.data.toUserId);
+      allow read, create, update, delete: if request.auth != null && request.auth.uid == resource.data.userId;
     }
     
-    // User data, including friends lists
-    match /users/{userId} {
-        // A user can read their own friends list
-        match /friends/{friendId} {
-          allow read: if request.auth != null && request.auth.uid == userId;
-          // IMPORTANT: This rule allows a user to create a friend document in BOTH their own
-          // and another user's subcollection, BUT ONLY if a corresponding 'accepted'
-          // friend request exists. This is key to making the transaction secure.
-          allow create: if request.auth != null && 
-                        exists(/databases/$(database)/documents/friendRequests/$(request.resource.data.requestId)) &&
-                        get(/databases/$(database)/documents/friendRequests/$(request.resource.data.requestId)).data.status == 'accepted' &&
-                        ((request.auth.uid == get(/databases/$(database)/documents/friendRequests/$(request.resource.data.requestId)).data.toUserId &&
-                          userId == get(/databases/$(database)/documents/friendRequests/$(request.resource.data.requestId)).data.fromUserId) ||
-                         (request.auth.uid == get(/databases/$(database)/documents/friendRequests/$(request.resource.data.requestId)).data.toUserId &&
-                          userId == request.auth.uid));
-        }
+    // Admin access to all journal entries for review
+    match /journalEntries/{entryId} {
+        allow read, update: if request.auth != null && request.auth.token.email == 'ahsan.khan@mitwpu.edu.in';
     }
-
+    
+    // Community Posts: Any authenticated user can create posts.
+    // Users can only update/delete their own posts.
+    match /posts/{postId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null;
+      allow update, delete: if request.auth != null && request.auth.uid == resource.data.authorId;
+      
+      // Comments: Authenticated users can read/create comments on any post.
+      // Users can only update/delete their own comments.
+      match /comments/{commentId} {
+        allow read: if request.auth != null;
+        allow create: if request.auth != null;
+        allow update, delete: if request.auth != null && request.auth.uid == resource.data.authorId;
+        
+         // Likes on Comments
+        match /likes/{userId} {
+          allow create: if request.auth != null && request.auth.uid == userId;
+          allow delete: if request.auth != null && request.auth.uid == userId;
+        }
+      }
+      
+      // Likes on Posts
+      match /likes/{userId} {
+        allow create: if request.auth != null && request.auth.uid == userId;
+        allow delete: if request.auth != null && request.auth.uid == userId;
+      }
+    }
   }
 }
