@@ -365,7 +365,7 @@ function FriendRequestNotifications() {
                 batch.update(reqRef, { status: 'accepted' });
                 
                 // Add friend to current user's friend list
-                const currentUserFriendRef = doc(collection(db, `users/${user.uid}/friends`));
+                const currentUserFriendRef = doc(collection(db, 'users', user.uid, 'friends'));
                 batch.set(currentUserFriendRef, { 
                     friendId: request.fromUserId, 
                     friendName: request.fromUserName, 
@@ -373,7 +373,7 @@ function FriendRequestNotifications() {
                 });
 
                 // Add current user to the other user's friend list
-                const otherUserFriendRef = doc(collection(db, `users/${request.fromUserId}/friends`));
+                const otherUserFriendRef = doc(collection(db, 'users', request.fromUserId, 'friends'));
                 batch.set(otherUserFriendRef, { 
                     friendId: user.uid, 
                     friendName: user.displayName || user.email, 
