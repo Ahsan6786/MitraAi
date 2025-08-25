@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { predictUserMood } from '@/ai/flows/predict-user-mood';
 import { generateSuggestions } from '@/ai/flows/generate-suggestions';
-import { Loader2, Mic, Square, Lightbulb, ListChecks, Languages } from 'lucide-react';
+import { Loader2, Mic, Square, Lightbulb, ListChecks, Languages, Sparkles } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/use-auth';
@@ -20,6 +20,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 
 const SpeechRecognition =
   (typeof window !== 'undefined' && (window.SpeechRecognition || window.webkitSpeechRecognition));
+
+type PageState = 'idle' | 'recording' | 'transcribed' | 'analyzing' | 'analyzed';
 
 interface AnalysisResult {
     mood: string;
@@ -36,10 +38,8 @@ const languageToSpeechCode: Record<string, string> = {
     Bhojpuri: 'en-IN',
 };
 
-
 export default function VoiceJournalPage() {
-  const [isRecording, setIsRecording] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [pageState, setPageState] = useState<PageState>('idle');
   const [transcript, setTranscript] = useState('');
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
   const [language, setLanguage] = useState('English');
@@ -50,28 +50,86 @@ export default function VoiceJournalPage() {
   const { toast } = useToast();
   const { user } = useAuth();
   const { pauseMusic, resumeMusic } = useMusic();
-  
-  const handleAnalyzeAndSave = useCallback(async (finalTranscription: string) => {
-    if (!finalTranscription.trim()) {
-      toast({ title: 'Empty Journal', description: 'No speech was detected to analyze.', variant: 'destructive' });
-      setIsLoading(false);
+
+  const handleStopRecording = useCallback(() => {
+    if (recognitionRef.current) {
+        recognitionRef.current.stop();
+        recognitionRef.current = null;
+    }
+    setPageState('transcribed');
+    resumeMusic();
+    finalTranscriptRef.current = transcript.trim();
+  }, [resumeMusic, transcript]);
+
+  const handleStartRecording = () => {
+     if (!SpeechRecognition) {
+      toast({
+        title: "Browser Not Supported",
+        description: "Your browser does not support live transcription.",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (pageState !== 'idle' && pageState !== 'analyzed' && pageState !== 'transcribed') return;
+
+    pauseMusic();
+    setTranscript('');
+    finalTranscriptRef.current = '';
+    setAnalysisResult(null);
+    setPageState('recording');
+
+    recognitionRef.current = new SpeechRecognition();
+    const recognition = recognitionRef.current;
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = languageToSpeechCode[language] || 'en-US';
+
+    recognition.onresult = (event: any) => {
+        let interimTranscript = '';
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+            interimTranscript += event.results[i][0].transcript;
+        }
+        setTranscript(finalTranscriptRef.current + interimTranscript);
+    };
+    
+    recognition.onend = () => {
+       if (recognitionRef.current) {
+          recognitionRef.current = null;
+       }
+       setPageState('transcribed');
+       resumeMusic();
+       finalTranscriptRef.current = transcript.trim();
+    }
+
+    recognition.onerror = (event: any) => {
+        console.error('Speech recognition error:', event.error);
+        toast({ title: 'Voice Error', description: `Could not start voice recognition: ${event.error}`, variant: 'destructive' });
+        setPageState('idle');
+        resumeMusic();
+        recognitionRef.current = null;
+    };
+    
+    recognition.start();
+  };
+
+  const handleAnalyzeAndSave = async () => {
+    const finalTranscription = finalTranscriptRef.current;
+    if (!finalTranscription) {
+      toast({ title: 'Empty Journal', description: 'There is no text to analyze.', variant: 'destructive' });
       return;
     }
     if (!user) {
       toast({ title: 'Not Authenticated', description: 'You must be logged in.', variant: 'destructive' });
-      setIsLoading(false);
       return;
     }
     
-    setIsLoading(true);
+    setPageState('analyzing');
     setAnalysisResult(null);
 
     try {
-      // Step 1: Predict mood using the reliable text journal flow
       const moodResult = await predictUserMood({ journalEntry: finalTranscription });
       const detectedMood = moodResult.mood || 'neutral';
 
-      // Step 2: Generate solutions based on the detected mood
       const suggestionsResult = await generateSuggestions({ mood: detectedMood });
       const solutions = suggestionsResult.suggestions;
       
@@ -88,6 +146,7 @@ export default function VoiceJournalPage() {
       });
       
       setAnalysisResult({ mood: detectedMood, solutions: solutions });
+      setPageState('analyzed');
       toast({
         title: "Analysis Complete & Saved",
         description: "Your voice journal has been successfully saved.",
@@ -100,82 +159,12 @@ export default function VoiceJournalPage() {
         description: error.message || 'Sorry, we could not process your journal right now.',
         variant: 'destructive',
       });
-    } finally {
-      setIsLoading(false);
+      setPageState('transcribed'); // Go back to transcribed state on failure
     }
-  }, [user, toast]);
-  
-
-  const stopRecording = useCallback(() => {
-    if (recognitionRef.current) {
-        recognitionRef.current.stop();
-        // The 'onend' event will handle cleanup and analysis
-    }
-  }, []);
-
-  const startRecording = () => {
-     if (!SpeechRecognition) {
-      toast({
-        title: "Browser Not Supported",
-        description: "Your browser does not support live transcription.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (isRecording || isLoading) return;
-
-    pauseMusic();
-    setTranscript('');
-    finalTranscriptRef.current = '';
-    setAnalysisResult(null);
-    setIsRecording(true);
-
-    recognitionRef.current = new SpeechRecognition();
-    const recognition = recognitionRef.current;
-    recognition.continuous = true;
-    recognition.interimResults = true;
-    recognition.lang = languageToSpeechCode[language] || 'en-US';
-
-    recognition.onresult = (event: any) => {
-        let interimTranscript = '';
-        let final = '';
-        for (let i = event.resultIndex; i < event.results.length; ++i) {
-            if (event.results[i].isFinal) {
-                final += event.results[i][0].transcript + ' ';
-            } else {
-                interimTranscript += event.results[i][0].transcript;
-            }
-        }
-        finalTranscriptRef.current += final;
-        setTranscript(finalTranscriptRef.current + interimTranscript);
-    };
-    
-    recognition.onend = () => {
-        setIsRecording(false);
-        resumeMusic();
-        recognitionRef.current = null;
-        
-        const finalTranscription = finalTranscriptRef.current.trim();
-        setTranscript(finalTranscription); 
-        if (finalTranscription) {
-            handleAnalyzeAndSave(finalTranscription);
-        }
-    }
-
-    recognition.onerror = (event: any) => {
-        console.error('Speech recognition error:', event.error);
-        toast({ title: 'Voice Error', description: `Could not start voice recognition: ${event.error}`, variant: 'destructive' });
-        setIsRecording(false);
-        resumeMusic();
-        recognitionRef.current = null;
-    };
-    
-    recognition.start();
   };
 
+
   useEffect(() => {
-    // Cleanup function to stop recording if the component unmounts
     return () => {
       if (recognitionRef.current) {
         recognitionRef.current.stop();
@@ -183,6 +172,7 @@ export default function VoiceJournalPage() {
     };
   }, []);
 
+  const isMicDisabled = pageState === 'recording' || pageState === 'analyzing';
 
   return (
     <div className="h-full flex flex-col bg-muted/20">
@@ -196,7 +186,7 @@ export default function VoiceJournalPage() {
         </div>
         <div className="flex items-center gap-2">
            <Languages className="w-5 h-5 text-muted-foreground hidden sm:block"/>
-            <Select value={language} onValueChange={setLanguage} disabled={isRecording || isLoading}>
+            <Select value={language} onValueChange={setLanguage} disabled={isMicDisabled}>
                 <SelectTrigger className="w-[100px] sm:w-[120px]">
                     <SelectValue placeholder="Language" />
                 </SelectTrigger>
@@ -218,7 +208,7 @@ export default function VoiceJournalPage() {
           <CardHeader>
             <CardTitle>Speak Your Mind</CardTitle>
             <CardDescription>
-                {isRecording 
+                {pageState === 'recording' 
                     ? "I'm listening... Speak freely. Press the stop button when you're done."
                     : "Press the mic to start. Your words will appear here as you talk."
                 }
@@ -230,35 +220,45 @@ export default function VoiceJournalPage() {
               value={transcript}
               readOnly
               rows={6}
-              className="resize-none text-base italic w-full max-w-lg mx-auto"
+              className="resize-none text-base italic"
             />
           </CardContent>
            <CardFooter className="flex-col gap-4">
-             <Button 
-                onClick={isRecording ? stopRecording : startRecording} 
-                size="lg" 
-                variant={isRecording ? 'destructive' : 'default'}
-                className="rounded-full w-20 h-20 shadow-lg"
-                disabled={isLoading}
-             >
-                {isRecording ? <Square className="w-8 h-8" /> : <Mic className="w-8 h-8" />}
-             </Button>
+             <div className="flex items-center gap-4">
+                <Button 
+                    onClick={pageState === 'recording' ? handleStopRecording : handleStartRecording} 
+                    size="lg" 
+                    variant={pageState === 'recording' ? 'destructive' : 'default'}
+                    className="rounded-full w-20 h-20 shadow-lg"
+                    disabled={isMicDisabled}
+                >
+                    {pageState === 'recording' ? <Square className="w-8 h-8" /> : <Mic className="w-8 h-8" />}
+                </Button>
+
+                {pageState === 'transcribed' && (
+                    <Button
+                        onClick={handleAnalyzeAndSave}
+                        size="lg"
+                        disabled={pageState !== 'transcribed'}
+                    >
+                        <Sparkles className="mr-2 h-5 w-5"/>
+                        Analyze & Save
+                    </Button>
+                )}
+             </div>
               <div className="text-sm text-muted-foreground h-5 flex items-center justify-center">
-                {isLoading ? (
-                    <span className="flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin"/>Analyzing & Saving...</span>
-                ) : isRecording ? (
+                {pageState === 'analyzing' && <span className="flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin"/>Analyzing & Saving...</span>}
+                {pageState === 'recording' && (
                     <div className="text-primary flex items-center gap-2">
                         <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div>
                         Listening...
                     </div>
-                ) : (
-                    analysisResult ? 'Recording complete. See results below.' : 'Press the mic to start speaking'
                 )}
              </div>
            </CardFooter>
         </Card>
 
-        {analysisResult && (
+        {pageState === 'analyzed' && analysisResult && (
           <div className="space-y-4 animate-in fade-in-50">
             <h2 className="text-lg font-semibold">Last Analysis Results</h2>
             <Card>
@@ -295,3 +295,5 @@ export default function VoiceJournalPage() {
     </div>
   );
 }
+
+    
