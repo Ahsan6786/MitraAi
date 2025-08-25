@@ -1,0 +1,31 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+  
+    // Journal Entries: Users can only read and write their own entries.
+    match /journalEntries/{entryId} {
+      allow read, write: if request.auth != null && request.auth.uid == resource.data.userId;
+    }
+    
+    // Posts: Any authenticated user can read, create, and update (for likes/comments) posts.
+    match /posts/{postId} {
+      allow read, create, update: if request.auth != null;
+
+      // Comments: Any authenticated user can read and create comments.
+      match /comments/{commentId} {
+        allow read, create, update: if request.auth != null;
+
+        // Likes on Comments: Authenticated users can like/unlike comments.
+        match /likes/{userId} {
+          allow read, write: if request.auth != null && request.auth.uid == userId;
+        }
+      }
+
+      // Likes on Posts: Authenticated users can like/unlike posts.
+      match /likes/{userId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+    }
+  }
+}
