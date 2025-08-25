@@ -7,24 +7,30 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Logo } from '@/components/icons';
 import { Bot, HeartPulse, Mic, FileText, Instagram, Mail, AlertTriangle, ShieldCheck, Handshake, Users, PlayCircle } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
-import { ThemeProvider } from '@/components/theme-provider';
 import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 
 // --- Interactive Hero Section Component ---
 function InteractiveHero() {
   const [isHovered, setIsHovered] = useState(false);
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    // This effect runs only on the client, after the component has mounted.
+    // This prevents the hydration error.
+    setIsClient(true);
+  }, []);
 
   return (
     <div className="relative w-full h-[500px] md:h-[600px] overflow-hidden flex items-center justify-center text-center bg-muted/20">
       
-      {/* Words floating around */}
-      {['Anxiety', 'Stress', 'Overwhelm', 'Loneliness', 'Doubt', 'Burnout', 'Worry', 'Pressure'].map((word, index) => (
+      {/* Words floating around - only render on client */}
+      {isClient && ['Anxiety', 'Stress', 'Overwhelm', 'Loneliness', 'Doubt', 'Burnout', 'Worry', 'Pressure'].map((word, index) => (
         <span
           key={index}
           className={cn(
             'absolute transition-all duration-700 ease-out text-muted-foreground/30 font-bold',
-             'text-2xl md:text-3xl lg:text-4xl', // Simplified sizing
+             'text-2xl md:text-3xl lg:text-4xl',
             isHovered ? 'opacity-0 scale-50' : 'opacity-100 scale-100'
           )}
           style={{ 
@@ -80,7 +86,7 @@ function InteractiveHero() {
 }
 
 
-function LandingPageContent() {
+export default function LandingPage() {
   const features = [
     {
       icon: <Bot className="w-8 h-8 text-primary" />,
@@ -127,7 +133,7 @@ function LandingPageContent() {
       </header>
       <main className="flex-1">
         
-        {/* New Interactive Hero Section */}
+        {/* Interactive Hero Section */}
         <section className="w-full">
             <InteractiveHero />
             <div className="container px-4 md:px-6 text-center -mt-20 relative z-10">
@@ -357,19 +363,3 @@ function LandingPageContent() {
     </div>
   );
 }
-
-
-export default function LandingPage() {
-    return (
-        <ThemeProvider
-            attribute="class"
-            defaultTheme="system"
-            enableSystem
-            disableTransitionOnChange
-        >
-            <LandingPageContent />
-        </ThemeProvider>
-    )
-}
-
-    
