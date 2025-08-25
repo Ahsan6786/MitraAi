@@ -45,21 +45,25 @@ export default function VoiceJournalPage() {
   const [language, setLanguage] = useState('English');
 
   const recognitionRef = useRef<any | null>(null);
-  const finalTranscriptRef = useRef('');
+  const silenceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const { toast } = useToast();
   const { user } = useAuth();
   const { pauseMusic, resumeMusic } = useMusic();
 
   const handleStopRecording = useCallback(() => {
+    if (silenceTimeoutRef.current) {
+        clearTimeout(silenceTimeoutRef.current);
+    }
     if (recognitionRef.current) {
         recognitionRef.current.stop();
         recognitionRef.current = null;
     }
-    setPageState('transcribed');
-    resumeMusic();
-    finalTranscriptRef.current = transcript.trim();
-  }, [resumeMusic, transcript]);
+    if (pageState === 'recording') {
+        setPageState('transcribed');
+        resumeMusic();
+    }
+  }, [pageState, resumeMusic]);
 
   const handleStartRecording = () => {
      if (!SpeechRecognition) {
@@ -70,11 +74,10 @@ export default function VoiceJournalPage() {
       });
       return;
     }
-    if (pageState !== 'idle' && pageState !== 'analyzed' && pageState !== 'transcribed') return;
+    if (pageState === 'recording' || pageState === 'analyzing') return;
 
     pauseMusic();
     setTranscript('');
-    finalTranscriptRef.current = '';
     setAnalysisResult(null);
     setPageState('recording');
 
@@ -85,20 +88,28 @@ export default function VoiceJournalPage() {
     recognition.lang = languageToSpeechCode[language] || 'en-US';
 
     recognition.onresult = (event: any) => {
-        let interimTranscript = '';
-        for (let i = event.resultIndex; i < event.results.length; ++i) {
-            interimTranscript += event.results[i][0].transcript;
+        if (silenceTimeoutRef.current) {
+            clearTimeout(silenceTimeoutRef.current);
         }
-        setTranscript(finalTranscriptRef.current + interimTranscript);
+
+        let finalTranscript = '';
+        let interimTranscript = '';
+        for (let i = 0; i < event.results.length; ++i) {
+            if (event.results[i].isFinal) {
+                finalTranscript += event.results[i][0].transcript;
+            } else {
+                interimTranscript += event.results[i][0].transcript;
+            }
+        }
+        setTranscript(finalTranscript + interimTranscript);
+        
+        silenceTimeoutRef.current = setTimeout(() => {
+            handleStopRecording();
+        }, 1500); // Stop after 1.5 seconds of silence
     };
     
     recognition.onend = () => {
-       if (recognitionRef.current) {
-          recognitionRef.current = null;
-       }
-       setPageState('transcribed');
-       resumeMusic();
-       finalTranscriptRef.current = transcript.trim();
+       handleStopRecording();
     }
 
     recognition.onerror = (event: any) => {
@@ -113,8 +124,7 @@ export default function VoiceJournalPage() {
   };
 
   const handleAnalyzeAndSave = async () => {
-    const finalTranscription = finalTranscriptRef.current;
-    if (!finalTranscription) {
+    if (!transcript.trim()) {
       toast({ title: 'Empty Journal', description: 'There is no text to analyze.', variant: 'destructive' });
       return;
     }
@@ -127,7 +137,7 @@ export default function VoiceJournalPage() {
     setAnalysisResult(null);
 
     try {
-      const moodResult = await predictUserMood({ journalEntry: finalTranscription });
+      const moodResult = await predictUserMood({ journalEntry: transcript });
       const detectedMood = moodResult.mood || 'neutral';
 
       const suggestionsResult = await generateSuggestions({ mood: detectedMood });
@@ -138,7 +148,7 @@ export default function VoiceJournalPage() {
         userEmail: user.email,
         type: 'voice',
         mood: detectedMood,
-        transcription: finalTranscription,
+        transcription: transcript,
         solutions: solutions,
         createdAt: serverTimestamp(),
         reviewed: false,
@@ -166,11 +176,9 @@ export default function VoiceJournalPage() {
 
   useEffect(() => {
     return () => {
-      if (recognitionRef.current) {
-        recognitionRef.current.stop();
-      }
+      handleStopRecording();
     };
-  }, []);
+  }, [handleStopRecording]);
 
   const isMicDisabled = pageState === 'recording' || pageState === 'analyzing';
 
@@ -209,7 +217,7 @@ export default function VoiceJournalPage() {
             <CardTitle>Speak Your Mind</CardTitle>
             <CardDescription>
                 {pageState === 'recording' 
-                    ? "I'm listening... Speak freely. Press the stop button when you're done."
+                    ? "I'm listening... Speak freely. I'll stop automatically when you pause."
                     : "Press the mic to start. Your words will appear here as you talk."
                 }
             </CardDescription>
@@ -218,9 +226,10 @@ export default function VoiceJournalPage() {
              <Textarea
               placeholder="Your live transcription will appear here..."
               value={transcript}
-              readOnly
+              onChange={(e) => setTranscript(e.target.value)}
               rows={6}
               className="resize-none text-base italic"
+              readOnly={pageState === 'recording'}
             />
           </CardContent>
            <CardFooter className="flex-col gap-4">
@@ -230,16 +239,16 @@ export default function VoiceJournalPage() {
                     size="lg" 
                     variant={pageState === 'recording' ? 'destructive' : 'default'}
                     className="rounded-full w-20 h-20 shadow-lg"
-                    disabled={isMicDisabled}
+                    disabled={isMicDisabled && pageState !== 'recording'}
                 >
                     {pageState === 'recording' ? <Square className="w-8 h-8" /> : <Mic className="w-8 h-8" />}
                 </Button>
 
-                {pageState === 'transcribed' && (
+                {(pageState === 'transcribed' || pageState === 'analyzed') && (
                     <Button
                         onClick={handleAnalyzeAndSave}
                         size="lg"
-                        disabled={pageState !== 'transcribed'}
+                        disabled={pageState === 'analyzing'}
                     >
                         <Sparkles className="mr-2 h-5 w-5"/>
                         Analyze & Save
@@ -295,5 +304,3 @@ export default function VoiceJournalPage() {
     </div>
   );
 }
-
-    
