@@ -51,7 +51,7 @@ export default function VoiceJournalPage() {
   const { user } = useAuth();
   const { pauseMusic, resumeMusic } = useMusic();
 
-   const handleAnalyze = async (transcription: string) => {
+   const handleAnalyze = useCallback(async (transcription: string) => {
     if (!transcription.trim()) {
       toast({ title: 'Empty Journal', description: 'No speech was detected to analyze.', variant: 'destructive' });
       return;
@@ -95,7 +95,7 @@ export default function VoiceJournalPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [user, toast]);
 
   const stopRecording = useCallback(() => {
     if (recognitionRef.current) {
@@ -109,7 +109,7 @@ export default function VoiceJournalPage() {
          handleAnalyze(finalTranscript);
       }
     }
-  }, [resumeMusic, user]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [resumeMusic, handleAnalyze]);
 
   const startRecording = () => {
      if (!SpeechRecognition) {
