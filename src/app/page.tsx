@@ -3,9 +3,9 @@
 
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Logo } from '@/components/icons';
-import { Bot, HeartPulse, Mic, FileText, Instagram, Mail, AlertTriangle, ShieldCheck, Handshake, Users, PlayCircle } from 'lucide-react';
+import { Bot, HeartPulse, Mic, FileText, Instagram, Mail, AlertTriangle, ShieldCheck, Handshake, Users, PlayCircle, Newspaper } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
@@ -194,8 +194,39 @@ function LandingPageContent() {
             </div>
           </div>
         </section>
+
+        <section id="ai-news" className="w-full py-12 md:py-24 lg:py-32">
+          <div className="container mx-auto px-4 md:px-6">
+            <div className="flex flex-col items-center justify-center space-y-4 text-center">
+              <div className="space-y-2">
+                <div className="inline-block rounded-lg bg-muted px-3 py-1 text-sm">From Our AI Journalist</div>
+                <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl">Latest News in AI</h2>
+                <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
+                  Here's a sample of the dynamic content you can generate with MitraAI.
+                </p>
+              </div>
+            </div>
+            <div className="mx-auto max-w-3xl mt-12">
+              <Card className="shadow-lg">
+                <CardHeader>
+                    <div className="flex items-center gap-3">
+                        <Newspaper className="w-8 h-8 text-primary" />
+                        <CardTitle className="text-2xl md:text-3xl">Google Unveils Gemini 2.0, Its Most Advanced AI Model Yet</CardTitle>
+                    </div>
+                </CardHeader>
+                <CardContent>
+                    <div className="prose prose-sm sm:prose-base dark:prose-invert max-w-none text-foreground">
+                        <p>In a landmark announcement today, Google has pulled back the curtain on Gemini 2.0, the next generation of its flagship large language model. Touting unprecedented multimodal capabilities, Gemini 2.0 is designed to understand and reason across text, images, audio, and video seamlessly.</p>
+                        <p>During a live demonstration, the model was shown analyzing complex scientific charts, writing code based on a spoken description, and even generating a short, coherent video from a simple text prompt. Sundar Pichai, CEO of Google, stated that this release marks a "quantum leap" in the journey toward artificial general intelligence, emphasizing its potential to revolutionize fields from scientific research to creative arts.</p>
+                        <p>The model will be rolled out in three sizes—Ultra, Pro, and Nano—to power everything from enterprise-level data centers to on-device mobile applications. While the full capabilities of the Ultra model are initially reserved for select partners, developers can begin experimenting with the Pro version via Google's AI Studio starting next week.</p>
+                    </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </section>
         
-        <section id="mission" className="w-full py-12 md:py-24">
+        <section id="mission" className="w-full py-12 md:py-24 bg-muted/20">
           <div className="container mx-auto px-4 md:px-6">
             <div className="grid gap-10 lg:grid-cols-2 lg:gap-16">
                <div className="space-y-4">
@@ -228,7 +259,7 @@ function LandingPageContent() {
           </div>
         </section>
         
-         <section id="why-us" className="w-full py-12 md:py-24 lg:py-32 bg-muted/20">
+         <section id="why-us" className="w-full py-12 md:py-24 lg:py-32">
           <div className="container mx-auto px-4 md:px-6">
              <div className="flex flex-col items-center justify-center space-y-4 text-center">
               <div className="space-y-2">
@@ -276,7 +307,7 @@ function LandingPageContent() {
           </div>
         </section>
 
-        <section id="tutorial" className="w-full py-12 md:py-24">
+        <section id="tutorial" className="w-full py-12 md:py-24 bg-muted/20">
           <div className="container mx-auto px-4 md:px-6">
             <div className="flex flex-col items-center justify-center space-y-4 text-center">
               <div className="space-y-2">
@@ -305,7 +336,7 @@ function LandingPageContent() {
           </div>
         </section>
         
-        <section id="founder" className="w-full py-12 md:py-24 bg-muted/20">
+        <section id="founder" className="w-full py-12 md:py-24">
            <div className="container mx-auto px-4 md:px-6">
              <Card className="w-full">
                   <CardHeader>
@@ -324,7 +355,7 @@ function LandingPageContent() {
            </div>
         </section>
 
-        <section id="disclaimer" className="w-full py-12 md:py-24">
+        <section id="disclaimer" className="w-full py-12 md:py-24 bg-muted/20">
            <div className="container mx-auto px-4 md:px-6">
               <div className="mx-auto max-w-3xl text-center">
                  <div className="flex justify-center mb-4">
@@ -368,5 +399,15 @@ function LandingPageContent() {
 
 
 export default function LandingPage() {
+    const [isClient, setIsClient] = useState(false);
+
+    useEffect(() => {
+        setIsClient(true);
+    }, []);
+
+    if (!isClient) {
+        return null;
+    }
+    
     return <LandingPageContent />;
 }
