@@ -5,7 +5,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, Newspaper, Sparkles } from 'lucide-react';
+import { Loader2, Newspaper, Sparkles, RefreshCw } from 'lucide-react';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { generateAiNews, GenerateAiNewsOutput } from '@/ai/flows/generate-ai-news';
@@ -24,7 +24,6 @@ export default function NewsPage() {
     const [articles, setArticles] = useState<NewsArticle[]>([]);
     const [isGenerating, setIsGenerating] = useState(true); // Start generating on load
     const [isGeneratingMore, setIsGeneratingMore] = useState(false);
-    const mainRef = useRef<HTMLElement>(null);
     const { toast } = useToast();
 
     const generateAndAddArticles = useCallback(async (count: number) => {
@@ -64,25 +63,12 @@ export default function NewsPage() {
     
     // Initial load
     useEffect(() => {
-        generateAndAddArticles(BATCH_SIZE);
+        // Only run on initial mount if articles are empty
+        if (articles.length === 0) {
+           generateAndAddArticles(BATCH_SIZE);
+        }
     }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-    // Infinite scroll handler
-    useEffect(() => {
-        const mainEl = mainRef.current;
-        if (!mainEl) return;
-
-        const handleScroll = () => {
-            const { scrollTop, scrollHeight, clientHeight } = mainEl;
-            // Load more when user is 150px from the bottom
-            if (scrollTop + clientHeight >= scrollHeight - 150 && !isGenerating && !isGeneratingMore) {
-                generateAndAddArticles(BATCH_SIZE);
-            }
-        };
-
-        mainEl.addEventListener('scroll', handleScroll);
-        return () => mainEl.removeEventListener('scroll', handleScroll);
-    }, [isGenerating, isGeneratingMore, generateAndAddArticles]);
 
     return (
         <div className="h-full flex flex-col">
@@ -92,13 +78,13 @@ export default function NewsPage() {
                     <div>
                       <h1 className="text-lg md:text-xl font-bold">AI News Feed</h1>
                       <p className="text-sm text-muted-foreground">
-                          Fresh AI news, generated on demand. Scroll for more.
+                          Fresh AI news, generated on demand.
                       </p>
                     </div>
                 </div>
                 <ThemeToggle />
             </header>
-            <main ref={mainRef} className="flex-1 overflow-auto p-2 sm:p-4 md:p-6">
+            <main className="flex-1 overflow-auto p-2 sm:p-4 md:p-6">
                 <div className="max-w-4xl mx-auto space-y-6">
                     {isGenerating && articles.length === 0 && (
                         <div className="flex flex-col items-center justify-center py-20 text-center">
@@ -131,15 +117,19 @@ export default function NewsPage() {
                         ))}
                     </div>
 
-                    {isGeneratingMore && (
-                        <div className="flex justify-center items-center py-10">
-                            <Loader2 className="w-10 h-10 animate-spin text-primary" />
-                        </div>
-                    )}
-
                     {!isGenerating && articles.length > 0 && (
-                         <div className="text-center text-muted-foreground py-4">
-                            <p>You've reached the end for now. Scroll up to load more.</p>
+                         <div className="text-center py-4">
+                            <Button 
+                                onClick={() => generateAndAddArticles(BATCH_SIZE)}
+                                disabled={isGeneratingMore}
+                            >
+                                {isGeneratingMore ? (
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin"/>
+                                ) : (
+                                    <RefreshCw className="mr-2 h-4 w-4"/>
+                                )}
+                                {isGeneratingMore ? 'Loading...' : 'Load More News'}
+                            </Button>
                         </div>
                     )}
                 </div>
