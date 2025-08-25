@@ -48,7 +48,7 @@ interface Comment {
 
 
 function PostCard({ post }: { post: Post }) {
-  const { user } = useAuth();
+  const { user } from 'use-auth';
   const { toast } = useToast();
   const [isLiking, setIsLiking] = useState(false);
   const [showComments, setShowComments] = useState(false);
@@ -156,7 +156,6 @@ function CommentSection({ postId }: { postId: string }) {
                     authorName: user.displayName || user.email,
                     content: newComment,
                     createdAt: serverTimestamp(),
-                    likeCount: 0,
                 });
             });
 
@@ -168,34 +167,6 @@ function CommentSection({ postId }: { postId: string }) {
             setIsSubmitting(false);
         }
     };
-    
-    const handleLikeComment = async (commentId: string) => {
-        if (!user) return;
-        
-        const commentRef = doc(db, `posts/${postId}/comments`, commentId);
-        const likeRef = doc(db, `posts/${postId}/comments/${commentId}/likes`, user.uid);
-
-        try {
-            await runTransaction(db, async (transaction) => {
-                const commentDoc = await transaction.get(commentRef);
-                const likeDoc = await transaction.get(likeRef);
-                
-                if (!commentDoc.exists()) throw "Comment does not exist!";
-                const currentLikeCount = commentDoc.data().likeCount || 0;
-
-                if (likeDoc.exists()) {
-                    transaction.update(commentRef, { likeCount: currentLikeCount - 1 });
-                    transaction.delete(likeRef);
-                } else {
-                    transaction.update(commentRef, { likeCount: currentLikeCount + 1 });
-                    transaction.set(likeRef, { userId: user.uid });
-                }
-            });
-        } catch (error) {
-            console.error("Error liking comment:", error);
-            toast({ title: "Error", description: "Could not update like.", variant: "destructive" });
-        }
-    }
 
     return (
         <div className="px-6 pb-6 pt-2">
@@ -216,11 +187,6 @@ function CommentSection({ postId }: { postId: string }) {
                                 </p>
                            </div>
                             <p className="text-sm mt-1">{comment.content}</p>
-                            <div className="mt-2">
-                                <Button variant="ghost" size="sm" className="h-auto px-2 py-1 text-xs" onClick={() => handleLikeComment(comment.id)}>
-                                    <ThumbsUp className="w-3 h-3 mr-1"/> {comment.likeCount || 0}
-                                </Button>
-                            </div>
                         </div>
                     </div>
                 ))}
