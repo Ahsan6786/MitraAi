@@ -45,27 +45,22 @@ export default function VoiceJournalPage() {
   const [language, setLanguage] = useState('English');
 
   const recognitionRef = useRef<any | null>(null);
-  const silenceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const { toast } = useToast();
   const { user } = useAuth();
   const { pauseMusic, resumeMusic } = useMusic();
 
-  const handleStopRecording = useCallback(() => {
-    if (silenceTimeoutRef.current) {
-        clearTimeout(silenceTimeoutRef.current);
-    }
+  const stopRecording = useCallback(() => {
     if (recognitionRef.current) {
-        recognitionRef.current.stop();
-        recognitionRef.current = null;
+      recognitionRef.current.stop();
+      recognitionRef.current = null; // Important to nullify to prevent re-entry
+      setPageState(transcript ? 'transcribed' : 'idle');
+      resumeMusic();
     }
-    if (pageState === 'recording') {
-        setPageState('transcribed');
-        resumeMusic();
-    }
-  }, [pageState, resumeMusic]);
+  }, [resumeMusic, transcript]);
 
-  const handleStartRecording = () => {
+
+  const startRecording = () => {
      if (!SpeechRecognition) {
       toast({
         title: "Browser Not Supported",
@@ -74,8 +69,7 @@ export default function VoiceJournalPage() {
       });
       return;
     }
-    if (pageState === 'recording' || pageState === 'analyzing') return;
-
+    
     pauseMusic();
     setTranscript('');
     setAnalysisResult(null);
@@ -88,10 +82,6 @@ export default function VoiceJournalPage() {
     recognition.lang = languageToSpeechCode[language] || 'en-US';
 
     recognition.onresult = (event: any) => {
-        if (silenceTimeoutRef.current) {
-            clearTimeout(silenceTimeoutRef.current);
-        }
-
         let finalTranscript = '';
         let interimTranscript = '';
         for (let i = 0; i < event.results.length; ++i) {
@@ -102,14 +92,12 @@ export default function VoiceJournalPage() {
             }
         }
         setTranscript(finalTranscript + interimTranscript);
-        
-        silenceTimeoutRef.current = setTimeout(() => {
-            handleStopRecording();
-        }, 1500); // Stop after 1.5 seconds of silence
     };
     
     recognition.onend = () => {
-       handleStopRecording();
+        if (pageState === 'recording') {
+            stopRecording();
+        }
     }
 
     recognition.onerror = (event: any) => {
@@ -121,6 +109,14 @@ export default function VoiceJournalPage() {
     };
     
     recognition.start();
+  };
+
+  const handleMicClick = () => {
+    if (pageState === 'recording') {
+      stopRecording();
+    } else {
+      startRecording();
+    }
   };
 
   const handleAnalyzeAndSave = async () => {
@@ -137,12 +133,15 @@ export default function VoiceJournalPage() {
     setAnalysisResult(null);
 
     try {
+      // 1. Predict Mood
       const moodResult = await predictUserMood({ journalEntry: transcript });
       const detectedMood = moodResult.mood || 'neutral';
 
+      // 2. Generate Suggestions
       const suggestionsResult = await generateSuggestions({ mood: detectedMood });
       const solutions = suggestionsResult.suggestions;
       
+      // 3. Save to Firestore
       await addDoc(collection(db, 'journalEntries'), {
         userId: user.uid,
         userEmail: user.email,
@@ -151,10 +150,11 @@ export default function VoiceJournalPage() {
         transcription: transcript,
         solutions: solutions,
         createdAt: serverTimestamp(),
-        reviewed: false,
+        reviewed: false, // Default values for admin review
         doctorReport: null,
       });
       
+      // 4. Update UI
       setAnalysisResult({ mood: detectedMood, solutions: solutions });
       setPageState('analyzed');
       toast({
@@ -175,12 +175,15 @@ export default function VoiceJournalPage() {
 
 
   useEffect(() => {
+    // Cleanup function to stop recording if component unmounts
     return () => {
-      handleStopRecording();
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
+      }
     };
-  }, [handleStopRecording]);
+  }, []);
 
-  const isMicDisabled = pageState === 'recording' || pageState === 'analyzing';
+  const isMicDisabled = pageState === 'analyzing';
 
   return (
     <div className="h-full flex flex-col bg-muted/20">
@@ -217,8 +220,8 @@ export default function VoiceJournalPage() {
             <CardTitle>Speak Your Mind</CardTitle>
             <CardDescription>
                 {pageState === 'recording' 
-                    ? "I'm listening... Speak freely. I'll stop automatically when you pause."
-                    : "Press the mic to start. Your words will appear here as you talk."
+                    ? "I'm listening... Press the button again to stop."
+                    : "Press the mic to start recording. Your words will appear here."
                 }
             </CardDescription>
           </CardHeader>
@@ -235,11 +238,11 @@ export default function VoiceJournalPage() {
            <CardFooter className="flex-col gap-4">
              <div className="flex items-center gap-4">
                 <Button 
-                    onClick={pageState === 'recording' ? handleStopRecording : handleStartRecording} 
+                    onClick={handleMicClick}
                     size="lg" 
                     variant={pageState === 'recording' ? 'destructive' : 'default'}
                     className="rounded-full w-20 h-20 shadow-lg"
-                    disabled={isMicDisabled && pageState !== 'recording'}
+                    disabled={isMicDisabled}
                 >
                     {pageState === 'recording' ? <Square className="w-8 h-8" /> : <Mic className="w-8 h-8" />}
                 </Button>
@@ -248,7 +251,7 @@ export default function VoiceJournalPage() {
                     <Button
                         onClick={handleAnalyzeAndSave}
                         size="lg"
-                        disabled={pageState === 'analyzing'}
+                        disabled={pageState === 'analyzing' || !transcript.trim()}
                     >
                         <Sparkles className="mr-2 h-5 w-5"/>
                         Analyze & Save
