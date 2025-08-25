@@ -3,32 +3,42 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Helper function to check if the user is the owner of a document
-    function isOwner(userId) {
-      return request.auth.uid == userId;
-    }
-
-    // Helper function to check if the user is the admin
+    
+    // Helper function for admin check
     function isAdmin() {
       return request.auth.token.email == 'ahsan.khan@mitwpu.edu.in';
     }
 
-    // Rules for posts collection and their comments subcollection
-    match /posts/{postId}/{documents=**} {
-      // Allow any authenticated user to read or create posts and comments
-      allow read, create: if request.auth != null;
-      
-      // Allow a user to update or delete a post/comment if they are the owner
-      allow update, delete: if request.auth != null && isOwner(resource.data.authorId);
-    }
-
     // Rules for journalEntries collection
     match /journalEntries/{entryId} {
-      // Admins can read and write any journal entry
+      // Admin can read/write everything
       allow read, write: if isAdmin();
       
-      // Regular users can read, create, and update their own journal entries
-      allow read, create, update: if request.auth != null && isOwner(resource.data.userId);
+      // Users can create, read, update, and delete their own entries
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+      allow read, update, delete: if request.auth != null && request.auth.uid == resource.data.userId;
+    }
+    
+    // Rules for posts collection
+    match /posts/{postId} {
+      allow read, create: if request.auth != null;
+      allow update, delete: if request.auth != null && resource.data.authorId == request.auth.uid;
+
+      // Rules for comments subcollection
+      match /comments/{commentId} {
+        allow read, create: if request.auth != null;
+        allow update, delete: if request.auth != null && resource.data.authorId == request.auth.uid;
+      }
+    }
+
+    // Recursive delete function for posts and their comments
+    function recursiveDelete(path) {
+      return {
+        "allow delete": if get(path).data.authorId == request.auth.uid,
+        "match /comments/{commentId}": {
+          "allow delete": if true
+        }
+      };
     }
   }
 }
