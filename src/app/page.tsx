@@ -136,7 +136,7 @@ export default function LandingPage() {
         {/* Interactive Hero Section */}
         <section className="w-full">
             <InteractiveHero />
-            <div className="container px-4 md:px-6 text-center -mt-20 relative z-10">
+            <div className="container mx-auto px-4 md:px-6 text-center -mt-20 relative z-10">
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                     <Button size="lg" asChild>
                       <Link href="/signup" prefetch={false}>
@@ -165,7 +165,7 @@ export default function LandingPage() {
         </section>
 
         <section id="features" className="w-full py-12 md:py-24 lg:py-32 bg-muted/20 mt-20">
-          <div className="container px-4 md:px-6">
+          <div className="container mx-auto px-4 md:px-6">
             <div className="flex flex-col items-center justify-center space-y-4 text-center">
               <div className="space-y-2">
                 <div className="inline-block rounded-lg bg-muted px-3 py-1 text-sm">Key Features</div>
@@ -194,7 +194,7 @@ export default function LandingPage() {
         </section>
         
         <section id="mission" className="w-full py-12 md:py-24">
-          <div className="container px-4 md:px-6">
+          <div className="container mx-auto px-4 md:px-6">
             <div className="grid gap-10 lg:grid-cols-2 lg:gap-16">
                <div className="space-y-4">
                   <div className="inline-block rounded-lg bg-muted px-3 py-1 text-sm">Our Mission</div>
@@ -227,7 +227,7 @@ export default function LandingPage() {
         </section>
         
          <section id="why-us" className="w-full py-12 md:py-24 lg:py-32 bg-muted/20">
-          <div className="container px-4 md:px-6">
+          <div className="container mx-auto px-4 md:px-6">
              <div className="flex flex-col items-center justify-center space-y-4 text-center">
               <div className="space-y-2">
                 <div className="inline-block rounded-lg bg-muted px-3 py-1 text-sm">Why MitraAI?</div>
@@ -275,11 +275,11 @@ export default function LandingPage() {
         </section>
 
         <section id="tutorial" className="w-full py-12 md:py-24">
-          <div className="container px-4 md:px-6">
+          <div className="container mx-auto px-4 md:px-6">
             <div className="flex flex-col items-center justify-center space-y-4 text-center">
               <div className="space-y-2">
                  <div className="inline-block rounded-lg bg-muted px-3 py-1 text-sm">How It Works</div>
-                 <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl flex items-center gap-3">
+                 <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl flex items-center justify-center gap-3">
                     <PlayCircle className="w-8 h-8 md:w-10 md:h-10 text-primary"/>
                     See MitraAI in Action
                  </h2>
@@ -304,7 +304,7 @@ export default function LandingPage() {
         </section>
         
         <section id="founder" className="w-full py-12 md:py-24 bg-muted/20">
-           <div className="container px-4 md:px-6">
+           <div className="container mx-auto px-4 md:px-6">
              <Card className="w-full">
                   <CardHeader>
                       <CardTitle className="flex items-center gap-2 text-2xl md:text-3xl">
@@ -323,7 +323,7 @@ export default function LandingPage() {
         </section>
 
         <section id="disclaimer" className="w-full py-12 md:py-24">
-           <div className="container px-4 md:px-6">
+           <div className="container mx-auto px-4 md:px-6">
               <div className="mx-auto max-w-3xl text-center">
                  <div className="flex justify-center mb-4">
                     <AlertTriangle className="w-10 h-10 text-amber-500" />
