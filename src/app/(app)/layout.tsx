@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { BookHeart, MessageSquare, MicVocal, ShieldCheck, LogOut, FileText, Puzzle, Phone, LayoutDashboard, Info, HeartPulse, Sparkles, Trophy, Newspaper, User } from 'lucide-react';
+import { BookHeart, MessageSquare, MicVocal, ShieldCheck, LogOut, FileText, Puzzle, Phone, LayoutDashboard, Info, HeartPulse, Sparkles, Trophy, Newspaper, User, Users } from 'lucide-react';
 import {
   SidebarProvider,
   Sidebar,
@@ -141,6 +141,14 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
                         <span>Voice Journal</span>
                       </div>
                       <Trophy className="w-4 h-4 text-amber-500" />
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                 <SidebarMenuItem>
+                  <SidebarMenuButton asChild isActive={pathname === '/community'}>
+                    <Link href="/community" onClick={handleLinkClick}>
+                      <Users />
+                      <span>Community</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
