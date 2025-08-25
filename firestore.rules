@@ -1,47 +1,42 @@
 
 rules_version = '2';
-
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Journal Entries: Users can only read/write their own entries.
+    // Journal entries can only be accessed by their owner
     match /journalEntries/{entryId} {
-      allow read, write: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow read, write: if request.auth.uid == resource.data.userId;
     }
 
-    // Posts: Any authenticated user can read/create/update posts.
+    // Community posts can be read by anyone, but only created/updated/deleted by the author
     match /posts/{postId} {
-      allow read, create: if request.auth != null;
-      allow update: if request.auth != null; // Allows liking and comment count updates
+      allow read: if request.auth != null;
+      allow create, update, delete: if request.auth.uid == request.resource.data.authorId;
 
-      // Comments: Authenticated users can read/write comments on any post.
+      // Likes and comments can be managed by any authenticated user
+      match /likes/{userId} {
+        allow read, create, delete: if request.auth.uid == userId;
+      }
       match /comments/{commentId} {
         allow read, create: if request.auth != null;
-        allow update: if request.auth != null; // For liking comments
-      }
-
-      // Likes on Posts
-      match /likes/{userId} {
-        allow read, create, delete: if request.auth != null && request.auth.uid == userId;
+        allow update, delete: if request.auth.uid == resource.data.authorId;
       }
     }
     
-    // Friend Requests:
+    // Friend requests can be created by anyone, but only managed by the recipient.
     match /friendRequests/{requestId} {
-      // Allow read/create if logged in.
-      allow read, create: if request.auth != null;
-      // Allow update/delete only by the sender or receiver.
-      allow update, delete: if request.auth != null && (resource.data.fromUserId == request.auth.uid || resource.data.toUserId == request.auth.uid);
+      allow read: if request.auth.uid == resource.data.toUserId || request.auth.uid == resource.data.fromUserId;
+      allow create: if request.auth.uid == request.resource.data.fromUserId;
+      allow update: if request.auth.uid == resource.data.toUserId;
     }
-
-    // Friends lists:
-    match /users/{userId}/friends/{friendId} {
-        // Users can only manage their own friends list.
-        allow read, write, delete: if request.auth != null && request.auth.uid == userId;
-        // A user can also add a friend to another user's list, but ONLY if they are accepting a request.
-        // This is a more advanced rule to secure the transaction.
-        // For simplicity, we'll keep the current rule which works but is slightly less secure.
-        // A better approach would be to handle this logic in a Cloud Function.
+    
+    // User data, specifically for the friends list
+    match /users/{userId} {
+      // Allow a user to read their own friends list.
+      match /friends/{friendId} {
+        allow read: if request.auth.uid == userId;
+        allow write: if request.auth.uid == userId; // Allow users to manage their own friends list
+      }
     }
   }
 }
