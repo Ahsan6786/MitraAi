@@ -253,6 +253,37 @@ function CommentSection({ postId }: { postId: string }) {
         }
     }
 
+    const handleAddFriend = async (commenter: Comment) => {
+        if (!user || user.uid === commenter.authorId) return;
+
+        try {
+            const q = query(collection(db, 'friendRequests'), 
+                where('fromUserId', '==', user.uid),
+                where('toUserId', '==', commenter.authorId)
+            );
+            const querySnapshot = await getDocs(q);
+
+            if (!querySnapshot.empty) {
+                toast({ title: "Request already sent", description: "You have already sent a friend request to this user." });
+                return;
+            }
+
+            await addDoc(collection(db, 'friendRequests'), {
+                fromUserId: user.uid,
+                fromUserName: user.displayName || user.email,
+                toUserId: commenter.authorId,
+                toUserName: commenter.authorName,
+                status: 'pending',
+                createdAt: serverTimestamp(),
+            });
+            toast({ title: "Friend Request Sent", description: `Your request to ${commenter.authorName} has been sent.` });
+        } catch (error) {
+            console.error("Error sending friend request:", error);
+            toast({ title: "Error", description: "Could not send friend request.", variant: "destructive" });
+        }
+    };
+
+
     return (
         <div className="px-6 pb-6 pt-2">
             <Separator className="mb-4" />
@@ -267,9 +298,16 @@ function CommentSection({ postId }: { postId: string }) {
                         <div className="flex-1 bg-muted p-3 rounded-lg">
                            <div className="flex justify-between items-center">
                                 <p className="text-sm font-semibold">{comment.authorName}</p>
-                                <p className="text-xs text-muted-foreground">
-                                    {comment.createdAt ? formatDistanceToNow(comment.createdAt.toDate(), { addSuffix: true }) : ''}
-                                </p>
+                                <div className="flex items-center">
+                                    <p className="text-xs text-muted-foreground mr-2">
+                                        {comment.createdAt ? formatDistanceToNow(comment.createdAt.toDate(), { addSuffix: true }) : ''}
+                                    </p>
+                                    {user && user.uid !== comment.authorId && (
+                                        <Button variant="ghost" size="icon" onClick={() => handleAddFriend(comment)} title="Add Friend" className="h-6 w-6">
+                                            <UserPlus className="w-4 h-4"/>
+                                        </Button>
+                                    )}
+                                </div>
                            </div>
                             <p className="text-sm mt-1">{comment.content}</p>
                             <div className="mt-2">
@@ -327,7 +365,7 @@ function FriendRequestNotifications() {
                 batch.update(reqRef, { status: 'accepted' });
                 
                 // Add friend to current user's friend list
-                const currentUserFriendRef = doc(collection(db, 'users', user.uid, 'friends'));
+                const currentUserFriendRef = doc(collection(db, `users/${user.uid}/friends`));
                 batch.set(currentUserFriendRef, { 
                     friendId: request.fromUserId, 
                     friendName: request.fromUserName, 
@@ -335,7 +373,7 @@ function FriendRequestNotifications() {
                 });
 
                 // Add current user to the other user's friend list
-                const otherUserFriendRef = doc(collection(db, 'users', request.fromUserId, 'friends'));
+                const otherUserFriendRef = doc(collection(db, `users/${request.fromUserId}/friends`));
                 batch.set(otherUserFriendRef, { 
                     friendId: user.uid, 
                     friendName: user.displayName || user.email, 
@@ -404,7 +442,7 @@ function FriendsList() {
 
     useEffect(() => {
         if (!user) return;
-        const q = query(collection(db, 'users', user.uid, 'friends'), orderBy('since', 'desc'));
+        const q = query(collection(db, `users/${user.uid}/friends`), orderBy('since', 'desc'));
         const unsubscribe = onSnapshot(q, (snapshot) => {
             const friendsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Friend));
             setFriends(friendsData);
