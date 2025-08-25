@@ -14,8 +14,12 @@ import {
   doc,
   runTransaction,
   Timestamp,
-  collectionGroup,
   where,
+  getDocs,
+  writeBatch,
+  updateDoc,
+  getDoc,
+  deleteDoc,
 } from 'firebase/firestore';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { ThemeToggle } from '@/components/theme-toggle';
@@ -23,11 +27,13 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Loader2, MessageSquare, ThumbsUp, Send } from 'lucide-react';
+import { Loader2, MessageSquare, ThumbsUp, Send, UserPlus, Bell, Check, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { formatDistanceToNow } from 'date-fns';
 import { Separator } from '@/components/ui/separator';
 import { Input } from '@/components/ui/input';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Badge } from '@/components/ui/badge';
 
 interface Post {
   id: string;
@@ -48,6 +54,14 @@ interface Comment {
   likeCount: number;
 }
 
+interface FriendRequest {
+    id: string;
+    fromUserId: string;
+    fromUserName: string;
+    toUserId: string;
+    status: 'pending' | 'accepted' | 'declined';
+}
+
 function PostCard({ post }: { post: Post }) {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -65,11 +79,9 @@ function PostCard({ post }: { post: Post }) {
       await runTransaction(db, async (transaction) => {
         const likeDoc = await transaction.get(likeRef);
         if (likeDoc.exists()) {
-          // Unlike
           transaction.update(postRef, { likeCount: post.likeCount - 1 });
           transaction.delete(likeRef);
         } else {
-          // Like
           transaction.update(postRef, { likeCount: post.likeCount + 1 });
           transaction.set(likeRef, { userId: user.uid });
         }
@@ -81,6 +93,36 @@ function PostCard({ post }: { post: Post }) {
       setIsLiking(false);
     }
   };
+
+  const handleAddFriend = async () => {
+      if (!user || user.uid === post.authorId) return;
+
+      try {
+          // Check if a request already exists
+          const q = query(collection(db, 'friendRequests'), 
+              where('fromUserId', '==', user.uid),
+              where('toUserId', '==', post.authorId)
+          );
+          const querySnapshot = await getDocs(q);
+
+          if (!querySnapshot.empty) {
+              toast({ title: "Request already sent", description: "You have already sent a friend request to this user." });
+              return;
+          }
+
+          await addDoc(collection(db, 'friendRequests'), {
+              fromUserId: user.uid,
+              fromUserName: user.displayName || user.email,
+              toUserId: post.authorId,
+              status: 'pending',
+              createdAt: serverTimestamp(),
+          });
+          toast({ title: "Friend Request Sent", description: `Your request to ${post.authorName} has been sent.` });
+      } catch (error) {
+          console.error("Error sending friend request:", error);
+          toast({ title: "Error", description: "Could not send friend request.", variant: "destructive" });
+      }
+  };
   
   const authorInitial = post.authorName ? post.authorName[0].toUpperCase() : 'A';
 
@@ -91,12 +133,17 @@ function PostCard({ post }: { post: Post }) {
           <Avatar>
             <AvatarFallback>{authorInitial}</AvatarFallback>
           </Avatar>
-          <div>
+          <div className="flex-1">
             <CardTitle className="text-base font-semibold">{post.authorName}</CardTitle>
             <CardDescription className="text-xs">
               {post.createdAt ? formatDistanceToNow(post.createdAt.toDate(), { addSuffix: true }) : 'Just now'}
             </CardDescription>
           </div>
+          {user && user.uid !== post.authorId && (
+              <Button variant="ghost" size="icon" onClick={handleAddFriend} title="Add Friend">
+                  <UserPlus className="w-5 h-5"/>
+              </Button>
+          )}
         </div>
       </CardHeader>
       <CardContent>
@@ -187,11 +234,9 @@ function CommentSection({ postId }: { postId: string }) {
                 const currentLikeCount = commentDoc.data().likeCount || 0;
 
                 if (likeDoc.exists()) {
-                    // Unlike
                     transaction.update(commentRef, { likeCount: currentLikeCount - 1 });
                     transaction.delete(likeRef);
                 } else {
-                    // Like
                     transaction.update(commentRef, { likeCount: currentLikeCount + 1 });
                     transaction.set(likeRef, { userId: user.uid });
                 }
@@ -243,6 +288,96 @@ function CommentSection({ postId }: { postId: string }) {
             </form>
         </div>
     );
+}
+
+function FriendRequestNotifications() {
+    const { user } = useAuth();
+    const { toast } = useToast();
+    const [requests, setRequests] = useState<FriendRequest[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        if (!user) return;
+        const q = query(
+            collection(db, 'friendRequests'),
+            where('toUserId', '==', user.uid),
+            where('status', '==', 'pending')
+        );
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const reqs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as FriendRequest));
+            setRequests(reqs);
+            setIsLoading(false);
+        });
+        return () => unsubscribe();
+    }, [user]);
+
+    const handleRequest = async (request: FriendRequest, newStatus: 'accepted' | 'declined') => {
+        if (!user) return;
+        try {
+            const batch = writeBatch(db);
+            const reqRef = doc(db, 'friendRequests', request.id);
+
+            if (newStatus === 'accepted') {
+                batch.update(reqRef, { status: 'accepted' });
+                // Add to friends subcollection for both users
+                const user1FriendRef = doc(db, `friends/${user.uid}/userFriends`, request.fromUserId);
+                batch.set(user1FriendRef, { friendId: request.fromUserId, since: serverTimestamp() });
+
+                const user2FriendRef = doc(db, `friends/${request.fromUserId}/userFriends`, user.uid);
+                batch.set(user2FriendRef, { friendId: user.uid, since: serverTimestamp() });
+            } else {
+                 batch.update(reqRef, { status: 'declined' });
+            }
+            await batch.commit();
+            toast({ title: `Request ${newStatus}` });
+        } catch (error) {
+            console.error(`Error handling request:`, error);
+            toast({ title: "Error", description: "Could not process the request.", variant: "destructive" });
+        }
+    };
+    
+    return (
+         <Popover>
+            <PopoverTrigger asChild>
+                <Button variant="ghost" size="icon" className="relative">
+                    <Bell className="w-5 h-5" />
+                    {requests.length > 0 && (
+                        <Badge variant="destructive" className="absolute -top-1 -right-1 h-4 w-4 justify-center rounded-full p-0 text-xs">
+                            {requests.length}
+                        </Badge>
+                    )}
+                </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-80">
+                <div className="grid gap-4">
+                    <div className="space-y-2">
+                        <h4 className="font-medium leading-none">Friend Requests</h4>
+                        <p className="text-sm text-muted-foreground">
+                            Accept or decline requests.
+                        </p>
+                    </div>
+                    {isLoading ? <Loader2 className="mx-auto w-5 h-5 animate-spin"/> :
+                     requests.length === 0 ? <p className="text-sm text-muted-foreground">No new requests.</p> :
+                     <div className="grid gap-2">
+                        {requests.map(req => (
+                            <div key={req.id} className="flex items-center justify-between">
+                                <span className="text-sm">{req.fromUserName}</span>
+                                <div className="flex gap-1">
+                                    <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => handleRequest(req, 'accepted')}>
+                                        <Check className="h-4 w-4" />
+                                    </Button>
+                                    <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => handleRequest(req, 'declined')}>
+                                        <X className="h-4 w-4" />
+                                    </Button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                    }
+                </div>
+            </PopoverContent>
+        </Popover>
+    )
 }
 
 
@@ -302,7 +437,10 @@ export default function CommunityPage() {
             <p className="text-sm text-muted-foreground">Share your thoughts with the community.</p>
           </div>
         </div>
-        <ThemeToggle />
+        <div className="flex items-center gap-2">
+            <FriendRequestNotifications />
+            <ThemeToggle />
+        </div>
       </header>
       <main className="flex-1 overflow-auto p-2 sm:p-4 md:p-6">
         <div className="max-w-2xl mx-auto space-y-6">

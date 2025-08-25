@@ -1,31 +1,42 @@
+
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-  
-    // Journal Entries: Users can only read and write their own entries.
+    
+    // Journal Entries: Users can only read/write their own entries.
     match /journalEntries/{entryId} {
       allow read, write: if request.auth != null && request.auth.uid == resource.data.userId;
     }
-    
-    // Posts: Any authenticated user can read, create, and update (for likes/comments) posts.
+
+    // Posts: Any authenticated user can read/create posts.
+    // Users can only update/delete their own posts.
     match /posts/{postId} {
-      allow read, create, update: if request.auth != null;
-
-      // Comments: Any authenticated user can read and create comments.
-      match /comments/{commentId} {
-        allow read, create, update: if request.auth != null;
-
-        // Likes on Comments: Authenticated users can like/unlike comments.
-        match /likes/{userId} {
-          allow read, write: if request.auth != null && request.auth.uid == userId;
-        }
-      }
-
-      // Likes on Posts: Authenticated users can like/unlike posts.
-      match /likes/{userId} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
-      }
+      allow read, create: if request.auth != null;
+      allow update, delete: if request.auth != null && request.auth.uid == resource.data.authorId;
     }
+
+    // Comments & Likes on Posts: Any authenticated user can create.
+    // Users can only update/delete their own comments/likes.
+    match /posts/{postId}/{subcollection}/{docId} {
+        allow read, create: if request.auth != null;
+        allow update, delete: if request.auth != null && request.auth.uid == resource.data.authorId || request.auth.uid == resource.data.userId;
+    }
+
+    // Friend Requests:
+    // Create: Any authenticated user can create a request.
+    // Read: Only the sender or receiver can read the request.
+    // Update (accept/decline): Only the receiver can update the status.
+    match /friendRequests/{requestId} {
+      allow create: if request.auth != null;
+      allow read: if request.auth != null && (request.auth.uid == resource.data.fromUserId || request.auth.uid == resource.data.toUserId);
+      allow update: if request.auth != null && request.auth.uid == resource.data.toUserId;
+    }
+
+    // Friends: Users can only read/write their own friends list.
+    match /friends/{userId}/userFriends/{friendId} {
+        allow read, write, delete: if request.auth != null && request.auth.uid == userId;
+    }
+
   }
 }
