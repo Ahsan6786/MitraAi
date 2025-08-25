@@ -166,8 +166,6 @@ function CommentSection({ postId }: { postId: string }) {
         setIsSubmitting(true);
 
         try {
-            const postRef = doc(db, 'posts', postId);
-            
             // This is a simplified transaction. For high-traffic apps, you might use a Cloud Function.
             const commentCollectionRef = collection(db, `posts/${postId}/comments`);
             await addDoc(commentCollectionRef, {
@@ -332,3 +330,5 @@ export default function CommunityPage() {
     </div>
   );
 }
+
+    
