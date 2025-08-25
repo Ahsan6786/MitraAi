@@ -11,40 +11,33 @@ import { ThemeToggle } from '@/components/theme-toggle';
 import { generateAiNews, GenerateAiNewsOutput } from '@/ai/flows/generate-ai-news';
 import { generateImage } from '@/ai/flows/generate-image';
 import { useToast } from '@/hooks/use-toast';
-import { cn } from '@/lib/utils';
 
 interface NewsArticle {
     text: GenerateAiNewsOutput;
-    imageUrl: string | null;
+    imageUrl: string;
 }
 
 export default function NewsPage() {
     const [article, setArticle] = useState<NewsArticle | null>(null);
-    const [isLoadingText, setIsLoadingText] = useState(false);
-    const [isLoadingImage, setIsLoadingImage] = useState(false);
+    const [isGenerating, setIsGenerating] = useState(false);
     const { toast } = useToast();
 
     const handleGenerateNews = async () => {
-        setIsLoadingText(true);
-        setIsLoadingImage(true);
+        setIsGenerating(true);
         setArticle(null);
 
         try {
-            // 1. Generate the text and image prompt first. This is fast.
+            // Generate the text content first to get the image prompt
             const newsText = await generateAiNews();
             
-            // 2. Display the text immediately.
+            // Generate the image using the prompt from the text content
+            const imageResult = await generateImage({ prompt: newsText.imagePrompt });
+
+            // Once both are complete, set the article state to display everything at once
             setArticle({
                 text: newsText,
-                imageUrl: null, // Image is not ready yet
+                imageUrl: imageResult.imageUrl,
             });
-            setIsLoadingText(false);
-
-            // 3. Generate the image in the background using the prompt.
-            const imageResult = await generateImage({ prompt: newsText.imagePrompt });
-            
-            // 4. Update the state with the image URL once it's ready.
-            setArticle(prev => prev ? { ...prev, imageUrl: imageResult.imageUrl } : null);
 
         } catch (error) {
             console.error("Failed to generate AI news:", error);
@@ -53,15 +46,10 @@ export default function NewsPage() {
                 description: "Could not generate the news article. Please try again.",
                 variant: "destructive",
             });
-            // Reset loading states on error
-            setIsLoadingText(false);
         } finally {
-            // Image loading is finished (either success or failure handled in catch)
-            setIsLoadingImage(false);
+            setIsGenerating(false);
         }
     };
-    
-    const isGenerating = isLoadingText || isLoadingImage;
 
     return (
         <div className="h-full flex flex-col">
@@ -89,12 +77,12 @@ export default function NewsPage() {
                         <CardContent>
                             <Button onClick={handleGenerateNews} disabled={isGenerating}>
                                 {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
-                                {isLoadingText ? 'Writing Article...' : isLoadingImage ? 'Generating Image...' : 'Get Latest News'}
+                                {isGenerating ? 'Generating News...' : 'Get Latest News'}
                             </Button>
                         </CardContent>
                     </Card>
 
-                    {isLoadingText && (
+                    {isGenerating && (
                         <div className="flex justify-center items-center py-10">
                             <Loader2 className="w-10 h-10 animate-spin text-primary" />
                         </div>
@@ -103,18 +91,8 @@ export default function NewsPage() {
                     {article && (
                         <Card className="shadow-lg animate-in fade-in-50">
                             <CardHeader>
-                                <div className={cn(
-                                    "relative w-full aspect-video rounded-t-lg overflow-hidden bg-muted transition-all duration-300",
-                                    !article.imageUrl && "h-12" // Collapse when no image
-                                )}>
-                                    {isLoadingImage && !article.imageUrl && (
-                                        <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
-                                           <Loader2 className="w-5 h-5 animate-spin mr-2"/> Generating Image...
-                                        </div>
-                                    )}
-                                    {article.imageUrl && (
-                                        <Image src={article.imageUrl} alt={article.text.headline} layout="fill" objectFit="cover" className="animate-in fade-in-50" />
-                                    )}
+                                <div className="relative w-full aspect-video rounded-t-lg overflow-hidden bg-muted">
+                                    <Image src={article.imageUrl} alt={article.text.headline} layout="fill" objectFit="cover" />
                                 </div>
                                 <div className="p-6">
                                     <div className="flex items-center gap-3">
