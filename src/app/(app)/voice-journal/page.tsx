@@ -51,14 +51,14 @@ export default function VoiceJournalPage() {
   const { user } = useAuth();
   const { pauseMusic, resumeMusic } = useMusic();
 
-  const handleAnalyze = useCallback(async (transcription: string) => {
-    if (!user) {
-      toast({ title: 'Not Authenticated', description: 'You must be logged in.', variant: 'destructive' });
+  const handleAnalyzeAndSave = useCallback(async (transcription: string) => {
+    if (!transcription) {
+      toast({ title: 'Empty Journal', description: 'No speech was detected to analyze.', variant: 'destructive' });
       setIsLoading(false);
       return;
     }
-    if (!transcription.trim()) {
-      toast({ title: 'Empty Journal', description: 'No speech was detected to analyze.', variant: 'destructive' });
+    if (!user) {
+      toast({ title: 'Not Authenticated', description: 'You must be logged in.', variant: 'destructive' });
       setIsLoading(false);
       return;
     }
@@ -102,6 +102,7 @@ export default function VoiceJournalPage() {
   const stopRecording = useCallback(() => {
     if (recognitionRef.current) {
         recognitionRef.current.stop();
+        // The onend event will handle the final processing
     }
   }, []);
 
@@ -129,22 +130,22 @@ export default function VoiceJournalPage() {
         if (silenceTimeoutRef.current) clearTimeout(silenceTimeoutRef.current);
         
         let interimTranscript = '';
-        let finalTranscript = '';
+        let finalTranscriptForChunk = '';
 
         for (let i = event.resultIndex; i < event.results.length; ++i) {
             if (event.results[i].isFinal) {
-                finalTranscript += event.results[i][0].transcript;
+                finalTranscriptForChunk += event.results[i][0].transcript;
             } else {
                 interimTranscript += event.results[i][0].transcript;
             }
         }
         
-        finalTranscriptRef.current += finalTranscript;
+        finalTranscriptRef.current += finalTranscriptForChunk;
         setTranscript(finalTranscriptRef.current + interimTranscript);
 
         silenceTimeoutRef.current = setTimeout(() => {
             stopRecording();
-        }, 1500);
+        }, 2000); // Stop after 2 seconds of silence
     };
     
     recognitionRef.current.onend = () => {
@@ -153,7 +154,7 @@ export default function VoiceJournalPage() {
         if (silenceTimeoutRef.current) clearTimeout(silenceTimeoutRef.current);
 
         const finalTranscription = finalTranscriptRef.current.trim();
-        handleAnalyze(finalTranscription);
+        handleAnalyzeAndSave(finalTranscription);
         recognitionRef.current = null;
     }
 
@@ -169,6 +170,7 @@ export default function VoiceJournalPage() {
   };
 
   useEffect(() => {
+    // Cleanup function to stop recording if the component unmounts
     return () => {
       if (recognitionRef.current) {
         recognitionRef.current.stop();
@@ -220,20 +222,14 @@ export default function VoiceJournalPage() {
                 }
             </CardDescription>
           </CardHeader>
-          <CardContent className="flex flex-col items-center justify-center gap-4 py-8">
+          <CardContent>
              <Textarea
               placeholder="Your live transcription will appear here..."
               value={transcript}
               readOnly
               rows={6}
-              className="resize-none text-base italic w-full max-w-lg"
+              className="resize-none text-base italic w-full max-w-lg mx-auto"
             />
-            {isRecording && (
-               <div className="text-primary flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-red-500 animate-pulse"></div>
-                  <span>Listening...</span>
-              </div>
-            )}
           </CardContent>
            <CardFooter className="flex-col gap-4">
              <Button 
@@ -247,9 +243,12 @@ export default function VoiceJournalPage() {
              </Button>
               <p className="text-sm text-muted-foreground h-5">
                 {isLoading ? (
-                    <span className="flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin"/>Analyzing...</span>
+                    <span className="flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin"/>Analyzing & Saving...</span>
                 ) : isRecording ? (
-                    'Press button to stop manually'
+                    <span className="text-primary flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div>
+                        Listening...
+                    </span>
                 ) : (
                     analysisResult ? 'Recording complete. See results below.' : 'Press the mic to start speaking'
                 )}
@@ -265,7 +264,7 @@ export default function VoiceJournalPage() {
                     <div className="flex justify-between items-start">
                         <div>
                              <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-                                <Lightbulb className="w-5 h-5 text-yellow-500"/>
+                                <Lightbulb className="w-5 h-5 text-primary"/>
                                 Your Mood
                             </CardTitle>
                             <Badge variant="outline" className="mt-2 capitalize text-base">{analysisResult.mood}</Badge>
@@ -276,28 +275,16 @@ export default function VoiceJournalPage() {
              <Card>
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-                       <ListChecks className="w-5 h-5 text-green-500"/>
-                       {analysisResult.mood.toLowerCase() === 'neutral' ? 'A Deeper Look' : 'Suggestions for you'}
+                       <ListChecks className="w-5 h-5 text-green-600"/>
+                       Suggestions For You
                     </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {analysisResult.mood.toLowerCase() === 'neutral' ? (
-                     <div className="space-y-2 text-muted-foreground">
-                        <p>It seems like your entry was a bit brief. For a more accurate mood analysis, try speaking a little more.</p>
-                        <p className="font-semibold pt-2">You could try talking about:</p>
-                        <ul className="list-disc pl-5">
-                            <li>How your day has been overall.</li>
-                            <li>Something specific that happened.</li>
-                            <li>How you are feeling physically or emotionally right now.</li>
-                        </ul>
-                     </div>
-                  ) : (
                     <ul className="list-disc pl-5 space-y-2 text-muted-foreground">
                         {analysisResult.solutions.map((solution, index) => (
                             <li key={index}>{solution}</li>
                         ))}
                     </ul>
-                  )}
                 </CardContent>
             </Card>
           </div>
