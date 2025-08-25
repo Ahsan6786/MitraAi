@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Logo } from '@/components/icons';
-import { Bot, HeartPulse, Mic, FileText, Instagram, Mail, AlertTriangle } from 'lucide-react';
+import { Bot, HeartPulse, Mic, FileText, Instagram, Mail, AlertTriangle, ShieldCheck, Handshake, Users } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { ThemeProvider } from '@/components/theme-provider';
 import { useState, useEffect } from 'react';
@@ -206,6 +206,114 @@ function LandingPageContent() {
               ))}
             </div>
           </div>
+        </section>
+        
+        <section id="mission" className="w-full py-12 md:py-24">
+          <div className="container px-4 md:px-6">
+            <div className="grid gap-10 lg:grid-cols-2 lg:gap-16">
+               <div className="space-y-4">
+                  <div className="inline-block rounded-lg bg-muted px-3 py-1 text-sm">Our Mission</div>
+                  <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">Building a Healthier Tomorrow</h2>
+                  <p className="max-w-[600px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
+                      We believe mental health is as important as physical health. MitraAI is designed to make emotional wellness accessible, private, and stigma-free for everyone.
+                  </p>
+               </div>
+               <div className="flex flex-col items-start space-y-4">
+                  <div className="inline-flex items-center rounded-lg bg-muted p-3">
+                     <Handshake className="h-6 w-6 text-primary" />
+                  </div>
+                  <ul className="grid gap-4">
+                     <li>
+                        <h3 className="text-lg font-bold">Empowerment Through Insight</h3>
+                        <p className="text-muted-foreground">Empower individuals to understand their emotions through AI-driven insights.</p>
+                     </li>
+                      <li>
+                        <h3 className="text-lg font-bold">Reduce Stigma</h3>
+                        <p className="text-muted-foreground">Encourage seeking help early and reduce the stigma around mental health.</p>
+                     </li>
+                      <li>
+                        <h3 className="text-lg font-bold">Build Connections</h3>
+                        <p className="text-muted-foreground">Help build stronger emotional connections with themselves and their loved ones.</p>
+                     </li>
+                  </ul>
+               </div>
+            </div>
+          </div>
+        </section>
+        
+         <section id="why-us" className="w-full py-12 md:py-24 lg:py-32 bg-muted/20">
+          <div className="container px-4 md:px-6">
+             <div className="flex flex-col items-center justify-center space-y-4 text-center">
+              <div className="space-y-2">
+                <div className="inline-block rounded-lg bg-muted px-3 py-1 text-sm">Why MitraAI?</div>
+                <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl">Your Personal Path to Wellness</h2>
+                <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
+                  Discover the features that make MitraAI a unique companion for your mental health journey.
+                </p>
+              </div>
+            </div>
+            <div className="mx-auto grid max-w-5xl items-center gap-6 py-12 lg:grid-cols-2 lg:gap-12">
+              <div className="flex flex-col justify-center space-y-4">
+                <ul className="grid gap-6">
+                   <li className="flex items-start gap-3">
+                      <div className="pt-1"><ShieldCheck className="w-5 h-5 text-primary"/></div>
+                      <div>
+                          <h4 className="font-semibold">A Safe Space to Talk</h4>
+                          <p className="text-sm text-muted-foreground">Share your thoughts with our AI companion without fear of judgment.</p>
+                      </div>
+                  </li>
+                   <li className="flex items-start gap-3">
+                      <div className="pt-1"><ShieldCheck className="w-5 h-5 text-primary"/></div>
+                      <div>
+                          <h4 className="font-semibold">Track Your Emotional Health</h4>
+                          <p className="text-sm text-muted-foreground">Through mood journals and voice reflections, visualize your emotional patterns.</p>
+                      </div>
+                  </li>
+                   <li className="flex items-start gap-3">
+                      <div className="pt-1"><ShieldCheck className="w-5 h-5 text-primary"/></div>
+                      <div>
+                          <h4 className="font-semibold">Early Awareness & Support</h4>
+                          <p className="text-sm text-muted-foreground">MitraAI gently helps you notice signs of stress or anxiety before they become overwhelming.</p>
+                      </div>
+                  </li>
+                   <li className="flex items-start gap-3">
+                      <div className="pt-1"><ShieldCheck className="w-5 h-5 text-primary"/></div>
+                      <div>
+                          <h4 className="font-semibold">Privacy First</h4>
+                          <p className="text-sm text-muted-foreground">Your journal is private. All data is securely stored, and you are in complete control of your information.</p>
+                      </div>
+                  </li>
+                </ul>
+              </div>
+               <img
+                    alt="Why MitraAI"
+                    className="mx-auto aspect-video overflow-hidden rounded-xl object-cover object-center sm:w-full lg:order-last"
+                    height="310"
+                    src="https://placehold.co/550x310.png"
+                    data-ai-hint="wellness relax"
+                    width="550"
+                  />
+            </div>
+          </div>
+        </section>
+        
+        <section id="founder" className="w-full py-12 md:py-24">
+           <div className="container px-4 md:px-6">
+             <Card className="w-full">
+                  <CardHeader>
+                      <CardTitle className="flex items-center gap-2 text-2xl md:text-3xl">
+                         <Users className="w-8 h-8 text-primary"/> About the Founder – Ahsan Imam Khan
+                      </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                     <p className="text-muted-foreground md:text-lg/relaxed">
+                      MitraAI was founded by Ahsan Imam Khan, a passionate tech enthusiast with a deep belief that technology should heal, not harm. Ahsan saw how people often suffer silently due to mental health stigma or lack of access to support. This inspired him to create an AI-powered platform that combines empathy with technology to help individuals track and improve their emotional well-being.
+                      <br/><br/>
+                      He envisions MitraAI as a global companion for anyone feeling lost, anxious, or alone. Ahsan’s goal is not just to build an app but to build hope — making mental wellness accessible to all, breaking the silence around mental health, and showing that nobody has to fight their battles alone.
+                     </p>
+                  </CardContent>
+              </Card>
+           </div>
         </section>
 
         <section id="disclaimer" className="w-full py-12 md:py-24">
