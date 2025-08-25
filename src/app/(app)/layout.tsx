@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { BookHeart, MessageSquare, MicVocal, ShieldCheck, LogOut, FileText, Puzzle, Phone, LayoutDashboard, Info, HeartPulse, Sparkles, Trophy, Newspaper } from 'lucide-react';
+import { BookHeart, MessageSquare, MicVocal, ShieldCheck, LogOut, FileText, Puzzle, Phone, LayoutDashboard, Info, HeartPulse, Sparkles, Trophy, Newspaper, User } from 'lucide-react';
 import {
   SidebarProvider,
   Sidebar,
@@ -221,6 +221,12 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
                   <span className="text-sm font-medium truncate">{userDisplayName}</span>
                 </div>
               </div>
+              <Button variant="ghost" size="sm" asChild className="w-full justify-start">
+                  <Link href="/profile">
+                    <User className="mr-2 h-4 w-4" />
+                    Profile
+                  </Link>
+              </Button>
               <Button variant="ghost" size="sm" onClick={handleSignOut} className="w-full justify-start">
                 <LogOut className="mr-2 h-4 w-4" />
                 Sign Out
