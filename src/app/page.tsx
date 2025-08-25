@@ -189,17 +189,16 @@ function LandingPageContent() {
                 </p>
               </div>
             </div>
-            <div className="mx-auto grid max-w-5xl items-start gap-6 sm:grid-cols-2 md:gap-12 lg:max-w-none lg:grid-cols-4 mt-12">
+            <div className="mx-auto grid max-w-5xl items-stretch gap-6 sm:grid-cols-2 md:gap-12 lg:max-w-none lg:grid-cols-4 mt-12">
               {features.map((feature) => (
-                <Card key={feature.title} className="text-center">
+                <Card key={feature.title} className="text-center flex flex-col">
                   <CardHeader>
                     <div className="mx-auto bg-primary/10 rounded-full p-3 w-fit">
                       {feature.icon}
                     </div>
                     <CardTitle className="mt-4 text-xl">{feature.title}</CardTitle>
-
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="flex-grow">
                     <p className="text-sm text-muted-foreground">{feature.description}</p>
                   </CardContent>
                 </Card>
