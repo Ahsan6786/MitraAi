@@ -1,44 +1,15 @@
-
 rules_version = '2';
-
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Journal Entries: Users can only access their own entries.
+
+    // Users can only read and write their own journal entries
     match /journalEntries/{entryId} {
-      allow read, create, update, delete: if request.auth != null && request.auth.uid == resource.data.userId;
+      allow read, write: if request.auth != null && request.auth.uid == resource.data.userId;
     }
-    
-    // Admin access to all journal entries for review
-    match /journalEntries/{entryId} {
-        allow read, update: if request.auth != null && request.auth.token.email == 'ahsan.khan@mitwpu.edu.in';
-    }
-    
-    // Community Posts: Any authenticated user can create posts.
-    // Users can only update/delete their own posts.
-    match /posts/{postId} {
-      allow read: if request.auth != null;
-      allow create: if request.auth != null;
-      allow update, delete: if request.auth != null && request.auth.uid == resource.data.authorId;
-      
-      // Comments: Authenticated users can read/create comments on any post.
-      // Users can only update/delete their own comments.
-      match /comments/{commentId} {
-        allow read: if request.auth != null;
-        allow create: if request.auth != null;
-        allow update, delete: if request.auth != null && request.auth.uid == resource.data.authorId;
-        
-         // Likes on Comments
-        match /likes/{userId} {
-          allow create: if request.auth != null && request.auth.uid == userId;
-          allow delete: if request.auth != null && request.auth.uid == userId;
-        }
-      }
-      
-      // Likes on Posts
-      match /likes/{userId} {
-        allow create: if request.auth != null && request.auth.uid == userId;
-        allow delete: if request.auth != null && request.auth.uid == userId;
-      }
+
+    // Any authenticated user can read and write to the posts collection and its subcollections
+    match /posts/{postId}/{document=**} {
+      allow read, write: if request.auth != null;
     }
   }
 }
