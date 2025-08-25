@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Logo } from '@/components/icons';
-import { Bot, HeartPulse, Mic, FileText, Instagram, Mail, AlertTriangle, ShieldCheck, Handshake, Users } from 'lucide-react';
+import { Bot, HeartPulse, Mic, FileText, Instagram, Mail, AlertTriangle, ShieldCheck, Handshake, Users, PlayCircle } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { ThemeProvider } from '@/components/theme-provider';
 import { useState, useEffect } from 'react';
@@ -296,8 +296,37 @@ function LandingPageContent() {
             </div>
           </div>
         </section>
+
+        <section id="tutorial" className="w-full py-12 md:py-24">
+          <div className="container px-4 md:px-6">
+            <div className="flex flex-col items-center justify-center space-y-4 text-center">
+              <div className="space-y-2">
+                 <div className="inline-block rounded-lg bg-muted px-3 py-1 text-sm">How It Works</div>
+                 <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl flex items-center gap-3">
+                    <PlayCircle className="w-8 h-8 md:w-10 md:h-10 text-primary"/>
+                    See MitraAI in Action
+                 </h2>
+                 <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
+                   Watch this short tutorial to see how you can start your wellness journey with MitraAI.
+                 </p>
+              </div>
+              <div className="w-full max-w-4xl mx-auto mt-8">
+                <div className="aspect-video overflow-hidden rounded-xl border shadow-lg">
+                   <iframe
+                      className="w-full h-full"
+                      src="https://www.youtube.com/embed/md5F-MmkqOM"
+                      title="YouTube video player"
+                      frameBorder="0"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                      allowFullScreen
+                    ></iframe>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
         
-        <section id="founder" className="w-full py-12 md:py-24">
+        <section id="founder" className="w-full py-12 md:py-24 bg-muted/20">
            <div className="container px-4 md:px-6">
              <Card className="w-full">
                   <CardHeader>
