@@ -13,46 +13,26 @@ import { cn } from '@/lib/utils';
 
 // --- Interactive Hero Section Component ---
 function InteractiveHero() {
-  const words = [
-    { text: "Anxiety", size: "text-4xl", position: { top: '15%', left: '20%' } },
-    { text: "Stress", size: "text-2xl", position: { top: '25%', left: '70%' } },
-    { text: "Overwhelm", size: "text-3xl", position: { top: '75%', left: '10%' } },
-    { text: "Loneliness", size: "text-4xl", position: { top: '80%', left: '60%' } },
-    { text: "Doubt", size: "text-2xl", position: { top: '50%', left: '5%' } },
-    { text: "Burnout", size: "text-3xl", position: { top: '10%', left: '80%' } },
-    { text: "Worry", size: "text-3xl", position: { top: '60%', left: '85%' } },
-    { text: "Pressure", size: "text-2xl", position: { top: '40%', left: '25%' } },
-  ];
-
   const [isHovered, setIsHovered] = useState(false);
-
-  // Add a slight delay to the hover effect for a smoother transition
-  useEffect(() => {
-    let timeoutId: NodeJS.Timeout;
-    if (isHovered) {
-      document.body.style.setProperty('--hero-bg-opacity', '0.05');
-    } else {
-       document.body.style.setProperty('--hero-bg-opacity', '0.2');
-    }
-    return () => clearTimeout(timeoutId);
-  }, [isHovered]);
-
 
   return (
     <div className="relative w-full h-[500px] md:h-[600px] overflow-hidden flex items-center justify-center text-center bg-muted/20">
       
       {/* Words floating around */}
-      {words.map((word, index) => (
+      {['Anxiety', 'Stress', 'Overwhelm', 'Loneliness', 'Doubt', 'Burnout', 'Worry', 'Pressure'].map((word, index) => (
         <span
           key={index}
           className={cn(
             'absolute transition-all duration-700 ease-out text-muted-foreground/30 font-bold',
-            word.size,
+             'text-2xl md:text-3xl lg:text-4xl', // Simplified sizing
             isHovered ? 'opacity-0 scale-50' : 'opacity-100 scale-100'
           )}
-          style={{ ...word.position }}
+          style={{ 
+             top: `${10 + (index % 4) * 20 + Math.random() * 10}%`,
+             left: `${15 + (index % 5) * 15 + Math.random() * 10}%`,
+           }}
         >
-          {word.text}
+          {word}
         </span>
       ))}
 
@@ -64,7 +44,7 @@ function InteractiveHero() {
       >
         {/* Glowing orb effect */}
         <div className={cn(
-          'absolute inset-0 bg-primary/30 rounded-full transition-all duration-700 ease-out blur-2xl',
+          'absolute inset-[-50px] bg-primary/30 rounded-full transition-all duration-700 ease-out blur-2xl',
           isHovered ? 'scale-[2.5] opacity-50' : 'scale-100 opacity-80'
         )}></div>
         
@@ -380,16 +360,6 @@ function LandingPageContent() {
 
 
 export default function LandingPage() {
-    const [isClient, setIsClient] = useState(false);
-
-    useEffect(() => {
-        setIsClient(true);
-    }, []);
-
-    if (!isClient) {
-        return null; // or a loading spinner
-    }
-
     return (
         <ThemeProvider
             attribute="class"
@@ -401,3 +371,5 @@ export default function LandingPage() {
         </ThemeProvider>
     )
 }
+
+    
