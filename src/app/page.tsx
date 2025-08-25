@@ -69,18 +69,28 @@ function InteractiveHero() {
         )}></div>
         
          <div className="relative z-20 transition-all duration-700 ease-out">
-            <h1 className={cn(
-              "text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl xl:text-6xl/none transition-opacity duration-500",
-              isHovered ? 'opacity-100' : 'opacity-0'
+            {/* Initial Prompt */}
+            <div className={cn(
+                "transition-opacity duration-500",
+                isHovered ? "opacity-0" : "opacity-100"
             )}>
-              Find Your Clarity
-            </h1>
-            <p className={cn(
-              "max-w-[600px] text-muted-foreground text-base sm:text-lg md:text-xl transition-opacity duration-500 delay-200",
-               isHovered ? 'opacity-100' : 'opacity-0'
+                <p className="text-xl md:text-2xl text-foreground">
+                    Feeling Overwhelmed? <br/><strong className="font-semibold">Touch here.</strong>
+                </p>
+            </div>
+            
+            {/* Content Revealed on Hover */}
+            <div className={cn(
+                "absolute inset-0 flex flex-col items-center justify-center transition-opacity duration-500",
+                isHovered ? "opacity-100" : "opacity-0"
             )}>
-              MitraAI is your compassionate companion, here to listen and help you navigate your thoughts.
-            </p>
+                 <h1 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl xl:text-6xl/none">
+                    Find Your Clarity
+                </h1>
+                <p className="max-w-[600px] text-muted-foreground text-base sm:text-lg md:text-xl mt-2">
+                    MitraAI is your compassionate companion, here to listen and help you navigate your thoughts.
+                </p>
+            </div>
          </div>
       </div>
     </div>
