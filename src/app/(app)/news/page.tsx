@@ -5,66 +5,51 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, Newspaper, Sparkles, Image as ImageIcon } from 'lucide-react';
+import { Loader2, Newspaper, Sparkles } from 'lucide-react';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { generateAiNews, GenerateAiNewsOutput } from '@/ai/flows/generate-ai-news';
 import { generateImage } from '@/ai/flows/generate-image';
 import { useToast } from '@/hooks/use-toast';
 
+interface NewsArticle {
+    text: GenerateAiNewsOutput;
+    imageUrl: string;
+}
+
 export default function NewsPage() {
-    const [news, setNews] = useState<GenerateAiNewsOutput | null>(null);
-    const [imageUrl, setImageUrl] = useState<string | null>(null);
-    const [isGeneratingText, setIsGeneratingText] = useState(false);
-    const [isGeneratingImage, setIsGeneratingImage] = useState(false);
+    const [article, setArticle] = useState<NewsArticle | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
     const { toast } = useToast();
 
     const handleGenerateNews = async () => {
-        setIsGeneratingText(true);
-        setIsGeneratingImage(false);
-        setNews(null);
-        setImageUrl(null);
+        setIsLoading(true);
+        setArticle(null);
 
         try {
-            const result = await generateAiNews();
-            setNews(result);
-            // Once text is loaded, trigger image generation
-            setIsGeneratingImage(true);
+            // Generate the text and image prompt first
+            const newsText = await generateAiNews();
+            
+            // Generate the image using the prompt from the text flow
+            const imageResult = await generateImage({ prompt: newsText.imagePrompt });
+
+            // Set the complete article with image URL at the same time
+            setArticle({
+                text: newsText,
+                imageUrl: imageResult.imageUrl,
+            });
+
         } catch (error) {
-            console.error("Failed to generate AI news text:", error);
+            console.error("Failed to generate AI news:", error);
             toast({
-                title: "Text Generation Failed",
+                title: "Generation Failed",
                 description: "Could not generate the news article. Please try again.",
                 variant: "destructive",
             });
-            setIsGeneratingText(false);
         } finally {
-            setIsGeneratingText(false);
+            setIsLoading(false);
         }
     };
-
-    useEffect(() => {
-        const generateAndSetImage = async () => {
-            if (isGeneratingImage && news?.imagePrompt) {
-                try {
-                    const imageResult = await generateImage({ prompt: news.imagePrompt });
-                    setImageUrl(imageResult.imageUrl);
-                } catch (error) {
-                     console.error("Failed to generate AI news image:", error);
-                     toast({
-                        title: "Image Generation Failed",
-                        description: "Could not generate an image for the article.",
-                        variant: "destructive",
-                    });
-                } finally {
-                    setIsGeneratingImage(false);
-                }
-            }
-        };
-        generateAndSetImage();
-    }, [isGeneratingImage, news, toast]);
-
-    const isLoading = isGeneratingText || isGeneratingImage;
 
     return (
         <div className="h-full flex flex-col">
@@ -91,44 +76,34 @@ export default function NewsPage() {
                         </CardHeader>
                         <CardContent>
                             <Button onClick={handleGenerateNews} disabled={isLoading}>
-                                {isGeneratingText ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
-                                {isGeneratingText ? 'Generating Article...' : 'Get Latest News'}
+                                {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+                                {isLoading ? 'Generating Article...' : 'Get Latest News'}
                             </Button>
                         </CardContent>
                     </Card>
 
-                    {isGeneratingText && (
+                    {isLoading && (
                         <div className="flex justify-center items-center py-10">
                             <Loader2 className="w-10 h-10 animate-spin text-primary" />
                         </div>
                     )}
 
-                    {news && (
+                    {article && (
                         <Card className="shadow-lg animate-in fade-in-50">
                             <CardHeader>
-                                {isGeneratingImage && (
-                                     <div className="bg-muted w-full aspect-video rounded-t-lg flex items-center justify-center">
-                                        <div className="text-muted-foreground flex flex-col items-center gap-2">
-                                            <Loader2 className="w-8 h-8 animate-spin"/>
-                                            <p>Generating image...</p>
-                                        </div>
-                                     </div>
-                                )}
-                                {imageUrl && (
-                                    <div className="relative w-full aspect-video rounded-t-lg overflow-hidden">
-                                        <Image src={imageUrl} alt={news.headline} layout="fill" objectFit="cover" />
-                                    </div>
-                                )}
+                                <div className="relative w-full aspect-video rounded-t-lg overflow-hidden">
+                                    <Image src={article.imageUrl} alt={article.text.headline} layout="fill" objectFit="cover" />
+                                </div>
                                 <div className="p-6">
                                     <div className="flex items-center gap-3">
                                         <Newspaper className="w-8 h-8 text-primary hidden sm:block" />
-                                        <CardTitle className="text-2xl md:text-3xl">{news.headline}</CardTitle>
+                                        <CardTitle className="text-2xl md:text-3xl">{article.text.headline}</CardTitle>
                                     </div>
                                 </div>
                             </CardHeader>
                             <CardContent className="px-6 pb-6">
                                 <div className="prose prose-sm sm:prose-base dark:prose-invert max-w-none text-foreground whitespace-pre-wrap">
-                                    {news.article}
+                                    {article.text.article}
                                 </div>
                             </CardContent>
                         </Card>
