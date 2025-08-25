@@ -43,12 +43,11 @@ interface Comment {
   authorName: string;
   content: string;
   createdAt: Timestamp;
-  likeCount: number;
 }
 
 
 function PostCard({ post }: { post: Post }) {
-  const { user } from 'use-auth';
+  const { user } = useAuth();
   const { toast } = useToast();
   const [isLiking, setIsLiking] = useState(false);
   const [showComments, setShowComments] = useState(false);
