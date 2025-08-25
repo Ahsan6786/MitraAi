@@ -278,15 +278,27 @@ export default function VoiceJournalPage() {
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
                        <ListChecks className="w-5 h-5 text-green-500"/>
-                       Suggestions for you
+                       {analysisResult.mood.toLowerCase() === 'neutral' ? 'A Deeper Look' : 'Suggestions for you'}
                     </CardTitle>
                 </CardHeader>
                 <CardContent>
+                  {analysisResult.mood.toLowerCase() === 'neutral' ? (
+                     <div className="space-y-2 text-muted-foreground">
+                        <p>It seems like your entry was a bit brief. For a more accurate mood analysis, try speaking a little more.</p>
+                        <p className="font-semibold pt-2">You could try talking about:</p>
+                        <ul className="list-disc pl-5">
+                            <li>How your day has been overall.</li>
+                            <li>Something specific that happened.</li>
+                            <li>How you are feeling physically or emotionally right now.</li>
+                        </ul>
+                     </div>
+                  ) : (
                     <ul className="list-disc pl-5 space-y-2 text-muted-foreground">
                         {analysisResult.solutions.map((solution, index) => (
                             <li key={index}>{solution}</li>
                         ))}
                     </ul>
+                  )}
                 </CardContent>
             </Card>
           </div>
