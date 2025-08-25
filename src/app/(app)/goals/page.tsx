@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Loader2, Plus, Trash2, Trophy } from 'lucide-react';
 import { SidebarTrigger } from '@/components/ui/sidebar';
-import { ThemeToggle } from '@/components/ui/theme-toggle';
+import { ThemeToggle } from '@/components/theme-toggle';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 
@@ -33,11 +33,12 @@ export default function GoalsPage() {
     const goalsCollectionRef = user ? collection(db, 'users', user.uid, 'goals') : null;
 
     useEffect(() => {
-        if (!goalsCollectionRef) {
+        if (!user) {
             setIsLoading(false);
             return;
         }
-
+        
+        const goalsCollectionRef = collection(db, 'users', user.uid, 'goals');
         const q = query(goalsCollectionRef, orderBy('createdAt', 'desc'));
 
         const unsubscribe = onSnapshot(q, (querySnapshot) => {
@@ -64,12 +65,13 @@ export default function GoalsPage() {
         });
 
         return () => unsubscribe();
-    }, [user, toast, goalsCollectionRef]);
+    }, [user, toast]);
 
     const handleAddGoal = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!newGoal.trim() || !goalsCollectionRef) return;
+        if (!newGoal.trim() || !user) return;
         
+        const goalsCollectionRef = collection(db, 'users', user.uid, 'goals');
         setIsAdding(true);
         try {
             await addDoc(goalsCollectionRef, {
@@ -87,14 +89,14 @@ export default function GoalsPage() {
     };
 
     const handleToggleGoal = async (goal: Goal) => {
-        if (!goalsCollectionRef) return;
-        const goalRef = doc(goalsCollectionRef, goal.id);
+        if (!user) return;
+        const goalRef = doc(db, 'users', user.uid, 'goals', goal.id);
         await updateDoc(goalRef, { completed: !goal.completed });
     };
 
     const handleDeleteGoal = async (id: string) => {
-        if (!goalsCollectionRef) return;
-        const goalRef = doc(goalsCollectionRef, id);
+        if (!user) return;
+        const goalRef = doc(db, 'users', user.uid, 'goals', id);
         await deleteDoc(goalRef);
     };
 
