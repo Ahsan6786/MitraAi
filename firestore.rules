@@ -4,41 +4,37 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
-    // Helper function for admin check
+    // Helper function to check if the user is the designated admin
     function isAdmin() {
       return request.auth.token.email == 'ahsan.khan@mitwpu.edu.in';
     }
 
     // Rules for journalEntries collection
     match /journalEntries/{entryId} {
-      // Admin can read/write everything
+      // Admin can read and write all entries
       allow read, write: if isAdmin();
       
-      // Users can create, read, update, and delete their own entries
-      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
-      allow read, update, delete: if request.auth != null && request.auth.uid == resource.data.userId;
+      // Regular users can only create, read, update, and delete their own entries
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow read, update, delete: if request.auth != null && resource.data.userId == request.auth.uid;
     }
-    
-    // Rules for posts collection
+
+    // Rules for posts and comments
     match /posts/{postId} {
+      // Any authenticated user can read and create posts
       allow read, create: if request.auth != null;
+      
+      // Only the author can update or delete their own post
       allow update, delete: if request.auth != null && resource.data.authorId == request.auth.uid;
 
-      // Rules for comments subcollection
+      // Rules for the comments sub-collection
       match /comments/{commentId} {
+        // Any authenticated user can read and create comments
         allow read, create: if request.auth != null;
+
+        // Only the author can update or delete their own comment
         allow update, delete: if request.auth != null && resource.data.authorId == request.auth.uid;
       }
-    }
-
-    // Recursive delete function for posts and their comments
-    function recursiveDelete(path) {
-      return {
-        "allow delete": if get(path).data.authorId == request.auth.uid,
-        "match /comments/{commentId}": {
-          "allow delete": if true
-        }
-      };
     }
   }
 }
