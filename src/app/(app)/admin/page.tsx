@@ -192,10 +192,10 @@ export default function AdminPage() {
                                                 {entry.type === 'text' ? <PenSquare className="w-5 h-5 text-primary" /> : <Mic className="w-5 h-5 text-primary" />}
                                             </div>
                                             <div className="flex-1">
-                                                <div className="font-semibold">
+                                                <div className="font-semibold text-sm sm:text-base truncate">
                                                   {entry.userEmail}
                                                 </div>
-                                                <div className="text-sm text-muted-foreground">
+                                                <div className="text-xs sm:text-sm text-muted-foreground">
                                                     {entry.createdAt.toDate().toLocaleString()}
                                                 </div>
                                             </div>
@@ -206,7 +206,7 @@ export default function AdminPage() {
                                         <div className="space-y-4">
                                             <div>
                                                 <h4 className="font-semibold text-sm mb-1">User's Entry:</h4>
-                                                <p className="text-sm text-muted-foreground italic p-3 bg-muted rounded-md">
+                                                <p className="text-sm text-muted-foreground italic p-3 bg-muted rounded-md whitespace-pre-wrap">
                                                     "{entryContent}"
                                                 </p>
                                             </div>

@@ -130,7 +130,7 @@ function PostCard({ post }: { post: Post }) {
         </div>
       </CardHeader>
       <CardContent>
-        <p className="whitespace-pre-wrap">{post.content}</p>
+        <p className="whitespace-pre-wrap text-sm sm:text-base">{post.content}</p>
       </CardContent>
       <CardFooter className="flex justify-between items-center gap-2">
          <Button variant="ghost" size="sm" onClick={() => setShowComments(!showComments)}>
@@ -191,7 +191,7 @@ function CommentSection({ postId }: { postId: string }) {
     };
 
     return (
-        <div className="px-6 pb-6 pt-2">
+        <div className="px-4 sm:px-6 pb-6 pt-2">
             <Separator className="mb-4" />
             <div className="space-y-4">
                 {isLoading && <Loader2 className="w-5 h-5 animate-spin mx-auto" />}
@@ -330,5 +330,3 @@ export default function CommunityPage() {
     </div>
   );
 }
-
-    

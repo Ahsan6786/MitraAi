@@ -97,18 +97,18 @@ export default function NewsPage() {
                     <div className="space-y-8">
                         {articles.map((article) => (
                             <Card key={article.id} className="shadow-lg animate-in fade-in-50">
-                                <CardHeader>
+                                <CardHeader className="p-0">
                                     <div className="relative w-full aspect-video rounded-t-lg overflow-hidden bg-muted">
                                         <Image src={article.imageUrl} alt={article.text.headline} layout="fill" objectFit="cover" />
                                     </div>
-                                    <div className="p-6">
-                                        <div className="flex items-center gap-3">
+                                    <div className="p-4 sm:p-6">
+                                        <div className="flex items-start sm:items-center gap-3">
                                             <Newspaper className="w-8 h-8 text-primary hidden sm:block" />
-                                            <CardTitle className="text-2xl md:text-3xl">{article.text.headline}</CardTitle>
+                                            <CardTitle className="text-xl sm:text-2xl md:text-3xl">{article.text.headline}</CardTitle>
                                         </div>
                                     </div>
                                 </CardHeader>
-                                <CardContent className="px-6 pb-6">
+                                <CardContent className="px-4 sm:px-6 pb-6">
                                     <div className="prose prose-sm sm:prose-base dark:prose-invert max-w-none text-foreground whitespace-pre-wrap">
                                         {article.text.article}
                                     </div>
