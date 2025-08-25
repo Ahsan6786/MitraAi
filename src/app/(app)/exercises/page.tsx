@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Play, Pause, RotateCcw } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { ThemeToggle } from '@/components/theme-toggle';
 
 const stages = [
   { name: 'Breathe In', duration: 4 },
@@ -133,14 +134,17 @@ function BoxBreathingExercise() {
 export default function ExercisesPage() {
   return (
     <div className="h-full flex flex-col">
-      <header className="border-b p-3 md:p-4 flex items-center gap-2">
-        <SidebarTrigger className="md:hidden" />
-        <div>
-          <h1 className="text-lg md:text-xl font-bold">Mindful Exercises</h1>
-          <p className="text-sm text-muted-foreground">
-            Simple practices to find calm and focus.
-          </p>
+      <header className="border-b p-3 md:p-4 flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+            <SidebarTrigger className="md:hidden" />
+            <div>
+              <h1 className="text-lg md:text-xl font-bold">Mindful Exercises</h1>
+              <p className="text-sm text-muted-foreground">
+                Simple practices to find calm and focus.
+              </p>
+            </div>
         </div>
+        <ThemeToggle />
       </header>
       <main className="flex-1 overflow-auto p-2 sm:p-4 md:p-6 flex flex-col items-center justify-start space-y-6">
         <BoxBreathingExercise />

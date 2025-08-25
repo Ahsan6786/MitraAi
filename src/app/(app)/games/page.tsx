@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
+import { ThemeToggle } from '@/components/theme-toggle';
 
 // --- Guess the Number Game ---
 function GuessTheNumberGame() {
@@ -369,12 +370,15 @@ export default function GamesPage() {
 
     return (
         <div className="h-full flex flex-col bg-muted/20">
-            <header className="border-b bg-background p-3 md:p-4 flex items-center gap-2">
-                <SidebarTrigger className="md:hidden" />
-                <div>
-                    <h1 className="text-lg md:text-xl font-bold">Mind Games</h1>
-                    <p className="text-sm text-muted-foreground">A fun way to refresh your mind.</p>
+            <header className="border-b bg-background p-3 md:p-4 flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                    <SidebarTrigger className="md:hidden" />
+                    <div>
+                        <h1 className="text-lg md:text-xl font-bold">Mind Games</h1>
+                        <p className="text-sm text-muted-foreground">A fun way to refresh your mind.</p>
+                    </div>
                 </div>
+                <ThemeToggle />
             </header>
             <main className="flex-1 overflow-auto p-2 sm:p-4 md:p-6 flex justify-center items-start">
                <Tabs defaultValue="guess-the-number" className="w-full max-w-md">

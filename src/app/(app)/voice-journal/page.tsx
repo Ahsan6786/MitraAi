@@ -14,6 +14,7 @@ import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { Textarea } from '@/components/ui/textarea';
 import { useMusic } from '@/hooks/use-music';
+import { ThemeToggle } from '@/components/theme-toggle';
 
 const SpeechRecognition =
   (typeof window !== 'undefined' && (window.SpeechRecognition || window.webkitSpeechRecognition));
@@ -169,12 +170,15 @@ export default function VoiceJournalPage() {
 
   return (
     <div className="h-full flex flex-col bg-muted/20">
-      <header className="border-b bg-background p-3 md:p-4 flex items-center gap-2">
-        <SidebarTrigger className="md-hidden" />
-        <div>
-          <h1 className="text-lg md:text-xl font-bold">Voice Journal</h1>
-          <p className="text-sm text-muted-foreground">Speak your mind, discover your mood.</p>
+      <header className="border-b bg-background p-3 md:p-4 flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <SidebarTrigger className="md:hidden" />
+          <div>
+            <h1 className="text-lg md:text-xl font-bold">Voice Journal</h1>
+            <p className="text-sm text-muted-foreground">Speak your mind, discover your mood.</p>
+          </div>
         </div>
+        <ThemeToggle />
       </header>
       <div className="flex-1 overflow-auto p-2 sm:p-4 md:p-6 space-y-6">
         <Card>

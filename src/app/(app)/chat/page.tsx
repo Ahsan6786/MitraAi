@@ -17,6 +17,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
 import { detectCrisis } from '@/ai/flows/detect-crisis';
 import CrisisAlertModal from '@/components/crisis-alert-modal';
+import { ThemeToggle } from '@/components/theme-toggle';
 
 interface Message {
   sender: 'user' | 'ai';
@@ -180,6 +181,7 @@ export default function ChatPage() {
                     <SelectItem value="German">German</SelectItem>
                 </SelectContent>
             </Select>
+            <ThemeToggle />
         </div>
       </header>
       <main className="flex-1 overflow-hidden">

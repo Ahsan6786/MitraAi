@@ -4,18 +4,22 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { Users, Heart, BrainCircuit, ShieldCheck, Handshake } from 'lucide-react';
+import { ThemeToggle } from '@/components/theme-toggle';
 
 export default function AboutPage() {
     return (
         <div className="h-full flex flex-col">
-            <header className="border-b p-3 md:p-4 flex items-center gap-2">
-                <SidebarTrigger className="md:hidden" />
-                <div>
-                  <h1 className="text-lg md:text-xl font-bold">About MitraAI</h1>
-                  <p className="text-sm text-muted-foreground">
-                      Your Personal Path to Mental Wellness
-                  </p>
+            <header className="border-b p-3 md:p-4 flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                    <SidebarTrigger className="md:hidden" />
+                    <div>
+                      <h1 className="text-lg md:text-xl font-bold">About MitraAI</h1>
+                      <p className="text-sm text-muted-foreground">
+                          Your Personal Path to Mental Wellness
+                      </p>
+                    </div>
                 </div>
+                <ThemeToggle />
             </header>
             <main className="flex-1 overflow-auto p-2 sm:p-4 md:p-6 space-y-6">
                 <Card>

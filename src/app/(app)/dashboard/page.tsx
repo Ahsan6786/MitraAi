@@ -10,6 +10,7 @@ import { Loader2, LayoutDashboard, BarChart, LineChart } from 'lucide-react';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { Bar, BarChart as RechartsBarChart, Line, LineChart as RechartsLineChart, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { subDays, format, parseISO } from 'date-fns';
+import { ThemeToggle } from '@/components/theme-toggle';
 
 interface JournalEntry {
     id: string;
@@ -117,14 +118,17 @@ export default function DashboardPage() {
 
     return (
         <div className="h-full flex flex-col">
-            <header className="border-b p-3 md:p-4 flex items-center gap-2">
-                <SidebarTrigger className="md:hidden" />
-                <div>
-                  <h1 className="text-lg md:text-xl font-bold">Your Wellness Dashboard</h1>
-                  <p className="text-sm text-muted-foreground">
-                      Visualize your mood patterns and track your progress.
-                  </p>
+            <header className="border-b p-3 md:p-4 flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                    <SidebarTrigger className="md:hidden" />
+                    <div>
+                      <h1 className="text-lg md:text-xl font-bold">Your Wellness Dashboard</h1>
+                      <p className="text-sm text-muted-foreground">
+                          Visualize your mood patterns and track your progress.
+                      </p>
+                    </div>
                 </div>
+                <ThemeToggle />
             </header>
             <main className="flex-1 overflow-auto p-2 sm:p-4 md:p-6 space-y-6">
                 {isLoading ? (

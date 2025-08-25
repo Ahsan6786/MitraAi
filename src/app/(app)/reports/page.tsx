@@ -10,6 +10,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { Badge } from '@/components/ui/badge';
 import { Loader2, MessageSquareText, Mic, PenSquare, CheckCircle2 } from 'lucide-react';
 import { SidebarTrigger } from '@/components/ui/sidebar';
+import { ThemeToggle } from '@/components/theme-toggle';
 
 interface JournalEntry {
     id: string;
@@ -57,14 +58,17 @@ export default function ReportsPage() {
 
     return (
         <div className="h-full flex flex-col">
-            <header className="border-b p-3 md:p-4 flex items-center gap-2">
-                <SidebarTrigger className="md:hidden" />
-                <div>
-                  <h1 className="text-lg md:text-xl font-bold">Doctor's Reports</h1>
-                  <p className="text-sm text-muted-foreground">
-                      View feedback from your doctor on your journal entries.
-                  </p>
+            <header className="border-b p-3 md:p-4 flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                    <SidebarTrigger className="md:hidden" />
+                    <div>
+                      <h1 className="text-lg md:text-xl font-bold">Doctor's Reports</h1>
+                      <p className="text-sm text-muted-foreground">
+                          View feedback from your doctor on your journal entries.
+                      </p>
+                    </div>
                 </div>
+                <ThemeToggle />
             </header>
             <main className="flex-1 overflow-auto p-2 sm:p-4 md:p-6">
                 {isLoading ? (

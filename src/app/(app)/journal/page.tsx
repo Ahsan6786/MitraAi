@@ -14,6 +14,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { db } from '@/lib/firebase';
 import { collection, addDoc, serverTimestamp, query, where, onSnapshot, orderBy, Timestamp } from 'firebase/firestore';
 import { SidebarTrigger } from '@/components/ui/sidebar';
+import { ThemeToggle } from '@/components/theme-toggle';
 
 interface JournalEntry {
   id: string;
@@ -136,12 +137,15 @@ export default function JournalPage() {
 
   return (
     <div className="h-full flex flex-col bg-muted/20">
-       <header className="border-b bg-background p-3 md:p-4 flex items-center gap-2">
-        <SidebarTrigger className="md:hidden" />
-        <div>
-          <h1 className="text-lg md:text-xl font-bold">Daily Mood Journal</h1>
-          <p className="text-sm text-muted-foreground">Reflect on your day, understand your emotions.</p>
+       <header className="border-b bg-background p-3 md:p-4 flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <SidebarTrigger className="md:hidden" />
+          <div>
+            <h1 className="text-lg md:text-xl font-bold">Daily Mood Journal</h1>
+            <p className="text-sm text-muted-foreground">Reflect on your day, understand your emotions.</p>
+          </div>
         </div>
+        <ThemeToggle />
       </header>
       <div className="flex-1 overflow-auto p-2 sm:p-4 md:p-6 space-y-6">
         <Card>

@@ -15,6 +15,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { generateDoctorReport } from '@/ai/flows/generate-doctor-report';
+import { ThemeToggle } from '@/components/theme-toggle';
 
 const ADMIN_EMAIL = 'ahsan.khan@mitwpu.edu.in';
 
@@ -149,17 +150,20 @@ export default function AdminPage() {
 
     return (
         <div className="h-full flex flex-col">
-            <header className="border-b p-3 md:p-4 flex items-center gap-2">
-                <SidebarTrigger className="md:hidden" />
-                <div>
-                  <h1 className="text-lg md:text-xl font-bold flex items-center gap-2">
-                      <ShieldCheck className="w-6 h-6 text-primary"/>
-                      Admin Panel
-                  </h1>
-                  <p className="text-sm text-muted-foreground">
-                      Review user journal entries.
-                  </p>
+            <header className="border-b p-3 md:p-4 flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                    <SidebarTrigger className="md:hidden" />
+                    <div>
+                      <h1 className="text-lg md:text-xl font-bold flex items-center gap-2">
+                          <ShieldCheck className="w-6 h-6 text-primary"/>
+                          Admin Panel
+                      </h1>
+                      <p className="text-sm text-muted-foreground">
+                          Review user journal entries.
+                      </p>
+                    </div>
                 </div>
+                <ThemeToggle />
             </header>
             <main className="flex-1 overflow-auto p-2 sm:p-4 md:p-6">
                 {isLoading ? (

@@ -18,6 +18,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { detectCrisis } from '@/ai/flows/detect-crisis';
 import CrisisAlertModal from '@/components/crisis-alert-modal';
 import { useMusic } from '@/hooks/use-music';
+import { ThemeToggle } from '@/components/theme-toggle';
 
 interface Message {
   sender: 'user' | 'ai';
@@ -262,6 +263,7 @@ export default function TalkPage() {
                     <SelectItem value="German">German</SelectItem>
                 </SelectContent>
             </Select>
+            <ThemeToggle />
         </div>
       </header>
       <main className="flex-1 overflow-hidden p-2 sm:p-4 md:p-6 flex flex-col">
