@@ -14,18 +14,32 @@ import {
   doc,
   runTransaction,
   Timestamp,
+  deleteDoc,
+  getDocs,
+  writeBatch,
 } from 'firebase/firestore';
 import { SidebarTrigger } from '@/components/ui/sidebar';
-import { ThemeToggle } from '@/components/theme-toggle';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Loader2, MessageSquare, Send } from 'lucide-react';
+import { Loader2, MessageSquare, Send, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { formatDistanceToNow } from 'date-fns';
 import { Separator } from '@/components/ui/separator';
 import { Input } from '@/components/ui/input';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 
 interface Post {
   id: string;
@@ -47,9 +61,38 @@ interface Comment {
 
 function PostCard({ post }: { post: Post }) {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [showComments, setShowComments] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   
   const authorInitial = post.authorName ? post.authorName[0].toUpperCase() : 'A';
+  const isAuthor = user && user.uid === post.authorId;
+
+  const handleDeletePost = async () => {
+    if (!isAuthor) return;
+    setIsDeleting(true);
+    try {
+      // First, delete all comments in the subcollection
+      const commentsQuery = query(collection(db, `posts/${post.id}/comments`));
+      const commentsSnapshot = await getDocs(commentsQuery);
+      const batch = writeBatch(db);
+      commentsSnapshot.forEach(commentDoc => {
+        batch.delete(commentDoc.ref);
+      });
+      await batch.commit();
+      
+      // Then, delete the post itself
+      await deleteDoc(doc(db, 'posts', post.id));
+
+      toast({ title: "Post Deleted", description: "Your post and all its comments have been removed." });
+    } catch (error) {
+      console.error("Error deleting post:", error);
+      toast({ title: "Error", description: "Could not delete the post.", variant: "destructive" });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
 
   return (
     <Card>
@@ -64,17 +107,36 @@ function PostCard({ post }: { post: Post }) {
               {post.createdAt ? formatDistanceToNow(post.createdAt.toDate(), { addSuffix: true }) : 'Just now'}
             </CardDescription>
           </div>
+          {isAuthor && (
+            <AlertDialog>
+                <AlertDialogTrigger asChild>
+                    <Button variant="ghost" size="icon" disabled={isDeleting}>
+                        {isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                    </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        This action cannot be undone. This will permanently delete your post and all of its comments.
+                    </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleDeletePost}>Continue</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+          )}
         </div>
       </CardHeader>
       <CardContent>
         <p className="whitespace-pre-wrap">{post.content}</p>
       </CardContent>
       <CardFooter className="flex justify-between items-center gap-2">
-        <div className="flex gap-4">
-          <Button variant="ghost" size="sm" onClick={() => setShowComments(!showComments)}>
-            <MessageSquare className="w-4 h-4 mr-2" /> {post.commentCount || 0}
+         <Button variant="ghost" size="sm" onClick={() => setShowComments(!showComments)}>
+            <MessageSquare className="w-4 h-4 mr-2" /> {post.commentCount || 0} Comments
           </Button>
-        </div>
       </CardFooter>
       {showComments && <CommentSection postId={post.id} />}
     </Card>
@@ -140,7 +202,7 @@ function CommentSection({ postId }: { postId: string }) {
             <Separator className="mb-4" />
             <div className="space-y-4">
                 {isLoading && <Loader2 className="w-5 h-5 animate-spin mx-auto" />}
-                {!isLoading && comments.length === 0 && <p className="text-sm text-muted-foreground text-center">No comments yet.</p>}
+                {!isLoading && comments.length === 0 && <p className="text-sm text-muted-foreground text-center">No comments yet. Be the first to comment!</p>}
                 {comments.map(comment => (
                     <div key={comment.id} className="flex items-start gap-3">
                         <Avatar className="w-8 h-8">
@@ -165,7 +227,7 @@ function CommentSection({ postId }: { postId: string }) {
                     onChange={(e) => setNewComment(e.target.value)}
                     disabled={isSubmitting}
                 />
-                <Button type="submit" size="icon" disabled={isSubmitting}>
+                <Button type="submit" size="icon" disabled={isSubmitting || !newComment.trim()}>
                     {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4"/>}
                 </Button>
             </form>
@@ -224,8 +286,8 @@ export default function CommunityPage() {
         <div className="flex items-center gap-2">
           <SidebarTrigger className="md:hidden" />
           <div>
-            <h1 className="text-lg md:text-xl font-bold">Community</h1>
-            <p className="text-sm text-muted-foreground">Connect with others.</p>
+            <h1 className="text-lg md:text-xl font-bold">Community Feed</h1>
+            <p className="text-sm text-muted-foreground">Share your thoughts and connect.</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -237,7 +299,7 @@ export default function CommunityPage() {
             <Card>
                 <form onSubmit={handleCreatePost}>
                 <CardHeader>
-                    <CardTitle className="text-lg">Create a New Post</CardTitle>
+                    <CardTitle className="text-lg">Share with the Community</CardTitle>
                 </CardHeader>
                 <CardContent>
                     <Textarea
@@ -249,7 +311,7 @@ export default function CommunityPage() {
                     />
                 </CardContent>
                 <CardFooter>
-                    <Button type="submit" disabled={isSubmitting}>
+                    <Button type="submit" disabled={isSubmitting || !newPostContent.trim()}>
                     {isSubmitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                     Post
                     </Button>
