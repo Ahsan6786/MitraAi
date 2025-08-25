@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { BookHeart, MessageSquare, MicVocal, ShieldCheck, LogOut, FileText, Puzzle, Phone, LayoutDashboard, Info, HeartPulse, Sparkles, Trophy, Newspaper, User, Users, ThumbsUp } from 'lucide-react';
+import { BookHeart, MessageSquare, MicVocal, ShieldCheck, LogOut, FileText, Puzzle, Phone, LayoutDashboard, Info, HeartPulse, Sparkles, Trophy, Newspaper, User, Users, Star } from 'lucide-react';
 import {
   SidebarProvider,
   Sidebar,
@@ -151,7 +151,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
                         <Users />
                         <span>Community</span>
                       </div>
-                      <ThumbsUp className="w-4 h-4 text-amber-500" />
+                      <Star className="w-4 h-4 text-amber-500" />
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
