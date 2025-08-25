@@ -38,21 +38,19 @@ const languageToSpeechCode: Record<string, string> = {
 
 export default function VoiceJournalPage() {
   const [isRecording, setIsRecording] = useState(false);
-  const [transcript, setTranscript] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [transcript, setTranscript] = useState('');
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
   const [language, setLanguage] = useState('English');
 
   const recognitionRef = useRef<any | null>(null);
-  const silenceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const finalTranscriptRef = useRef('');
 
   const { toast } = useToast();
   const { user } = useAuth();
   const { pauseMusic, resumeMusic } = useMusic();
-
-  const handleAnalyzeAndSave = useCallback(async (transcription: string) => {
-    if (!transcription) {
+  
+  const handleAnalyzeAndSave = useCallback(async (finalTranscription: string) => {
+    if (!finalTranscription) {
       toast({ title: 'Empty Journal', description: 'No speech was detected to analyze.', variant: 'destructive' });
       setIsLoading(false);
       return;
@@ -67,14 +65,14 @@ export default function VoiceJournalPage() {
     setAnalysisResult(null);
 
     try {
-      const result = await analyzeVoiceJournal({ transcription });
+      const result = await analyzeVoiceJournal({ transcription: finalTranscription });
       
       await addDoc(collection(db, 'journalEntries'), {
         userId: user.uid,
         userEmail: user.email,
         type: 'voice',
         mood: result.mood,
-        transcription: transcription,
+        transcription: finalTranscription,
         solutions: result.solutions,
         createdAt: serverTimestamp(),
         reviewed: false,
@@ -99,10 +97,11 @@ export default function VoiceJournalPage() {
     }
   }, [user, toast]);
   
+
   const stopRecording = useCallback(() => {
     if (recognitionRef.current) {
         recognitionRef.current.stop();
-        // The onend event will handle the final processing
+        // The 'onend' event will handle cleanup and analysis
     }
   }, []);
 
@@ -115,58 +114,53 @@ export default function VoiceJournalPage() {
       });
       return;
     }
+
+    if (isRecording || isLoading) return;
+
     pauseMusic();
     setTranscript('');
-    finalTranscriptRef.current = '';
     setAnalysisResult(null);
     setIsRecording(true);
 
     recognitionRef.current = new SpeechRecognition();
-    recognitionRef.current.continuous = true;
-    recognitionRef.current.interimResults = true;
-    recognitionRef.current.lang = languageToSpeechCode[language] || 'en-US';
+    const recognition = recognitionRef.current;
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = languageToSpeechCode[language] || 'en-US';
 
-    recognitionRef.current.onresult = (event: any) => {
-        if (silenceTimeoutRef.current) clearTimeout(silenceTimeoutRef.current);
-        
+    let finalTranscript = '';
+
+    recognition.onresult = (event: any) => {
         let interimTranscript = '';
-        let finalTranscriptForChunk = '';
-
         for (let i = event.resultIndex; i < event.results.length; ++i) {
             if (event.results[i].isFinal) {
-                finalTranscriptForChunk += event.results[i][0].transcript;
+                finalTranscript += event.results[i][0].transcript + ' ';
             } else {
                 interimTranscript += event.results[i][0].transcript;
             }
         }
-        
-        finalTranscriptRef.current += finalTranscriptForChunk;
-        setTranscript(finalTranscriptRef.current + interimTranscript);
-
-        silenceTimeoutRef.current = setTimeout(() => {
-            stopRecording();
-        }, 2000); // Stop after 2 seconds of silence
+        setTranscript(finalTranscript + interimTranscript);
     };
     
-    recognitionRef.current.onend = () => {
+    recognition.onend = () => {
         setIsRecording(false);
         resumeMusic();
-        if (silenceTimeoutRef.current) clearTimeout(silenceTimeoutRef.current);
-
-        const finalTranscription = finalTranscriptRef.current.trim();
-        handleAnalyzeAndSave(finalTranscription);
         recognitionRef.current = null;
+        
+        const trimmedTranscript = finalTranscript.trim();
+        setTranscript(trimmedTranscript); // Show the final, cleaned transcript
+        handleAnalyzeAndSave(trimmedTranscript);
     }
 
-    recognitionRef.current.onerror = (event: any) => {
+    recognition.onerror = (event: any) => {
         console.error('Speech recognition error:', event.error);
-        toast({ title: 'Voice Error', description: 'There was an error with voice recognition.', variant: 'destructive' });
+        toast({ title: 'Voice Error', description: `Could not start voice recognition: ${event.error}`, variant: 'destructive' });
         setIsRecording(false);
         resumeMusic();
         recognitionRef.current = null;
     };
     
-    recognitionRef.current.start();
+    recognition.start();
   };
 
   useEffect(() => {
@@ -174,9 +168,6 @@ export default function VoiceJournalPage() {
     return () => {
       if (recognitionRef.current) {
         recognitionRef.current.stop();
-      }
-      if (silenceTimeoutRef.current) {
-        clearTimeout(silenceTimeoutRef.current);
       }
     };
   }, []);
@@ -217,7 +208,7 @@ export default function VoiceJournalPage() {
             <CardTitle>Speak Your Mind</CardTitle>
             <CardDescription>
                 {isRecording 
-                    ? "I'm listening... Speak freely. I'll stop and analyze when you pause."
+                    ? "I'm listening... Speak freely. Press the stop button when you're done."
                     : "Press the mic to start. Your words will appear here as you talk."
                 }
             </CardDescription>
@@ -257,7 +248,7 @@ export default function VoiceJournalPage() {
         </Card>
 
         {analysisResult && (
-          <div className="space-y-4">
+          <div className="space-y-4 animate-in fade-in-50">
             <h2 className="text-lg font-semibold">Last Analysis Results</h2>
             <Card>
                 <CardHeader>
