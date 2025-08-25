@@ -241,18 +241,18 @@ export default function VoiceJournalPage() {
              >
                 {isRecording ? <Square className="w-8 h-8" /> : <Mic className="w-8 h-8" />}
              </Button>
-              <p className="text-sm text-muted-foreground h-5">
+              <div className="text-sm text-muted-foreground h-5">
                 {isLoading ? (
                     <span className="flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin"/>Analyzing & Saving...</span>
                 ) : isRecording ? (
                     <span className="text-primary flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div>
+                        <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
                         Listening...
                     </span>
                 ) : (
                     analysisResult ? 'Recording complete. See results below.' : 'Press the mic to start speaking'
                 )}
-             </p>
+             </div>
            </CardFooter>
         </Card>
 
