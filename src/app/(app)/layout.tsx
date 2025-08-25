@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -100,9 +101,12 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
                 
                 <SidebarMenuItem>
                   <SidebarMenuButton asChild isActive={pathname === '/talk'}>
-                    <Link href="/talk" onClick={handleLinkClick}>
-                      <Phone />
-                      <span>Talk to Mitra</span>
+                    <Link href="/talk" onClick={handleLinkClick} className="flex items-center justify-between w-full">
+                      <div className="flex items-center gap-2">
+                        <Phone />
+                        <span>Talk to Mitra</span>
+                      </div>
+                      <Trophy className="w-4 h-4 text-amber-500" />
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -127,9 +131,12 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
                     asChild
                     isActive={pathname === '/voice-journal'}
                   >
-                    <Link href="/voice-journal" onClick={handleLinkClick}>
-                      <MicVocal />
-                      <span>Voice Journal</span>
+                    <Link href="/voice-journal" onClick={handleLinkClick} className="flex items-center justify-between w-full">
+                      <div className="flex items-center gap-2">
+                        <MicVocal />
+                        <span>Voice Journal</span>
+                      </div>
+                      <Trophy className="w-4 h-4 text-amber-500" />
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -168,9 +175,12 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
                     asChild
                     isActive={pathname === '/reports'}
                   >
-                    <Link href="/reports" onClick={handleLinkClick}>
-                      <FileText />
-                      <span>Doctor's Reports</span>
+                    <Link href="/reports" onClick={handleLinkClick} className="flex items-center justify-between w-full">
+                       <div className="flex items-center gap-2">
+                        <FileText />
+                        <span>Doctor's Reports</span>
+                      </div>
+                      <Trophy className="w-4 h-4 text-amber-500" />
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
