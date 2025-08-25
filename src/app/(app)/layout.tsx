@@ -65,6 +65,10 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
     return null;
   }
 
+  const userDisplayName = user.displayName || user.email;
+  const userAvatarFallback = user.displayName?.[0] || user.email?.[0] || 'U';
+
+
   return (
     <>
       <Sidebar>
@@ -211,10 +215,10 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
           <div className="flex flex-col gap-2 p-2">
              <div className="flex items-center gap-3 p-2">
                 <Avatar>
-                  <AvatarFallback>{user.email?.[0].toUpperCase()}</AvatarFallback>
+                  <AvatarFallback>{userAvatarFallback.toUpperCase()}</AvatarFallback>
                 </Avatar>
                 <div className="flex flex-col overflow-hidden">
-                  <span className="text-sm font-medium truncate">{user.email}</span>
+                  <span className="text-sm font-medium truncate">{userDisplayName}</span>
                 </div>
               </div>
               <Button variant="ghost" size="sm" onClick={handleSignOut} className="w-full justify-start">
