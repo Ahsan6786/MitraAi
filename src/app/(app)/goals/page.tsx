@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Loader2, Plus, Trash2, Trophy } from 'lucide-react';
 import { SidebarTrigger } from '@/components/ui/sidebar';
-import { ThemeToggle } from '@/components/theme-toggle';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 
@@ -48,9 +48,12 @@ export default function GoalsPage() {
             // Sort by completion status client-side after fetching
             goalsData.sort((a, b) => {
                 if (a.completed === b.completed) {
-                    return 0; // Keep original (date-based) order if completion is same
+                     // If both have same completion status, sort by creation date (newest first)
+                    const dateA = a.createdAt?.toMillis() || 0;
+                    const dateB = b.createdAt?.toMillis() || 0;
+                    return dateB - dateA;
                 }
-                return a.completed ? 1 : -1;
+                return a.completed ? 1 : -1; // Incomplete goals first
             });
             setGoals(goalsData);
             setIsLoading(false);
