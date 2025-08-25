@@ -8,6 +8,85 @@ import { Logo } from '@/components/icons';
 import { Bot, HeartPulse, Mic, FileText, Instagram, Mail, AlertTriangle } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { ThemeProvider } from '@/components/theme-provider';
+import { useState, useEffect } from 'react';
+import { cn } from '@/lib/utils';
+
+// --- Interactive Hero Section Component ---
+function InteractiveHero() {
+  const words = [
+    { text: "Anxiety", size: "text-4xl", position: { top: '15%', left: '20%' } },
+    { text: "Stress", size: "text-2xl", position: { top: '25%', left: '70%' } },
+    { text: "Overwhelm", size: "text-3xl", position: { top: '75%', left: '10%' } },
+    { text: "Loneliness", size: "text-4xl", position: { top: '80%', left: '60%' } },
+    { text: "Doubt", size: "text-2xl", position: { top: '50%', left: '5%' } },
+    { text: "Burnout", size: "text-3xl", position: { top: '10%', left: '80%' } },
+    { text: "Worry", size: "text-3xl", position: { top: '60%', left: '85%' } },
+    { text: "Pressure", size: "text-2xl", position: { top: '40%', left: '25%' } },
+  ];
+
+  const [isHovered, setIsHovered] = useState(false);
+
+  // Add a slight delay to the hover effect for a smoother transition
+  useEffect(() => {
+    let timeoutId: NodeJS.Timeout;
+    if (isHovered) {
+      document.body.style.setProperty('--hero-bg-opacity', '0.05');
+    } else {
+       document.body.style.setProperty('--hero-bg-opacity', '0.2');
+    }
+    return () => clearTimeout(timeoutId);
+  }, [isHovered]);
+
+
+  return (
+    <div className="relative w-full h-[500px] md:h-[600px] overflow-hidden flex items-center justify-center text-center bg-muted/20">
+      
+      {/* Words floating around */}
+      {words.map((word, index) => (
+        <span
+          key={index}
+          className={cn(
+            'absolute transition-all duration-700 ease-out text-muted-foreground/30 font-bold',
+            word.size,
+            isHovered ? 'opacity-0 scale-50' : 'opacity-100 scale-100'
+          )}
+          style={{ ...word.position }}
+        >
+          {word.text}
+        </span>
+      ))}
+
+      {/* Central orb and text */}
+      <div 
+        className="relative z-10 flex flex-col items-center justify-center cursor-pointer p-8"
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+      >
+        {/* Glowing orb effect */}
+        <div className={cn(
+          'absolute inset-0 bg-primary/30 rounded-full transition-all duration-700 ease-out blur-2xl',
+          isHovered ? 'scale-[2.5] opacity-50' : 'scale-100 opacity-80'
+        )}></div>
+        
+         <div className="relative z-20 transition-all duration-700 ease-out">
+            <h1 className={cn(
+              "text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl xl:text-6xl/none transition-opacity duration-500",
+              isHovered ? 'opacity-100' : 'opacity-0'
+            )}>
+              Find Your Clarity
+            </h1>
+            <p className={cn(
+              "max-w-[600px] text-muted-foreground text-base sm:text-lg md:text-xl transition-opacity duration-500 delay-200",
+               isHovered ? 'opacity-100' : 'opacity-0'
+            )}>
+              MitraAI is your compassionate companion, here to listen and help you navigate your thoughts.
+            </p>
+         </div>
+      </div>
+    </div>
+  );
+}
+
 
 function LandingPageContent() {
   const features = [
@@ -55,46 +134,39 @@ function LandingPageContent() {
         </nav>
       </header>
       <main className="flex-1">
-        <section className="w-full py-12 md:py-24 lg:py-32 xl:py-48 bg-muted/20">
-          <div className="container px-4 md:px-6">
-            <div className="flex flex-col items-center space-y-6 text-center">
-              <div className="space-y-2">
-                <h1 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl xl:text-6xl/none">
-                  Your Personal Path to Mental Wellness
-                </h1>
-                <p className="max-w-[600px] text-muted-foreground text-base sm:text-lg md:text-xl">
-                  MitraAI is your compassionate AI companion, here to listen and support you 24/7. While a doctor provides professional guidance, your AI friend is always here for you, anytime, anywhere.
-                </p>
-              </div>
-              <div className="flex flex-col sm:flex-row items-center gap-4">
-                <Button size="lg" asChild>
-                  <Link href="/signup" prefetch={false}>
-                    Get Started for Free
-                  </Link>
-                </Button>
-                <Button variant="outline" size="icon" asChild>
-                  <Link 
-                    href="https://www.instagram.com/mitraai1?igsh=MThuMDBkYnE5cGl1dQ%3D%3D&utm_source=qr"
-                    prefetch={false}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    <Instagram className="h-5 w-5" />
-                    <span className="sr-only">Instagram</span>
-                  </Link>
-                </Button>
-                 <Button variant="outline" size="icon" asChild>
-                  <Link href="mailto:mitraai0001@gmail.com" prefetch={false}>
-                    <Mail className="h-5 w-5" />
-                    <span className="sr-only">Email</span>
-                  </Link>
-                </Button>
+        
+        {/* New Interactive Hero Section */}
+        <section className="w-full">
+            <InteractiveHero />
+            <div className="container px-4 md:px-6 text-center -mt-20 relative z-10">
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                    <Button size="lg" asChild>
+                      <Link href="/signup" prefetch={false}>
+                        Get Started for Free
+                      </Link>
+                    </Button>
+                    <Button variant="outline" size="icon" asChild>
+                      <Link 
+                        href="https://www.instagram.com/mitraai1?igsh=MThuMDBkYnE5cGl1dQ%3D%3D&utm_source=qr"
+                        prefetch={false}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <Instagram className="h-5 w-5" />
+                        <span className="sr-only">Instagram</span>
+                      </Link>
+                    </Button>
+                     <Button variant="outline" size="icon" asChild>
+                      <Link href="mailto:mitraai0001@gmail.com" prefetch={false}>
+                        <Mail className="h-5 w-5" />
+                        <span className="sr-only">Email</span>
+                      </Link>
+                    </Button>
               </div>
             </div>
-          </div>
         </section>
 
-        <section id="features" className="w-full py-12 md:py-24 lg:py-32 bg-muted/20">
+        <section id="features" className="w-full py-12 md:py-24 lg:py-32 bg-muted/20 mt-20">
           <div className="container px-4 md:px-6">
             <div className="flex flex-col items-center justify-center space-y-4 text-center">
               <div className="space-y-2">
@@ -168,6 +240,16 @@ function LandingPageContent() {
 
 
 export default function LandingPage() {
+    const [isClient, setIsClient] = useState(false);
+
+    useEffect(() => {
+        setIsClient(true);
+    }, []);
+
+    if (!isClient) {
+        return null; // or a loading spinner
+    }
+
     return (
         <ThemeProvider
             attribute="class"
