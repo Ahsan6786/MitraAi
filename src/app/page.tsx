@@ -60,9 +60,11 @@ function InteractiveHero() {
                 "transition-opacity duration-500",
                 isHovered ? "opacity-0" : "opacity-100"
             )}>
-                <p className="text-xl md:text-2xl text-foreground">
-                    Feeling Overwhelmed? <br/><strong className="font-semibold">Touch here.</strong>
-                </p>
+                 <div className="text-4xl font-bold sm:text-5xl md:text-6xl text-center space-y-2">
+                    <div>Unleash</div>
+                    <div>Your</div>
+                    <div>Warrior</div>
+                </div>
             </div>
             
             {/* Content Revealed on Hover */}
@@ -70,11 +72,6 @@ function InteractiveHero() {
                 "absolute inset-0 flex flex-col items-center justify-center transition-opacity duration-500",
                 isHovered ? "opacity-100" : "opacity-0"
             )}>
-                 <div className="text-4xl font-bold sm:text-5xl md:text-6xl">
-                    <div className="py-2">Unleash</div>
-                    <div className="py-2">Your</div>
-                    <div className="py-2">Warrior</div>
-                </div>
                 <p className="max-w-[700px] text-muted-foreground text-lg sm:text-xl md:text-2xl mt-6">
                     You are a warrior. You have chosen MitraAI for your well-being.
                 </p>
@@ -86,7 +83,7 @@ function InteractiveHero() {
 }
 
 
-export default function LandingPage() {
+function LandingPageContent() {
   const features = [
     {
       icon: <Bot className="w-8 h-8 text-primary" />,
@@ -112,7 +109,7 @@ export default function LandingPage() {
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
-      <header className="px-4 lg:px-6 h-16 flex items-center border-b">
+      <header className="px-4 lg:px-6 h-16 flex items-center border-b sticky top-0 z-50 bg-background/95 backdrop-blur-sm">
         <Link href="#" className="flex items-center justify-center" prefetch={false}>
           <Logo className="h-6 w-6 text-primary" />
           <span className="ml-2 text-lg font-semibold">MitraAI</span>
@@ -362,4 +359,9 @@ export default function LandingPage() {
       </footer>
     </div>
   );
+}
+
+
+export default function LandingPage() {
+    return <LandingPageContent />;
 }
