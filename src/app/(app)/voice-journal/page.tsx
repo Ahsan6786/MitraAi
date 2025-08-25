@@ -32,7 +32,7 @@ const languageToSpeechCode: Record<string, string> = {
     Arabic: 'ar-SA',
     French: 'fr-FR',
     German: 'de-DE',
-    Bhojpuri: 'en-IN', // No specific code, fallback to a regional one
+    Bhojpuri: 'en-IN',
 };
 
 
@@ -51,16 +51,18 @@ export default function VoiceJournalPage() {
   const { user } = useAuth();
   const { pauseMusic, resumeMusic } = useMusic();
 
-   const handleAnalyze = useCallback(async (transcription: string) => {
-    if (!transcription.trim()) {
-      toast({ title: 'Empty Journal', description: 'No speech was detected to analyze.', variant: 'destructive' });
-      return;
-    }
+  const handleAnalyze = useCallback(async (transcription: string) => {
     if (!user) {
       toast({ title: 'Not Authenticated', description: 'You must be logged in.', variant: 'destructive' });
+      setIsLoading(false);
       return;
     }
-
+    if (!transcription.trim()) {
+      toast({ title: 'Empty Journal', description: 'No speech was detected to analyze.', variant: 'destructive' });
+      setIsLoading(false);
+      return;
+    }
+    
     setIsLoading(true);
     setAnalysisResult(null);
 
@@ -96,20 +98,12 @@ export default function VoiceJournalPage() {
       setIsLoading(false);
     }
   }, [user, toast]);
-
+  
   const stopRecording = useCallback(() => {
     if (recognitionRef.current) {
-      recognitionRef.current.stop();
-      recognitionRef.current = null;
-      setIsRecording(false);
-      resumeMusic();
-
-      const finalTranscript = finalTranscriptRef.current.trim();
-      if (finalTranscript) {
-         handleAnalyze(finalTranscript);
-      }
+        recognitionRef.current.stop();
     }
-  }, [resumeMusic, handleAnalyze]);
+  }, []);
 
   const startRecording = () => {
      if (!SpeechRecognition) {
@@ -150,20 +144,25 @@ export default function VoiceJournalPage() {
 
         silenceTimeoutRef.current = setTimeout(() => {
             stopRecording();
-        }, 1500); // Stop after 1.5 seconds of silence
+        }, 1500);
     };
+    
+    recognitionRef.current.onend = () => {
+        setIsRecording(false);
+        resumeMusic();
+        if (silenceTimeoutRef.current) clearTimeout(silenceTimeoutRef.current);
+
+        const finalTranscription = finalTranscriptRef.current.trim();
+        handleAnalyze(finalTranscription);
+        recognitionRef.current = null;
+    }
 
     recognitionRef.current.onerror = (event: any) => {
         console.error('Speech recognition error:', event.error);
         toast({ title: 'Voice Error', description: 'There was an error with voice recognition.', variant: 'destructive' });
         setIsRecording(false);
         resumeMusic();
-    };
-
-    recognitionRef.current.onend = () => {
-        if (recognitionRef.current) {
-            stopRecording();
-        }
+        recognitionRef.current = null;
     };
     
     recognitionRef.current.start();
@@ -193,7 +192,7 @@ export default function VoiceJournalPage() {
         </div>
         <div className="flex items-center gap-2">
            <Languages className="w-5 h-5 text-muted-foreground hidden sm:block"/>
-            <Select value={language} onValueChange={setLanguage}>
+            <Select value={language} onValueChange={setLanguage} disabled={isRecording || isLoading}>
                 <SelectTrigger className="w-[100px] sm:w-[120px]">
                     <SelectValue placeholder="Language" />
                 </SelectTrigger>
@@ -307,3 +306,5 @@ export default function VoiceJournalPage() {
     </div>
   );
 }
+
+    

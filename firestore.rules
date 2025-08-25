@@ -4,25 +4,25 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Journal entries: Only the owner can read/write their own entries
-    match /journalEntries/{entryId} {
-      allow read, write: if request.auth != null && request.auth.uid == resource.data.userId;
+    function isSignedIn() {
+      return request.auth != null;
     }
 
-    // Community Posts
+    match /journalEntries/{entryId} {
+      allow read, update, delete: if isSignedIn() && request.auth.uid == resource.data.userId;
+      allow create: if isSignedIn() && request.auth.uid == request.resource.data.userId;
+    }
+
     match /posts/{postId} {
-      // Anyone signed in can read or create posts
-      allow read, create: if request.auth != null;
-      // Only the author can update or delete their own post
-      allow update, delete: if request.auth != null && request.auth.uid == resource.data.authorId;
-      
-      // Post Comments
+      allow read, create: if isSignedIn();
+      allow update, delete: if isSignedIn() && request.auth.uid == resource.data.authorId;
+
       match /comments/{commentId} {
-        // Anyone signed in can read or create comments
-        allow read, create: if request.auth != null;
-        // Only the author of the comment can update or delete it
-        allow update, delete: if request.auth != null && request.auth.uid == resource.data.authorId;
+        allow read, create: if isSignedIn();
+        allow update, delete: if isSignedIn() && request.auth.uid == resource.data.authorId;
       }
     }
   }
 }
+
+    
