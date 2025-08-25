@@ -247,10 +247,10 @@ export default function VoiceJournalPage() {
                 {isLoading ? (
                     <span className="flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin"/>Analyzing & Saving...</span>
                 ) : isRecording ? (
-                    <span className="text-primary flex items-center gap-2">
-                        <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+                    <div className="text-primary flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div>
                         Listening...
-                    </span>
+                    </div>
                 ) : (
                     analysisResult ? 'Recording complete. See results below.' : 'Press the mic to start speaking'
                 )}
