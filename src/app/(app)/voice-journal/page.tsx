@@ -5,7 +5,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { analyzeVoiceJournal } from '@/ai/flows/analyze-voice-journal';
-import { Loader2, Mic, Square, Lightbulb, ListChecks } from 'lucide-react';
+import { Loader2, Mic, Square, Lightbulb, ListChecks, Languages } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/use-auth';
@@ -15,6 +15,7 @@ import { SidebarTrigger } from '@/components/ui/sidebar';
 import { Textarea } from '@/components/ui/textarea';
 import { useMusic } from '@/hooks/use-music';
 import { ThemeToggle } from '@/components/theme-toggle';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const SpeechRecognition =
   (typeof window !== 'undefined' && (window.SpeechRecognition || window.webkitSpeechRecognition));
@@ -24,11 +25,23 @@ interface AnalysisResult {
     solutions: string[];
 }
 
+const languageToSpeechCode: Record<string, string> = {
+    English: 'en-US',
+    Hindi: 'hi-IN',
+    Hinglish: 'en-IN',
+    Arabic: 'ar-SA',
+    French: 'fr-FR',
+    German: 'de-DE',
+    Bhojpuri: 'en-IN', // No specific code, fallback to a regional one
+};
+
+
 export default function VoiceJournalPage() {
   const [isRecording, setIsRecording] = useState(false);
   const [transcript, setTranscript] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
+  const [language, setLanguage] = useState('English');
 
   const recognitionRef = useRef<any | null>(null);
   const silenceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -116,7 +129,7 @@ export default function VoiceJournalPage() {
     recognitionRef.current = new SpeechRecognition();
     recognitionRef.current.continuous = true;
     recognitionRef.current.interimResults = true;
-    recognitionRef.current.lang = 'en-US';
+    recognitionRef.current.lang = languageToSpeechCode[language] || 'en-US';
 
     recognitionRef.current.onresult = (event: any) => {
         if (silenceTimeoutRef.current) clearTimeout(silenceTimeoutRef.current);
@@ -178,7 +191,24 @@ export default function VoiceJournalPage() {
             <p className="text-sm text-muted-foreground">Speak your mind, discover your mood.</p>
           </div>
         </div>
-        <ThemeToggle />
+        <div className="flex items-center gap-2">
+           <Languages className="w-5 h-5 text-muted-foreground hidden sm:block"/>
+            <Select value={language} onValueChange={setLanguage}>
+                <SelectTrigger className="w-[100px] sm:w-[120px]">
+                    <SelectValue placeholder="Language" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="English">English</SelectItem>
+                    <SelectItem value="Hindi">Hindi</SelectItem>
+                    <SelectItem value="Hinglish">Hinglish</SelectItem>
+                    <SelectItem value="Bhojpuri">Bhojpuri</SelectItem>
+                    <SelectItem value="Arabic">Arabic</SelectItem>
+                    <SelectItem value="French">French</SelectItem>
+                    <SelectItem value="German">German</SelectItem>
+                </SelectContent>
+            </Select>
+            <ThemeToggle />
+        </div>
       </header>
       <div className="flex-1 overflow-auto p-2 sm:p-4 md:p-6 space-y-6">
         <Card>
