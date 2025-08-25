@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from 'next/link';
@@ -139,14 +138,6 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
                     <Link href="/affirmations" onClick={handleLinkClick}>
                       <Sparkles />
                       <span>Affirmations</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                 <SidebarMenuItem>
-                  <SidebarMenuButton asChild isActive={pathname === '/goals'}>
-                    <Link href="/goals" onClick={handleLinkClick}>
-                      <Trophy />
-                      <span>Goals</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
