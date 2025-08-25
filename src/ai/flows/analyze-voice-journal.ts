@@ -35,12 +35,22 @@ const prompt = ai.definePrompt({
   name: 'analyzeVoiceJournalPrompt',
   input: {schema: AnalyzeVoiceJournalInputSchema},
   output: {schema: AnalyzeVoiceJournalOutputSchema},
-  prompt: `You are a mental health assistant.
-  1. Analyze the following journal entry transcription to determine the user's primary mood (e.g., happy, sad, anxious, angry).
-  2. Based on the mood, provide 3 short, actionable, and supportive solutions or pieces of advice.
+  prompt: `You are a mental health assistant. Your task is to analyze a user's journal entry transcription.
 
   Journal Entry: {{{transcription}}}
-  `,
+
+  1.  **Determine the Mood**: Analyze the journal entry to determine the user's primary mood (e.g., happy, sad, anxious, angry).
+      -   If the transcription is too short, unclear, or lacks emotional content, you MUST default the mood to "Neutral".
+      -   Do NOT invent a mood if one is not clearly present.
+
+  2.  **Provide Solutions**:
+      -   If a clear mood (like happy, sad, etc.) is detected, provide 3 short, actionable, and supportive solutions or pieces of advice relevant to that mood.
+      -   If the mood is "Neutral" because the text was unclear or too short, your solutions MUST be a list of encouraging tips for a better analysis next time, such as:
+          - "Try speaking a little more about how your day went."
+          - "You could describe a specific event or feeling."
+          - "Talking about your hopes or worries can also be helpful."
+
+  You must always return a valid mood and a list of solutions.`,
 });
 
 const analyzeVoiceJournalFlow = ai.defineFlow(
