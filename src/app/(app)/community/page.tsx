@@ -21,7 +21,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Loader2, MessageSquare, ThumbsUp, Send } from 'lucide-react';
+import { Loader2, MessageSquare, Send } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { formatDistanceToNow } from 'date-fns';
 import { Separator } from '@/components/ui/separator';
@@ -33,7 +33,6 @@ interface Post {
   authorName: string;
   content: string;
   createdAt: Timestamp;
-  likeCount: number;
   commentCount: number;
 }
 
@@ -48,35 +47,7 @@ interface Comment {
 
 function PostCard({ post }: { post: Post }) {
   const { user } = useAuth();
-  const { toast } = useToast();
-  const [isLiking, setIsLiking] = useState(false);
   const [showComments, setShowComments] = useState(false);
-
-  const handleLike = async () => {
-    if (!user) return;
-    setIsLiking(true);
-
-    const postRef = doc(db, 'posts', post.id);
-    const likeRef = doc(db, `posts/${post.id}/likes`, user.uid);
-
-    try {
-      await runTransaction(db, async (transaction) => {
-        const likeDoc = await transaction.get(likeRef);
-        if (likeDoc.exists()) {
-          transaction.update(postRef, { likeCount: post.likeCount - 1 });
-          transaction.delete(likeRef);
-        } else {
-          transaction.update(postRef, { likeCount: post.likeCount + 1 });
-          transaction.set(likeRef, { userId: user.uid });
-        }
-      });
-    } catch (error) {
-      console.error("Error liking post:", error);
-      toast({ title: "Error", description: "Could not update like.", variant: "destructive" });
-    } finally {
-      setIsLiking(false);
-    }
-  };
   
   const authorInitial = post.authorName ? post.authorName[0].toUpperCase() : 'A';
 
@@ -100,9 +71,6 @@ function PostCard({ post }: { post: Post }) {
       </CardContent>
       <CardFooter className="flex justify-between items-center gap-2">
         <div className="flex gap-4">
-          <Button variant="ghost" size="sm" onClick={handleLike} disabled={isLiking}>
-            <ThumbsUp className="w-4 h-4 mr-2" /> {post.likeCount || 0}
-          </Button>
           <Button variant="ghost" size="sm" onClick={() => setShowComments(!showComments)}>
             <MessageSquare className="w-4 h-4 mr-2" /> {post.commentCount || 0}
           </Button>
@@ -239,7 +207,6 @@ export default function CommunityPage() {
         authorName: user.displayName || user.email,
         content: newPostContent,
         createdAt: serverTimestamp(),
-        likeCount: 0,
         commentCount: 0,
       });
       setNewPostContent('');
