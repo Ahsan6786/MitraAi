@@ -11,3 +11,4 @@ import '@/ai/flows/transcribe-audio.ts';
 import '@/ai/flows/generate-doctor-report.ts';
 import '@/ai/flows/generate-affirmation.ts';
 import '@/ai/flows/generate-ai-news.ts';
+import '@/ai/flows/generate-image.ts';

@@ -14,6 +14,7 @@ import { z } from 'genkit';
 const GenerateAiNewsOutputSchema = z.object({
   headline: z.string().describe("A compelling, short headline for the news article."),
   article: z.string().describe("The full text of the news article, written in an engaging journalistic style."),
+  imagePrompt: z.string().describe("A short, descriptive prompt for an image generation model to create a picture for this article (e.g., 'futuristic AI data visualization')."),
 });
 export type GenerateAiNewsOutput = z.infer<typeof GenerateAiNewsOutputSchema>;
 
@@ -32,7 +33,7 @@ const prompt = ai.definePrompt({
   
   The tone should be engaging, informative, and accessible to a general audience.
   
-  Generate a catchy headline and the full article text.`,
+  Generate a catchy headline, the full article text, and a simple, descriptive prompt (5-10 words) for an image generation model that captures the essence of the article.`,
 });
 
 const generateAiNewsFlow = ai.defineFlow(
