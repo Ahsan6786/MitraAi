@@ -7,6 +7,9 @@ body {
 }
 
 @layer base {
+  html {
+    scroll-behavior: smooth;
+  }
   :root,
   .theme-blue-light {
     --background: 210 20% 98%;
