@@ -1,22 +1,30 @@
 
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /posts/{postId} {
-      allow read: if request.auth != null;
-      allow create: if request.auth != null 
-                    && request.resource.data.authorId == request.auth.uid;
-      allow delete: if request.auth != null && resource.data.authorId == request.auth.uid;
-      
-      match /comments/{commentId} {
-        allow read, create: if request.auth != null;
-      }
+
+    // Allow signed-in users to read/write their own journal entries
+    match /journalEntries/{entryId} {
+      allow read, update, delete: if request.auth != null && request.auth.uid == resource.data.userId;
+      allow create: if request.auth != null;
     }
 
-    match /journalEntries/{entryId} {
-      allow read, create, update: if request.auth != null && request.resource.data.userId == request.auth.uid;
+    // Rules for posts
+    match /posts/{postId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null;
+      allow update: if request.auth != null && request.auth.uid == resource.data.authorId;
+      // Allow delete if the user is the author. This rule, combined with the one below,
+      // allows for the deletion of the post and its comments subcollection.
+      allow delete: if request.auth != null && request.auth.uid == resource.data.authorId;
+
+      // Rules for comments within posts
+      match /comments/{commentId} {
+        allow read, create: if request.auth != null;
+        // Allow comment deletion by the comment author, or by the post author when deleting their post.
+        allow delete: if request.auth != null && (request.auth.uid == resource.data.authorId || request.auth.uid == get(/databases/$(database)/documents/posts/$(postId)).data.authorId);
+      }
     }
   }
 }
-
-    
