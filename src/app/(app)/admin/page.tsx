@@ -54,12 +54,10 @@ export default function AdminPage() {
           return;
         }
 
-        // This query now includes an orderBy clause.
-        // Firestore will likely log an error in the console with a link to create the required composite index.
+        // Query only for unreviewed entries. Sorting will be done client-side.
         const q = query(
             collection(db, 'journalEntries'),
-            where('reviewed', '==', false),
-            orderBy('createdAt', 'desc')
+            where('reviewed', '==', false)
         );
 
         const unsubscribe = onSnapshot(q, (querySnapshot) => {
@@ -68,13 +66,16 @@ export default function AdminPage() {
                 ...doc.data(),
             } as JournalEntry));
             
+            // Sort the entries by date here in the code
+            entriesData.sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis());
+
             setEntries(entriesData);
             setIsLoading(false);
         }, (error) => {
             console.error("Error fetching entries for admin: ", error);
             toast({
                 title: "Error Fetching Data",
-                description: "Could not fetch journal entries. Please check the console for a link to create a Firestore index.",
+                description: "Could not fetch journal entries. Please check your Firestore security rules.",
                 variant: "destructive",
                 duration: 10000,
             });
