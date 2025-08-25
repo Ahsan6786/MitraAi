@@ -3,52 +3,45 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // Helper functions
+  
+    // Helper function to check for admin role
     function isAdmin() {
       return request.auth.token.email == 'ahsan.khan@mitwpu.edu.in';
     }
 
-    function isOwner(userId) {
-      return request.auth.uid == userId;
-    }
-
-    // Rules for journalEntries collection
+    // Journal Entries
     match /journalEntries/{entryId} {
       // Admin can do anything
       allow read, write: if isAdmin();
       
-      // Users can create entries for themselves
-      allow create: if request.auth != null && isOwner(request.resource.data.userId);
-
-      // Users can read, update, and delete their own entries
-      allow read, update, delete: if request.auth != null && isOwner(resource.data.userId);
+      // Regular users can create their own entries
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      
+      // Regular users can read, update, and delete ONLY their own entries
+      allow read, update, delete: if request.auth != null && resource.data.userId == request.auth.uid;
     }
-
-    // Rules for posts collection
+    
+    // Community Posts
     match /posts/{postId} {
       // Any authenticated user can read all posts
       allow read: if request.auth != null;
       
-      // Users can create posts for themselves
-      allow create: if request.auth != null && isOwner(request.resource.data.authorId);
+      // Any authenticated user can create a post, ensuring they are the author
+      allow create: if request.auth != null && request.resource.data.authorId == request.auth.uid;
       
-      // Users can only delete their own posts
-      allow delete: if request.auth != null && isOwner(resource.data.authorId);
-
-      // Users can update the comment count on any post (needed for creating comments)
-      allow update: if request.auth != null;
-
-      // Rules for comments sub-collection
+      // Users can only update or delete their own posts
+      allow update, delete: if request.auth != null && resource.data.authorId == request.auth.uid;
+      
+      // Rules for the comments subcollection
       match /comments/{commentId} {
         // Any authenticated user can read comments
         allow read: if request.auth != null;
         
         // Any authenticated user can create a comment
-        allow create: if request.auth != null;
+        allow create: if request.auth != null && request.resource.data.authorId == request.auth.uid;
         
-        // Comments cannot be updated or deleted by users through the app
-        allow update, delete: if false;
+        // Users can only delete their own comments
+        allow delete: if request.auth != null && resource.data.authorId == request.auth.uid;
       }
     }
   }
