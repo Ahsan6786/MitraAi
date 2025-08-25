@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 import { db } from '@/lib/firebase';
-import { collection, query, where, onSnapshot, Timestamp, doc, updateDoc } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, Timestamp, doc, updateDoc, orderBy } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Badge } from '@/components/ui/badge';
@@ -54,9 +54,12 @@ export default function AdminPage() {
           return;
         }
 
+        // This query now includes an orderBy clause.
+        // Firestore will likely log an error in the console with a link to create the required composite index.
         const q = query(
             collection(db, 'journalEntries'),
-            where('reviewed', '==', false)
+            where('reviewed', '==', false),
+            orderBy('createdAt', 'desc')
         );
 
         const unsubscribe = onSnapshot(q, (querySnapshot) => {
@@ -65,17 +68,15 @@ export default function AdminPage() {
                 ...doc.data(),
             } as JournalEntry));
             
-            // Sort entries by date client-side to avoid complex index
-            entriesData.sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis());
-
             setEntries(entriesData);
             setIsLoading(false);
         }, (error) => {
             console.error("Error fetching entries for admin: ", error);
             toast({
                 title: "Error Fetching Data",
-                description: "Could not fetch journal entries. Please try again later.",
-                variant: "destructive"
+                description: "Could not fetch journal entries. Please check the console for a link to create a Firestore index.",
+                variant: "destructive",
+                duration: 10000,
             });
             setIsLoading(false);
         });
