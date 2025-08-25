@@ -326,11 +326,22 @@ function FriendRequestNotifications() {
             if (newStatus === 'accepted') {
                 batch.update(reqRef, { status: 'accepted' });
                 
-                const currentUserFriendRef = doc(collection(db, `users/${user.uid}/friends`));
-                batch.set(currentUserFriendRef, { friendId: request.fromUserId, friendName: request.fromUserName, since: serverTimestamp() });
+                // Add friend to current user's friend list
+                const currentUserFriendRef = doc(collection(db, 'users', user.uid, 'friends'));
+                batch.set(currentUserFriendRef, { 
+                    friendId: request.fromUserId, 
+                    friendName: request.fromUserName, 
+                    since: serverTimestamp() 
+                });
 
-                const otherUserFriendRef = doc(collection(db, `users/${request.fromUserId}/friends`));
-                batch.set(otherUserFriendRef, { friendId: user.uid, friendName: user.displayName || user.email, since: serverTimestamp() });
+                // Add current user to the other user's friend list
+                const otherUserFriendRef = doc(collection(db, 'users', request.fromUserId, 'friends'));
+                batch.set(otherUserFriendRef, { 
+                    friendId: user.uid, 
+                    friendName: user.displayName || user.email, 
+                    since: serverTimestamp() 
+                });
+
             } else {
                  batch.update(reqRef, { status: 'declined' });
             }
@@ -393,7 +404,7 @@ function FriendsList() {
 
     useEffect(() => {
         if (!user) return;
-        const q = query(collection(db, `users/${user.uid}/friends`), orderBy('since', 'desc'));
+        const q = query(collection(db, 'users', user.uid, 'friends'), orderBy('since', 'desc'));
         const unsubscribe = onSnapshot(q, (snapshot) => {
             const friendsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Friend));
             setFriends(friendsData);
