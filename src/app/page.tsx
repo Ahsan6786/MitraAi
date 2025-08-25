@@ -145,7 +145,7 @@ export default function LandingPage() {
                     </Button>
                     <Button variant="outline" size="icon" asChild>
                       <Link 
-                        href="https://www.instagram.com/mitraai1?igsh=MThuMDBkYnE5cGl1dQ%3D%3D&utm_source=qr"
+                        href="https://www.instagram.com/mitra____ai?igsh=MThuMDBkYnE5cGl1dQ%3D%3D&utm_source=qr"
                         prefetch={false}
                         target="_blank"
                         rel="noopener noreferrer"
@@ -341,7 +341,7 @@ export default function LandingPage() {
         <p className="text-xs text-muted-foreground">&copy; 2025 MitraAI. All rights reserved.</p>
         <nav className="sm:ml-auto flex gap-4 sm:gap-6">
             <Link 
-              href="https://www.instagram.com/mitraai1?igsh=MThuMDBkYnE5cGl1dQ%3D%3D&utm_source=qr"
+              href="https://www.instagram.com/mitra____ai?igsh=MThuMDBkYnE5cGl1dQ%3D%3D&utm_source=qr"
               className="text-muted-foreground hover:text-foreground"
               prefetch={false}
               target="_blank"
