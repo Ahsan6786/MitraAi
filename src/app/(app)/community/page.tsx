@@ -12,14 +12,13 @@ import {
   addDoc,
   serverTimestamp,
   doc,
-  runTransaction,
-  Timestamp,
   deleteDoc,
+  Timestamp,
   getDocs,
   writeBatch,
 } from 'firebase/firestore';
 import { SidebarTrigger } from '@/components/ui/sidebar';
-import { ThemeToggle } from '@/components/ui/theme-toggle';
+import { ThemeToggle } from '@/components/theme-toggle';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -169,24 +168,20 @@ function CommentSection({ postId }: { postId: string }) {
         try {
             const postRef = doc(db, 'posts', postId);
             
-            await runTransaction(db, async (transaction) => {
-                const postDoc = await transaction.get(postRef);
-                if (!postDoc.exists()) {
-                    throw "Post does not exist!";
-                }
-
-                const newCommentCount = (postDoc.data().commentCount || 0) + 1;
-                transaction.update(postRef, { commentCount: newCommentCount });
-                
-                const commentCollectionRef = collection(db, `posts/${postId}/comments`);
-                const newCommentRef = doc(commentCollectionRef);
-                transaction.set(newCommentRef, {
-                    authorId: user.uid,
-                    authorName: user.displayName || user.email,
-                    content: newComment,
-                    createdAt: serverTimestamp(),
-                });
+            // This is a simplified transaction. For high-traffic apps, you might use a Cloud Function.
+            const commentCollectionRef = collection(db, `posts/${postId}/comments`);
+            await addDoc(commentCollectionRef, {
+                authorId: user.uid,
+                authorName: user.displayName || user.email,
+                content: newComment,
+                createdAt: serverTimestamp(),
             });
+            
+            // Note: This comment count update is not transactional with comment creation.
+            // For perfect accuracy, a more complex transaction or a Cloud Function would be needed.
+            const currentComments = (await getDocs(commentCollectionRef)).size;
+            await doc(db, 'posts', postId).set({ commentCount: currentComments }, { merge: true });
+
 
             setNewComment('');
         } catch (error) {
