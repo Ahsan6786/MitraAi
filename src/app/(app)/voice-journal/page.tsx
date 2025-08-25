@@ -4,7 +4,8 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { analyzeVoiceJournal } from '@/ai/flows/analyze-voice-journal';
+import { predictUserMood } from '@/ai/flows/predict-user-mood';
+import { generateSuggestions } from '@/ai/flows/generate-suggestions';
 import { Loader2, Mic, Square, Lightbulb, ListChecks, Languages } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
@@ -44,13 +45,14 @@ export default function VoiceJournalPage() {
   const [language, setLanguage] = useState('English');
 
   const recognitionRef = useRef<any | null>(null);
+  const finalTranscriptRef = useRef('');
 
   const { toast } = useToast();
   const { user } = useAuth();
   const { pauseMusic, resumeMusic } = useMusic();
   
   const handleAnalyzeAndSave = useCallback(async (finalTranscription: string) => {
-    if (!finalTranscription) {
+    if (!finalTranscription.trim()) {
       toast({ title: 'Empty Journal', description: 'No speech was detected to analyze.', variant: 'destructive' });
       setIsLoading(false);
       return;
@@ -65,21 +67,27 @@ export default function VoiceJournalPage() {
     setAnalysisResult(null);
 
     try {
-      const result = await analyzeVoiceJournal({ transcription: finalTranscription });
+      // Step 1: Predict mood using the reliable text journal flow
+      const moodResult = await predictUserMood({ journalEntry: finalTranscription });
+      const detectedMood = moodResult.mood || 'neutral';
+
+      // Step 2: Generate solutions based on the detected mood
+      const suggestionsResult = await generateSuggestions({ mood: detectedMood });
+      const solutions = suggestionsResult.suggestions;
       
       await addDoc(collection(db, 'journalEntries'), {
         userId: user.uid,
         userEmail: user.email,
         type: 'voice',
-        mood: result.mood,
+        mood: detectedMood,
         transcription: finalTranscription,
-        solutions: result.solutions,
+        solutions: solutions,
         createdAt: serverTimestamp(),
         reviewed: false,
         doctorReport: null,
       });
       
-      setAnalysisResult(result);
+      setAnalysisResult({ mood: detectedMood, solutions: solutions });
       toast({
         title: "Analysis Complete & Saved",
         description: "Your voice journal has been successfully saved.",
@@ -119,6 +127,7 @@ export default function VoiceJournalPage() {
 
     pauseMusic();
     setTranscript('');
+    finalTranscriptRef.current = '';
     setAnalysisResult(null);
     setIsRecording(true);
 
@@ -128,18 +137,18 @@ export default function VoiceJournalPage() {
     recognition.interimResults = true;
     recognition.lang = languageToSpeechCode[language] || 'en-US';
 
-    let finalTranscript = '';
-
     recognition.onresult = (event: any) => {
         let interimTranscript = '';
+        let final = '';
         for (let i = event.resultIndex; i < event.results.length; ++i) {
             if (event.results[i].isFinal) {
-                finalTranscript += event.results[i][0].transcript + ' ';
+                final += event.results[i][0].transcript + ' ';
             } else {
                 interimTranscript += event.results[i][0].transcript;
             }
         }
-        setTranscript(finalTranscript + interimTranscript);
+        finalTranscriptRef.current += final;
+        setTranscript(finalTranscriptRef.current + interimTranscript);
     };
     
     recognition.onend = () => {
@@ -147,9 +156,11 @@ export default function VoiceJournalPage() {
         resumeMusic();
         recognitionRef.current = null;
         
-        const trimmedTranscript = finalTranscript.trim();
-        setTranscript(trimmedTranscript); // Show the final, cleaned transcript
-        handleAnalyzeAndSave(trimmedTranscript);
+        const finalTranscription = finalTranscriptRef.current.trim();
+        setTranscript(finalTranscription); 
+        if (finalTranscription) {
+            handleAnalyzeAndSave(finalTranscription);
+        }
     }
 
     recognition.onerror = (event: any) => {
@@ -232,7 +243,7 @@ export default function VoiceJournalPage() {
              >
                 {isRecording ? <Square className="w-8 h-8" /> : <Mic className="w-8 h-8" />}
              </Button>
-              <div className="text-sm text-muted-foreground h-5">
+              <div className="text-sm text-muted-foreground h-5 flex items-center justify-center">
                 {isLoading ? (
                     <span className="flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin"/>Analyzing & Saving...</span>
                 ) : isRecording ? (
