@@ -84,10 +84,10 @@ function InteractiveHero() {
                 "absolute inset-0 flex flex-col items-center justify-center transition-opacity duration-500",
                 isHovered ? "opacity-100" : "opacity-0"
             )}>
-                 <h1 className="text-3xl font-bold tracking-wide sm:text-4xl md:text-5xl xl:text-6xl/none">
+                 <h1 className="text-4xl font-bold tracking-widest sm:text-5xl md:text-6xl xl:text-7xl/none">
                     Find Your Clarity
                 </h1>
-                <p className="max-w-[600px] text-muted-foreground text-base sm:text-lg md:text-xl mt-4 tracking-wide">
+                <p className="max-w-[700px] text-muted-foreground text-lg sm:text-xl md:text-2xl mt-6 tracking-wider leading-relaxed">
                     MitraAI is your compassionate companion, here to listen and help you navigate your thoughts.
                 </p>
             </div>
