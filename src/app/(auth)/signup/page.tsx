@@ -8,12 +8,13 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 
 function SignUpForm() {
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -22,6 +23,14 @@ function SignUpForm() {
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!name.trim()) {
+      toast({
+        title: "Sign Up Failed",
+        description: "Please enter your name.",
+        variant: "destructive",
+      });
+      return;
+    }
     if (password.length < 6) {
       toast({
         title: "Sign Up Failed",
@@ -32,7 +41,13 @@ function SignUpForm() {
     }
     setIsLoading(true);
     try {
-      await createUserWithEmailAndPassword(auth, email, password);
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      // After creating the user, update their profile with the name
+      if (userCredential.user) {
+        await updateProfile(userCredential.user, {
+          displayName: name,
+        });
+      }
       router.push('/chat');
     } catch (error: any) {
       toast({
@@ -55,6 +70,16 @@ function SignUpForm() {
       </CardHeader>
       <form onSubmit={handleSignUp}>
         <CardContent className="grid gap-4">
+          <div className="grid gap-2">
+            <Label htmlFor="name">Name</Label>
+            <Input
+              id="name"
+              placeholder="Your Name"
+              required
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
+          </div>
           <div className="grid gap-2">
             <Label htmlFor="email">Email</Label>
             <Input
