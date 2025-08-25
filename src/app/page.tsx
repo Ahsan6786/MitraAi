@@ -305,7 +305,7 @@ function LandingPageContent() {
                 <div className="aspect-video overflow-hidden rounded-xl border shadow-lg">
                    <iframe
                       className="w-full h-full"
-                      src="https://www.youtube.com/embed/md5F-MmkqOM"
+                      src="https://www.youtube.com/embed/pu0Ekbo13Dg"
                       title="YouTube video player"
                       frameBorder="0"
                       allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
