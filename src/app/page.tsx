@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Logo } from '@/components/icons';
-import { Bot, HeartPulse, Mic, FileText, Instagram, Mail, AlertTriangle, ShieldCheck, Handshake, Users, PlayCircle, Newspaper } from 'lucide-react';
+import { Bot, HeartPulse, Mic, FileText, Instagram, Mail, AlertTriangle, ShieldCheck, Handshake, Users, PlayCircle, Newspaper, ArrowUp } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
@@ -84,6 +84,33 @@ function InteractiveHero() {
 
 
 function LandingPageContent() {
+  const [isVisible, setIsVisible] = useState(false);
+
+  // Show button when page is scrolled up to a certain amount
+  const toggleVisibility = () => {
+    if (window.scrollY > 300) {
+      setIsVisible(true);
+    } else {
+      setIsVisible(false);
+    }
+  };
+
+  // Set up event listener
+  useEffect(() => {
+    window.addEventListener('scroll', toggleVisibility);
+    return () => {
+      window.removeEventListener('scroll', toggleVisibility);
+    };
+  }, []);
+
+  // Smooth scroll to top
+  const scrollToTop = () => {
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth',
+    });
+  };
+
   const features = [
     {
       icon: <Bot className="w-8 h-8 text-primary" />,
@@ -393,6 +420,16 @@ function LandingPageContent() {
             </Link>
         </nav>
       </footer>
+      {isVisible && (
+        <Button
+          onClick={scrollToTop}
+          className="fixed bottom-4 right-4 h-12 w-12 rounded-full shadow-lg"
+          size="icon"
+          aria-label="Scroll to top"
+        >
+          <ArrowUp className="h-6 w-6" />
+        </Button>
+      )}
     </div>
   );
 }
