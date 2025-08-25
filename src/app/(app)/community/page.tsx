@@ -17,9 +17,6 @@ import {
   where,
   getDocs,
   writeBatch,
-  updateDoc,
-  getDoc,
-  deleteDoc,
 } from 'firebase/firestore';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { ThemeToggle } from '@/components/theme-toggle';
@@ -34,6 +31,7 @@ import { Separator } from '@/components/ui/separator';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface Post {
   id: string;
@@ -61,6 +59,14 @@ interface FriendRequest {
     toUserId: string;
     status: 'pending' | 'accepted' | 'declined';
 }
+
+interface Friend {
+    id: string;
+    friendId: string;
+    friendName?: string; 
+    since: Timestamp;
+}
+
 
 function PostCard({ post }: { post: Post }) {
   const { user } = useAuth();
@@ -98,7 +104,6 @@ function PostCard({ post }: { post: Post }) {
       if (!user || user.uid === post.authorId) return;
 
       try {
-          // Check if a request already exists
           const q = query(collection(db, 'friendRequests'), 
               where('fromUserId', '==', user.uid),
               where('toUserId', '==', post.authorId)
@@ -114,6 +119,7 @@ function PostCard({ post }: { post: Post }) {
               fromUserId: user.uid,
               fromUserName: user.displayName || user.email,
               toUserId: post.authorId,
+              toUserName: post.authorName,
               status: 'pending',
               createdAt: serverTimestamp(),
           });
@@ -319,12 +325,12 @@ function FriendRequestNotifications() {
 
             if (newStatus === 'accepted') {
                 batch.update(reqRef, { status: 'accepted' });
-                // Add to friends subcollection for both users
-                const user1FriendRef = doc(db, `friends/${user.uid}/userFriends`, request.fromUserId);
-                batch.set(user1FriendRef, { friendId: request.fromUserId, since: serverTimestamp() });
+                
+                const currentUserFriendRef = doc(collection(db, `users/${user.uid}/friends`));
+                batch.set(currentUserFriendRef, { friendId: request.fromUserId, friendName: request.fromUserName, since: serverTimestamp() });
 
-                const user2FriendRef = doc(db, `friends/${request.fromUserId}/userFriends`, user.uid);
-                batch.set(user2FriendRef, { friendId: user.uid, since: serverTimestamp() });
+                const otherUserFriendRef = doc(collection(db, `users/${request.fromUserId}/friends`));
+                batch.set(otherUserFriendRef, { friendId: user.uid, friendName: user.displayName || user.email, since: serverTimestamp() });
             } else {
                  batch.update(reqRef, { status: 'declined' });
             }
@@ -377,6 +383,53 @@ function FriendRequestNotifications() {
                 </div>
             </PopoverContent>
         </Popover>
+    )
+}
+
+function FriendsList() {
+    const { user } = useAuth();
+    const [friends, setFriends] = useState<Friend[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        if (!user) return;
+        const q = query(collection(db, `users/${user.uid}/friends`), orderBy('since', 'desc'));
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const friendsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Friend));
+            setFriends(friendsData);
+            setIsLoading(false);
+        });
+        return () => unsubscribe();
+    }, [user]);
+    
+    if (isLoading) {
+        return <div className="flex justify-center py-10"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
+    }
+    
+    if (friends.length === 0) {
+        return <div className="text-center text-muted-foreground py-10"><p>You haven't added any friends yet.</p></div>
+    }
+
+    return (
+        <div className="space-y-4">
+            {friends.map(friend => (
+                <Card key={friend.id}>
+                    <CardHeader>
+                        <div className="flex items-center gap-3">
+                            <Avatar>
+                               <AvatarFallback>{friend.friendName ? friend.friendName[0].toUpperCase() : '?'}</AvatarFallback>
+                            </Avatar>
+                            <div>
+                                <CardTitle className="text-base font-semibold">{friend.friendName}</CardTitle>
+                                <CardDescription className="text-xs">
+                                    Friends since {friend.since ? formatDistanceToNow(friend.since.toDate()) : 'a while'} ago
+                                </CardDescription>
+                            </div>
+                        </div>
+                    </CardHeader>
+                </Card>
+            ))}
+        </div>
     )
 }
 
@@ -433,8 +486,8 @@ export default function CommunityPage() {
         <div className="flex items-center gap-2">
           <SidebarTrigger className="md:hidden" />
           <div>
-            <h1 className="text-lg md:text-xl font-bold">Community Feed</h1>
-            <p className="text-sm text-muted-foreground">Share your thoughts with the community.</p>
+            <h1 className="text-lg md:text-xl font-bold">Community</h1>
+            <p className="text-sm text-muted-foreground">Connect with others.</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -443,43 +496,54 @@ export default function CommunityPage() {
         </div>
       </header>
       <main className="flex-1 overflow-auto p-2 sm:p-4 md:p-6">
-        <div className="max-w-2xl mx-auto space-y-6">
-          <Card>
-            <form onSubmit={handleCreatePost}>
-              <CardHeader>
-                <CardTitle className="text-lg">Create a New Post</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Textarea
-                  placeholder="What's on your mind?"
-                  rows={4}
-                  value={newPostContent}
-                  onChange={(e) => setNewPostContent(e.target.value)}
-                  disabled={isSubmitting}
-                />
-              </CardContent>
-              <CardFooter>
-                <Button type="submit" disabled={isSubmitting}>
-                  {isSubmitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                  Post
-                </Button>
-              </CardFooter>
-            </form>
-          </Card>
+        <div className="max-w-2xl mx-auto">
+            <Tabs defaultValue="feed">
+                <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="feed">Feed</TabsTrigger>
+                    <TabsTrigger value="friends">My Friends</TabsTrigger>
+                </TabsList>
+                <TabsContent value="feed" className="mt-6 space-y-6">
+                     <Card>
+                        <form onSubmit={handleCreatePost}>
+                        <CardHeader>
+                            <CardTitle className="text-lg">Create a New Post</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <Textarea
+                            placeholder="What's on your mind?"
+                            rows={4}
+                            value={newPostContent}
+                            onChange={(e) => setNewPostContent(e.target.value)}
+                            disabled={isSubmitting}
+                            />
+                        </CardContent>
+                        <CardFooter>
+                            <Button type="submit" disabled={isSubmitting}>
+                            {isSubmitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                            Post
+                            </Button>
+                        </CardFooter>
+                        </form>
+                    </Card>
 
-          {isLoading ? (
-            <div className="flex justify-center py-10">
-              <Loader2 className="w-8 h-8 animate-spin text-primary" />
-            </div>
-          ) : posts.length === 0 ? (
-            <div className="text-center text-muted-foreground py-10">
-                <p>No posts yet. Be the first to share something!</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {posts.map(post => <PostCard key={post.id} post={post} />)}
-            </div>
-          )}
+                    {isLoading ? (
+                        <div className="flex justify-center py-10">
+                        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                        </div>
+                    ) : posts.length === 0 ? (
+                        <div className="text-center text-muted-foreground py-10">
+                            <p>No posts yet. Be the first to share something!</p>
+                        </div>
+                    ) : (
+                        <div className="space-y-4">
+                        {posts.map(post => <PostCard key={post.id} post={post} />)}
+                        </div>
+                    )}
+                </TabsContent>
+                <TabsContent value="friends" className="mt-6">
+                    <FriendsList />
+                </TabsContent>
+            </Tabs>
         </div>
       </main>
     </div>
