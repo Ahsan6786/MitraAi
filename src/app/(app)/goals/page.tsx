@@ -4,7 +4,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { db } from '@/lib/firebase';
-import { collection, addDoc, query, onSnapshot, doc, updateDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, query, onSnapshot, doc, updateDoc, deleteDoc, serverTimestamp, orderBy } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -38,19 +38,17 @@ export default function GoalsPage() {
             return;
         }
 
-        const q = query(goalsCollectionRef, collection(db, 'goals'));
+        const q = query(goalsCollectionRef, orderBy('createdAt', 'desc'));
 
         const unsubscribe = onSnapshot(q, (querySnapshot) => {
             const goalsData = querySnapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data()
             } as Goal));
-            // Sort by completion status then by creation date
+            // Sort by completion status client-side after fetching
             goalsData.sort((a, b) => {
                 if (a.completed === b.completed) {
-                     // Both are null or have timestamps
-                    if (!a.createdAt || !b.createdAt) return 0;
-                    return b.createdAt.toMillis() - a.createdAt.toMillis();
+                    return 0; // Keep original (date-based) order if completion is same
                 }
                 return a.completed ? 1 : -1;
             });
