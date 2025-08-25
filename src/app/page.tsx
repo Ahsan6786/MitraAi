@@ -90,7 +90,7 @@ function InteractiveHero() {
                     <div className="py-2">Clarity</div>
                 </div>
                 <p className="max-w-[700px] text-muted-foreground text-lg sm:text-xl md:text-2xl mt-6">
-                    MitraAI is your compassionate companion, here to listen and help you navigate your thoughts.
+                    You are a warrior. You have chosen MitraAI for your well-being.
                 </p>
             </div>
          </div>
