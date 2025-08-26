@@ -3,31 +3,24 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    function isOwner() {
-      return request.auth.token.email == 'ahsanimamkhan06@gmail.com';
+
+    match /journalEntries/{entryId} {
+      allow read, create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow update: if request.auth != null && resource.data.userId == request.auth.uid;
     }
 
     match /posts/{postId} {
       allow read: if true;
       allow create: if request.auth != null;
-      
-      // An author can delete their own post, OR the owner can delete any post.
-      allow delete: if request.auth.uid == resource.data.authorId || isOwner();
+      allow update: if request.auth.uid == resource.data.authorId;
+      allow delete: if request.auth.uid == resource.data.authorId || request.auth.token.email == 'ahsanimamkhan06@gmail.com';
 
-      // Allow anyone to update the commentCount, but only the author to update other fields.
-      allow update: if (request.auth.uid == resource.data.authorId && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['commentCount'])) ||
-                     (request.auth != null && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['commentCount']));
-    }
-
-    match /posts/{postId}/comments/{commentId} {
-      allow read: if true;
-      allow create: if request.auth != null;
-      
-      // An author can delete their own comment, OR the owner can delete any comment.
-      allow delete: if request.auth.uid == resource.data.authorId || isOwner();
-      
-      // Owner can update the 'hidden' field on any comment.
-      allow update: if isOwner() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['hidden']);
+      match /comments/{commentId} {
+        allow read: if true;
+        allow create: if request.auth != null;
+        allow update: if request.auth.uid == resource.data.authorId || request.auth.token.email == 'ahsanimamkhan06@gmail.com';
+        allow delete: if request.auth.uid == resource.data.authorId || request.auth.token.email == 'ahsanimamkhan06@gmail.com';
+      }
     }
   }
 }
