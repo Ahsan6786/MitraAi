@@ -43,6 +43,7 @@ export default function LiveMoodPage() {
     const recognitionRef = useRef<any>(null);
     const silenceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const transcriptRef = useRef(''); // Ref to hold the latest transcript
+    const manualStopRef = useRef(false); // Ref to track if user stopped manually
     const { toast } = useToast();
     const { user } = useAuth();
     const scrollViewportRef = useRef<HTMLDivElement>(null);
@@ -83,7 +84,7 @@ export default function LiveMoodPage() {
                 stream.getTracks().forEach(track => track.stop());
             }
              if (recognitionRef.current) {
-                recognitionRef.current.stop();
+                recognitionRef.current.abort();
             }
         };
     }, [toast]);
@@ -94,15 +95,17 @@ export default function LiveMoodPage() {
         }
     }, [chatMessages]);
     
-    // Cleanup on unmount
+    // Full cleanup on unmount
     useEffect(() => {
       return () => {
         if (silenceTimeoutRef.current) clearTimeout(silenceTimeoutRef.current);
         if (recognitionRef.current) {
-            recognitionRef.current.stop();
+            recognitionRef.current.onresult = null;
+            recognitionRef.current.onend = null;
+            recognitionRef.current.onerror = null;
+            recognitionRef.current.abort();
             recognitionRef.current = null;
         }
-        // Stop camera stream (redundant but safe)
         if (videoRef.current && videoRef.current.srcObject) {
             const stream = videoRef.current.srcObject as MediaStream;
             stream.getTracks().forEach(track => track.stop());
@@ -124,20 +127,14 @@ export default function LiveMoodPage() {
         return '';
     };
 
-    const stopListening = useCallback(() => {
-        if (recognitionRef.current) {
-            recognitionRef.current.stop();
-        }
-    }, []);
-
     const startListening = useCallback(() => {
-        if (!SpeechRecognition) {
-            toast({ title: 'Speech Recognition not supported', variant: 'destructive' });
+        if (!SpeechRecognition || isRecording) {
             return;
         }
-
+        manualStopRef.current = false;
         setIsRecording(true);
         transcriptRef.current = '';
+
         recognitionRef.current = new SpeechRecognition();
         recognitionRef.current.continuous = true;
         recognitionRef.current.interimResults = true;
@@ -158,17 +155,22 @@ export default function LiveMoodPage() {
             transcriptRef.current = finalTranscript + interimTranscript;
 
             silenceTimeoutRef.current = setTimeout(() => {
-                stopListening();
+                 if (recognitionRef.current) {
+                    recognitionRef.current.stop();
+                }
             }, 2000);
         };
 
         recognitionRef.current.onend = () => {
             if (silenceTimeoutRef.current) clearTimeout(silenceTimeoutRef.current);
+            
             const finalTranscript = transcriptRef.current.trim();
-            if (finalTranscript) {
+            // Only process if it was not a manual stop and there is a transcript
+            if (!manualStopRef.current && finalTranscript) {
                 processMood(finalTranscript);
             }
             
+            // Cleanup recognition state
             if (recognitionRef.current) {
                recognitionRef.current = null;
                setIsRecording(false);
@@ -177,23 +179,29 @@ export default function LiveMoodPage() {
         };
 
         recognitionRef.current.onerror = (event: any) => {
-            toast({ title: 'Speech recognition error', description: event.error, variant: 'destructive' });
-            setIsRecording(false);
+             if (event.error !== 'aborted' && event.error !== 'no-speech') {
+                toast({ title: 'Speech recognition error', description: `Error: ${event.error}`, variant: 'destructive' });
+             }
+             setIsRecording(false);
         };
 
         recognitionRef.current.start();
-    }, [language, stopListening, toast]);
+    }, [language, isRecording, toast]);
 
+    const stopListening = useCallback(() => {
+        if (recognitionRef.current) {
+            manualStopRef.current = true;
+            recognitionRef.current.stop();
+        }
+    }, []);
 
     const processMood = useCallback(async (transcript: string) => {
         if (!transcript.trim()) {
             setIsProcessing(false);
             return;
         }
-
         setIsProcessing(true);
         const photoDataUri = captureFrame();
-
         const userMessage: ChatMessage = { sender: 'user', text: transcript };
         setChatMessages(prev => [...prev, userMessage]);
 
@@ -204,12 +212,7 @@ export default function LiveMoodPage() {
         }
 
         try {
-            const result = await predictLiveMood({
-                photoDataUri,
-                description: transcript,
-                language,
-            });
-
+            const result = await predictLiveMood({ photoDataUri, description: transcript, language });
             const aiMessage: ChatMessage = { sender: 'ai', text: result.response };
             setChatMessages(prev => [...prev, aiMessage]);
             
@@ -217,21 +220,15 @@ export default function LiveMoodPage() {
             if (ttsResult.audioDataUri) {
                 const audio = new Audio(ttsResult.audioDataUri);
                 audio.onended = () => {
-                    // Check if another recording hasn't been manually started
-                    if (!isRecording) {
-                       setTimeout(() => {
-                           startListening();
-                       }, 500);
-                    }
+                    setTimeout(() => {
+                        if (!isRecording) startListening();
+                    }, 500);
                 };
                 audio.play();
             } else {
-                // If no audio, still start listening
-                if (!isRecording) {
-                    setTimeout(() => {
-                       startListening();
-                   }, 500);
-                }
+                 setTimeout(() => {
+                    if (!isRecording) startListening();
+                }, 500);
             }
 
         } catch (error) {
@@ -251,7 +248,6 @@ export default function LiveMoodPage() {
             startListening();
         }
     };
-
 
     return (
         <div className="h-full flex flex-col">
@@ -279,9 +275,9 @@ export default function LiveMoodPage() {
                 </div>
             </header>
             <main className="flex-1 overflow-hidden p-2 sm:p-4 md:p-6">
-                <div className="grid gap-6 grid-cols-1 lg:grid-cols-2 h-full max-h-[calc(100vh-12rem)]">
+                <div className="grid gap-6 grid-cols-1 lg:grid-cols-2 h-full max-h-[calc(100vh-15rem)] lg:max-h-[calc(100vh-10rem)]">
                     <div className="flex flex-col gap-4">
-                        <Card className="flex-1 flex flex-col">
+                        <Card className="flex-1 flex flex-col min-h-0">
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2">
                                     <Camera className="w-5 h-5 text-primary" />
@@ -359,5 +355,4 @@ export default function LiveMoodPage() {
             <canvas ref={canvasRef} className="hidden"></canvas>
         </div>
     );
-
-    
+}
