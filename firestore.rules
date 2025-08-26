@@ -3,35 +3,34 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
-    // Rules for journal entries
-    match /journalEntries/{entryId} {
-      allow read, update: if request.auth.token.email == 'ahsan.khan@mitwpu.edu.in';
-      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
-      allow read: if request.auth != null && resource.data.userId == request.auth.uid;
-    }
-
-    // Rules for community posts
+    // Defines security rules for the 'posts' collection.
     match /posts/{postId} {
-      // Anyone authenticated can read posts.
+      // Any authenticated user can read posts.
       allow read: if request.auth != null;
       
-      // A user can create a post if they are authenticated and the authorId matches their UID.
-      allow create: if request.auth != null && request.resource.data.authorId == request.auth.uid;
+      // Users can only create or update their own posts.
+      allow create, update: if request.auth.uid == request.resource.data.authorId;
       
-      // A user can update their own post (e.g., comment count).
-      allow update: if request.auth != null && resource.data.authorId == request.auth.uid;
+      // The post author or the designated owner can delete a post.
+      allow delete: if request.auth.uid == resource.data.authorId || request.auth.token.email == 'ahsanimamkhan06@gmail.com';
       
-      // A user can delete their own post OR if the user is the owner.
-      allow delete: if request.auth != null && (resource.data.authorId == request.auth.uid || request.auth.token.email == 'ahsanimamkhan06@gmail.com');
-
-      // Rules for comments within a post
+      // Defines security rules for the 'comments' subcollection within each post.
       match /comments/{commentId} {
-        // Anyone authenticated can read and create comments.
+        // Any authenticated user can read or create comments.
         allow read, create: if request.auth != null;
         
-        // A user can delete their own comment OR if the user is the owner of the parent post.
-        allow delete: if request.auth != null && (resource.data.authorId == request.auth.uid || get(/databases/$(database)/documents/posts/$(postId)).data.authorId == request.auth.uid);
+        // The comment author or the designated owner can delete a comment.
+        allow delete: if request.auth.uid == resource.data.authorId || request.auth.token.email == 'ahsanimamkhan06@gmail.com';
       }
+    }
+
+    // Defines security rules for the 'journalEntries' collection.
+    match /journalEntries/{entryId} {
+      // Users can only create their own journal entries.
+      allow create: if request.auth.uid == request.resource.data.userId;
+      
+      // The entry's author or the admin can read or update journal entries.
+      allow read, update: if request.auth.uid == resource.data.userId || request.auth.token.email == 'ahsan.khan@mitwpu.edu.in';
     }
   }
 }
