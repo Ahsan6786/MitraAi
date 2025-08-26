@@ -46,6 +46,7 @@ export default function LiveMoodPage() {
     const scrollViewportRef = useRef<HTMLDivElement>(null);
     const streamRef = useRef<MediaStream | null>(null);
     const audioRef = useRef<HTMLAudioElement | null>(null);
+    const manualStopRef = useRef(false);
 
     // Auto-scroll to bottom of chat
     useEffect(() => {
@@ -109,17 +110,14 @@ export default function LiveMoodPage() {
         }
         return '';
     };
-
-    const handleMicClick = useCallback(() => {
-        if (isRecording) {
-            // eslint-disable-next-line @typescript-eslint/no-use-before-define
-            stopListening();
-        } else {
-            // eslint-disable-next-line @typescript-eslint/no-use-before-define
-            startListening();
-        }
-    }, [isRecording]); // eslint-disable-line react-hooks/exhaustive-deps
     
+    const handleMicClick = useCallback(() => {
+        // eslint-disable-next-line @typescript-eslint/no-use-before-define
+        if (isRecording) stopListening();
+        // eslint-disable-next-line @typescript-eslint/no-use-before-define
+        else startListening();
+    }, [isRecording]); // eslint-disable-line react-hooks/exhaustive-deps
+
     const processMood = useCallback(async (transcript: string) => {
         if (!transcript) {
             setIsProcessing(false);
@@ -141,15 +139,21 @@ export default function LiveMoodPage() {
             const aiMessage: ChatMessage = { sender: 'ai', text: result.response };
             setChatMessages(prev => [...prev, aiMessage]);
             
-            const ttsResult = await textToSpeech({ text: result.response });
-            if (ttsResult.audioDataUri) {
-                const audio = new Audio(ttsResult.audioDataUri);
-                audioRef.current = audio;
-                audio.play();
-                audio.onended = () => {
-                   if (isRecording) return;
-                   handleMicClick();
-                };
+            if (result.response.trim()) {
+                const ttsResult = await textToSpeech({ text: result.response });
+                if (ttsResult.audioDataUri) {
+                    const audio = new Audio(ttsResult.audioDataUri);
+                    audioRef.current = audio;
+                    audio.play();
+                    audio.onended = () => {
+                        // Automatically start listening again after AI finishes
+                        handleMicClick();
+                    };
+                } else {
+                    handleMicClick();
+                }
+            } else {
+                 handleMicClick();
             }
 
         } catch (error) {
@@ -160,7 +164,7 @@ export default function LiveMoodPage() {
         } finally {
             setIsProcessing(false);
         }
-    }, [language, toast, isRecording, handleMicClick]);
+    }, [language, toast, handleMicClick]);
 
 
     const startListening = useCallback(() => {
@@ -172,7 +176,7 @@ export default function LiveMoodPage() {
             });
             return;
         }
-
+        manualStopRef.current = false;
         setIsRecording(true);
         const recognition = new SpeechRecognition();
         recognitionRef.current = recognition;
@@ -189,7 +193,8 @@ export default function LiveMoodPage() {
 
         recognition.onend = () => {
             setIsRecording(false);
-            if (finalTranscript) {
+            // Only process if it wasn't a manual stop and there is a transcript
+            if (!manualStopRef.current && finalTranscript) {
                 processMood(finalTranscript);
             }
         };
@@ -206,6 +211,7 @@ export default function LiveMoodPage() {
 
 
     const stopListening = useCallback(() => {
+        manualStopRef.current = true;
         if (recognitionRef.current) {
             recognitionRef.current.stop();
         }
@@ -315,4 +321,5 @@ export default function LiveMoodPage() {
             <canvas ref={canvasRef} className="hidden"></canvas>
         </div>
     );
-}
+
+    
