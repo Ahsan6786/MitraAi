@@ -70,7 +70,8 @@ function PostCard({ post }: { post: Post }) {
   
   const authorInitial = post.authorName ? post.authorName[0].toUpperCase() : 'A';
   const isAuthor = user && user.uid === post.authorId;
-  const canDelete = isAuthor; // Only the author can delete their post
+  const isOwner = user?.email === OWNER_EMAIL;
+  const canDelete = isAuthor || isOwner;
 
   const handleDeletePost = async () => {
     if (!canDelete) return;
@@ -122,7 +123,7 @@ function PostCard({ post }: { post: Post }) {
                     <AlertDialogHeader>
                     <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                     <AlertDialogDescription>
-                        This action cannot be undone. This will permanently delete your post and all of its comments.
+                        This action cannot be undone. This will permanently delete this post and all of its comments.
                     </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
@@ -199,8 +200,9 @@ function CommentSection({ postId }: { postId: string }) {
                 hidden: false,
             });
             
+            const postRef = doc(db, 'posts', postId);
             const currentComments = (await getDocs(commentCollectionRef)).size;
-            await doc(db, 'posts', postId).set({ commentCount: currentComments }, { merge: true });
+            await updateDoc(postRef, { commentCount: currentComments });
 
             setNewComment('');
         } catch (error) {
