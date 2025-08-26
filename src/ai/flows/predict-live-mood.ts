@@ -10,6 +10,7 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
+import { googleAI } from '@genkit-ai/googleai';
 
 const PredictLiveMoodInputSchema = z.object({
   photoDataUri: z
@@ -58,7 +59,8 @@ const predictLiveMoodFlow = ai.defineFlow(
     outputSchema: PredictLiveMoodOutputSchema,
   },
   async (input) => {
-    const { output } = await prompt(input);
+    // Use the faster preview model for this specific, latency-sensitive flow.
+    const { output } = await prompt(input, { model: googleAI.model('gemini-2.5-flash-preview') });
     return output!;
   }
 );
