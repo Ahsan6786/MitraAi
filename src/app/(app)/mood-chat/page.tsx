@@ -10,7 +10,7 @@ import { cn } from '@/lib/utils';
 import { Loader2, Send, User, MessageCircleHeart, Smile, Frown, Meh } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { SidebarTrigger } from '@/components/ui/sidebar';
-import { ThemeToggle } from '@/components/ui/theme-toggle';
+import { ThemeToggle } from '@/components/theme-toggle';
 import { predictChatMood } from '@/ai/flows/predict-chat-mood';
 import { Badge } from '@/components/ui/badge';
 
