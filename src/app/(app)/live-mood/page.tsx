@@ -109,13 +109,8 @@ export default function LiveMoodPage() {
         }
         return '';
     };
-
-    const handleMicClick = useCallback(() => {
-        if (isRecording) {
-            recognitionRef.current?.stop();
-            return;
-        }
-
+    
+    const startListening = useCallback(() => {
         if (!SpeechRecognition) {
             toast({
                 title: "Browser Not Supported",
@@ -124,7 +119,8 @@ export default function LiveMoodPage() {
             });
             return;
         }
-        
+
+        setIsRecording(true);
         const recognition = new SpeechRecognition();
         recognitionRef.current = recognition;
         
@@ -141,47 +137,7 @@ export default function LiveMoodPage() {
         recognition.onend = () => {
             setIsRecording(false);
             if (finalTranscript) {
-                (async () => {
-                    if (!finalTranscript) {
-                        setIsProcessing(false);
-                        return;
-                    }
-                    setIsProcessing(true);
-                    const photoDataUri = captureFrame();
-                    const userMessage: ChatMessage = { sender: 'user', text: finalTranscript };
-                    setChatMessages(prev => [...prev, userMessage]);
-
-                    if (!photoDataUri) {
-                        toast({ title: 'Could not capture frame', variant: 'destructive' });
-                        setIsProcessing(false);
-                        return;
-                    }
-
-                    try {
-                        const result = await predictLiveMood({ photoDataUri, description: finalTranscript, language });
-                        const aiMessage: ChatMessage = { sender: 'ai', text: result.response };
-                        setChatMessages(prev => [...prev, aiMessage]);
-                        
-                        const ttsResult = await textToSpeech({ text: result.response });
-                        if (ttsResult.audioDataUri) {
-                            const audio = new Audio(ttsResult.audioDataUri);
-                            audioRef.current = audio;
-                            audio.play();
-                            audio.onended = () => {
-                               if (isRecording) return;
-                               setTimeout(() => handleMicClick(), 500);
-                            };
-                        }
-
-                    } catch (error) {
-                        console.error('Error predicting live mood:', error);
-                        toast({ title: 'AI Analysis Failed', variant: 'destructive' });
-                        const errorMessage: ChatMessage = { sender: 'ai', text: "Sorry, I couldn't process that right now." };
-                        setChatMessages(prev => [...prev, errorMessage]);
-                    } finally {
-                        setIsProcessing(false);
-                    }
-                })();
+                processMood(finalTranscript);
             }
         };
 
@@ -191,10 +147,25 @@ export default function LiveMoodPage() {
             }
             setIsRecording(false);
         };
-
+        
         recognition.start();
-        setIsRecording(true);
-    }, [isRecording, language, toast]);
+    }, [language, toast, processMood]);
+
+
+    const stopListening = useCallback(() => {
+        if (recognitionRef.current) {
+            recognitionRef.current.stop();
+        }
+        setIsRecording(false);
+    }, []);
+
+    const handleMicClick = useCallback(() => {
+        if (isRecording) {
+            stopListening();
+        } else {
+            startListening();
+        }
+    }, [isRecording, startListening, stopListening]);
 
     const processMood = useCallback(async (transcript: string) => {
         if (!transcript) {
@@ -224,7 +195,6 @@ export default function LiveMoodPage() {
                 audio.play();
                 audio.onended = () => {
                    if (isRecording) return;
-                   // Using a timeout allows the state to update before starting the next recognition
                    setTimeout(() => handleMicClick(), 500);
                 };
             }
@@ -238,9 +208,6 @@ export default function LiveMoodPage() {
             setIsProcessing(false);
         }
     }, [language, toast, isRecording, handleMicClick]);
-    
-    useEffect(() => {
-    }, [processMood]);
 
 
     return (
