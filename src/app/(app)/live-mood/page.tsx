@@ -34,7 +34,7 @@ const languageToSpeechCode: Record<string, string> = {
 export default function LiveMoodPage() {
     const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
     const [isRecording, setIsRecording] = useState(false);
-    const [isProcessing, setIsProcessing] = useState(isProcessing);
+    const [isProcessing, setIsProcessing] = useState(false);
     const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
     const [language, setLanguage] = useState('English');
     
