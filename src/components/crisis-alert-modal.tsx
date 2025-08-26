@@ -24,10 +24,15 @@ export default function CrisisAlertModal({ isOpen, onClose }: CrisisAlertModalPr
         setIsSpeaking(true);
         try {
           const result = await textToSpeech({ text: ALERT_MESSAGE });
-          const audioInstance = new Audio(result.audioDataUri);
-          setAudio(audioInstance);
-          audioInstance.play();
-          audioInstance.onended = () => setIsSpeaking(false);
+          if (result.audioDataUri) {
+            const audioInstance = new Audio(result.audioDataUri);
+            setAudio(audioInstance);
+            audioInstance.play();
+            audioInstance.onended = () => setIsSpeaking(false);
+          } else {
+            // If audio fails to generate, just stop the speaking indicator
+            setIsSpeaking(false);
+          }
         } catch (error) {
           console.error("Failed to generate speech for crisis alert:", error);
           setIsSpeaking(false);
