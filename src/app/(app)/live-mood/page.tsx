@@ -41,13 +41,18 @@ export default function LiveMoodPage() {
     const videoRef = useRef<HTMLVideoElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const recognitionRef = useRef<any>(null);
-    const silenceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-    const transcriptRef = useRef(''); // Ref to hold the latest transcript
-    const manualStopRef = useRef(false); // Ref to track if user stopped manually
     const { toast } = useToast();
     const { user } = useAuth();
     const scrollViewportRef = useRef<HTMLDivElement>(null);
 
+    // Auto-scroll to bottom of chat
+    useEffect(() => {
+        if (scrollViewportRef.current) {
+          scrollViewportRef.current.scrollTo({ top: scrollViewportRef.current.scrollHeight, behavior: 'smooth' });
+        }
+    }, [chatMessages]);
+    
+    // Setup and cleanup camera
     useEffect(() => {
         let stream: MediaStream | null = null;
         const getCameraPermission = async () => {
@@ -78,40 +83,16 @@ export default function LiveMoodPage() {
         };
         getCameraPermission();
 
-        // Cleanup function to stop the camera stream when the component unmounts
         return () => {
             if (stream) {
                 stream.getTracks().forEach(track => track.stop());
             }
-             if (recognitionRef.current) {
+            if (recognitionRef.current) {
                 recognitionRef.current.abort();
             }
         };
     }, [toast]);
 
-    useEffect(() => {
-        if (scrollViewportRef.current) {
-          scrollViewportRef.current.scrollTo({ top: scrollViewportRef.current.scrollHeight, behavior: 'smooth' });
-        }
-    }, [chatMessages]);
-    
-    // Full cleanup on unmount
-    useEffect(() => {
-      return () => {
-        if (silenceTimeoutRef.current) clearTimeout(silenceTimeoutRef.current);
-        if (recognitionRef.current) {
-            recognitionRef.current.onresult = null;
-            recognitionRef.current.onend = null;
-            recognitionRef.current.onerror = null;
-            recognitionRef.current.abort();
-            recognitionRef.current = null;
-        }
-        if (videoRef.current && videoRef.current.srcObject) {
-            const stream = videoRef.current.srcObject as MediaStream;
-            stream.getTracks().forEach(track => track.stop());
-        }
-      }
-    }, []);
 
     const captureFrame = (): string => {
         if (!videoRef.current || !canvasRef.current) return '';
@@ -127,76 +108,8 @@ export default function LiveMoodPage() {
         return '';
     };
 
-    const startListening = useCallback(() => {
-        if (!SpeechRecognition || isRecording) {
-            return;
-        }
-        manualStopRef.current = false;
-        setIsRecording(true);
-        transcriptRef.current = '';
-
-        recognitionRef.current = new SpeechRecognition();
-        recognitionRef.current.continuous = true;
-        recognitionRef.current.interimResults = true;
-        recognitionRef.current.lang = languageToSpeechCode[language] || 'en-US';
-
-        recognitionRef.current.onresult = (event: any) => {
-            if (silenceTimeoutRef.current) clearTimeout(silenceTimeoutRef.current);
-            
-            let finalTranscript = '';
-            let interimTranscript = '';
-            for (let i = 0; i < event.results.length; ++i) {
-                if (event.results[i].isFinal) {
-                    finalTranscript += event.results[i][0].transcript;
-                } else {
-                    interimTranscript += event.results[i][0].transcript;
-                }
-            }
-            transcriptRef.current = finalTranscript + interimTranscript;
-
-            silenceTimeoutRef.current = setTimeout(() => {
-                 if (recognitionRef.current) {
-                    recognitionRef.current.stop();
-                }
-            }, 2000);
-        };
-
-        recognitionRef.current.onend = () => {
-            if (silenceTimeoutRef.current) clearTimeout(silenceTimeoutRef.current);
-            
-            const finalTranscript = transcriptRef.current.trim();
-            // Only process if it was not a manual stop and there is a transcript
-            if (!manualStopRef.current && finalTranscript) {
-                processMood(finalTranscript);
-            }
-            
-            // Cleanup recognition state
-            if (recognitionRef.current) {
-               recognitionRef.current = null;
-               setIsRecording(false);
-               transcriptRef.current = '';
-            }
-        };
-
-        recognitionRef.current.onerror = (event: any) => {
-             if (event.error !== 'aborted' && event.error !== 'no-speech') {
-                toast({ title: 'Speech recognition error', description: `Error: ${event.error}`, variant: 'destructive' });
-             }
-             setIsRecording(false);
-        };
-
-        recognitionRef.current.start();
-    }, [language, isRecording, toast]);
-
-    const stopListening = useCallback(() => {
-        if (recognitionRef.current) {
-            manualStopRef.current = true;
-            recognitionRef.current.stop();
-        }
-    }, []);
-
     const processMood = useCallback(async (transcript: string) => {
-        if (!transcript.trim()) {
+        if (!transcript) {
             setIsProcessing(false);
             return;
         }
@@ -219,16 +132,7 @@ export default function LiveMoodPage() {
             const ttsResult = await textToSpeech({ text: result.response });
             if (ttsResult.audioDataUri) {
                 const audio = new Audio(ttsResult.audioDataUri);
-                audio.onended = () => {
-                    setTimeout(() => {
-                        if (!isRecording) startListening();
-                    }, 500);
-                };
                 audio.play();
-            } else {
-                 setTimeout(() => {
-                    if (!isRecording) startListening();
-                }, 500);
             }
 
         } catch (error) {
@@ -239,15 +143,53 @@ export default function LiveMoodPage() {
         } finally {
             setIsProcessing(false);
         }
-    }, [isRecording, language, startListening, toast]);
-    
+    }, [language, toast]);
+
     const handleMicClick = () => {
         if (isRecording) {
-            stopListening();
+            recognitionRef.current?.stop();
         } else {
-            startListening();
+            if (!SpeechRecognition) {
+                toast({
+                    title: "Browser Not Supported",
+                    description: "Your browser does not support the Web Speech API for voice recognition.",
+                    variant: "destructive",
+                });
+                return;
+            }
+            
+            const recognition = new SpeechRecognition();
+            recognitionRef.current = recognition;
+            
+            recognition.continuous = false;
+            recognition.interimResults = false;
+            recognition.lang = languageToSpeechCode[language] || 'en-US';
+            
+            let finalTranscript = '';
+
+            recognition.onresult = (event: any) => {
+                finalTranscript = event.results[0][0].transcript;
+            };
+
+            recognition.onend = () => {
+                setIsRecording(false);
+                if (finalTranscript) {
+                    processMood(finalTranscript);
+                }
+            };
+
+            recognition.onerror = (event: any) => {
+                if (event.error !== 'aborted' && event.error !== 'no-speech') {
+                   toast({ title: 'Speech recognition error', description: `Error: ${event.error}`, variant: 'destructive' });
+                }
+                setIsRecording(false);
+            };
+
+            recognition.start();
+            setIsRecording(true);
         }
     };
+
 
     return (
         <div className="h-full flex flex-col">
