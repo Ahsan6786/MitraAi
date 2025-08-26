@@ -186,6 +186,17 @@ function CommentSection({ postId }: { postId: string }) {
             toast({ title: 'Error', description: 'Could not update comment visibility.', variant: 'destructive' });
         }
     };
+    
+    const handleDeleteComment = async (commentId: string) => {
+        try {
+            await deleteDoc(doc(db, `posts/${postId}/comments`, commentId));
+            toast({ title: 'Comment Deleted' });
+        } catch (error) {
+            console.error('Error deleting comment:', error);
+            toast({ title: 'Error', description: 'Could not delete comment.', variant: 'destructive' });
+        }
+    };
+
 
     const handleAddComment = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -219,29 +230,53 @@ function CommentSection({ postId }: { postId: string }) {
             <div className="space-y-4">
                 {isLoading && <Loader2 className="w-5 h-5 animate-spin mx-auto" />}
                 {!isLoading && comments.length === 0 && <p className="text-sm text-muted-foreground text-center">No comments yet. Be the first to comment!</p>}
-                {comments.map(comment => (
-                    <div key={comment.id} className={cn("flex items-start gap-3 transition-opacity", comment.hidden && 'opacity-50')}>
-                        <Avatar className="w-8 h-8">
-                           <AvatarFallback>{comment.authorName ? comment.authorName[0].toUpperCase() : 'A'}</AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1 bg-muted p-3 rounded-lg">
-                           <div className="flex justify-between items-center">
-                                <p className="text-sm font-semibold">{comment.authorName}</p>
-                                <div className="flex items-center gap-2">
-                                    <p className="text-xs text-muted-foreground mr-2">
-                                        {comment.createdAt ? formatDistanceToNow(comment.createdAt.toDate(), { addSuffix: true }) : ''}
-                                    </p>
-                                    {isOwner && (
-                                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleToggleHideComment(comment)}>
-                                            {comment.hidden ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-                                        </Button>
-                                    )}
-                                </div>
-                           </div>
-                            <p className="text-sm mt-1">{comment.hidden ? <i>Comment hidden by moderator</i> : comment.content}</p>
+                {comments.map(comment => {
+                    const isCommentAuthor = user?.uid === comment.authorId;
+                    return (
+                        <div key={comment.id} className={cn("flex items-start gap-3 transition-opacity", comment.hidden && 'opacity-50')}>
+                            <Avatar className="w-8 h-8">
+                               <AvatarFallback>{comment.authorName ? comment.authorName[0].toUpperCase() : 'A'}</AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1 bg-muted p-3 rounded-lg">
+                               <div className="flex justify-between items-center">
+                                    <p className="text-sm font-semibold">{comment.authorName}</p>
+                                    <div className="flex items-center gap-1">
+                                        <p className="text-xs text-muted-foreground mr-1">
+                                            {comment.createdAt ? formatDistanceToNow(comment.createdAt.toDate(), { addSuffix: true }) : ''}
+                                        </p>
+                                        {isOwner && (
+                                            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleToggleHideComment(comment)}>
+                                                {comment.hidden ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                                            </Button>
+                                        )}
+                                        {isCommentAuthor && (
+                                             <AlertDialog>
+                                                <AlertDialogTrigger asChild>
+                                                    <Button variant="ghost" size="icon" className="h-6 w-6">
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </Button>
+                                                </AlertDialogTrigger>
+                                                <AlertDialogContent>
+                                                    <AlertDialogHeader>
+                                                    <AlertDialogTitle>Delete Comment?</AlertDialogTitle>
+                                                    <AlertDialogDescription>
+                                                        Are you sure you want to delete this comment? This action cannot be undone.
+                                                    </AlertDialogDescription>
+                                                    </AlertDialogHeader>
+                                                    <AlertDialogFooter>
+                                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                    <AlertDialogAction onClick={() => handleDeleteComment(comment.id)}>Delete</AlertDialogAction>
+                                                    </AlertDialogFooter>
+                                                </AlertDialogContent>
+                                            </AlertDialog>
+                                        )}
+                                    </div>
+                               </div>
+                                <p className="text-sm mt-1">{comment.hidden && !isOwner ? <i>Comment hidden by moderator</i> : comment.content}</p>
+                            </div>
                         </div>
-                    </div>
-                ))}
+                    );
+                })}
             </div>
             <form onSubmit={handleAddComment} className="flex items-center gap-2 mt-4">
                 <Input
@@ -360,3 +395,5 @@ export default function CommunityPage() {
     </div>
   );
 }
+
+    
