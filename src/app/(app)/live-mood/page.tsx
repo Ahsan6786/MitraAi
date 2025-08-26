@@ -91,6 +91,7 @@ export default function LiveMoodPage() {
             }
             if (recognitionRef.current) {
                 recognitionRef.current.abort();
+                recognitionRef.current = null;
             }
         };
     }, [toast]);
@@ -109,17 +110,13 @@ export default function LiveMoodPage() {
         }
         return '';
     };
-    
-    const handleMicClick = useCallback(() => {
-        if (isRecording) {
-            recognitionRef.current?.stop();
-        } else {
-             // eslint-disable-next-line @typescript-eslint/no-use-before-define
-            startListening();
-        }
-    }, [isRecording]); // eslint-disable-line react-hooks/exhaustive-deps
-    
+
     const processMood = useCallback(async (transcript: string) => {
+        if (!transcript.trim()) {
+            setIsProcessing(false);
+            return;
+        }
+
         setIsProcessing(true);
         const photoDataUri = captureFrame();
         const userMessage: ChatMessage = { sender: 'user', text: transcript };
@@ -142,14 +139,7 @@ export default function LiveMoodPage() {
                     const audio = new Audio(ttsResult.audioDataUri);
                     audioRef.current = audio;
                     audio.play();
-                    audio.onended = () => {
-                       setTimeout(() => handleMicClick(), 500);
-                    };
-                } else {
-                    setTimeout(() => handleMicClick(), 500);
                 }
-            } else {
-                 setTimeout(() => handleMicClick(), 500);
             }
 
         } catch (error) {
@@ -160,27 +150,26 @@ export default function LiveMoodPage() {
         } finally {
             setIsProcessing(false);
         }
-    }, [language, toast, handleMicClick]);
-
+    }, [language, toast]);
 
     const startListening = useCallback(() => {
-        if (isRecording || isProcessing || !SpeechRecognition) {
+        if (!SpeechRecognition) {
+            toast({ title: 'Browser Not Supported', variant: 'destructive' });
             return;
         }
+        if (isRecording || isProcessing) return;
 
         setIsRecording(true);
         const recognition = new SpeechRecognition();
         recognitionRef.current = recognition;
         
-        recognition.continuous = false;
+        recognition.continuous = false; // Process after a single utterance
         recognition.interimResults = false;
         recognition.lang = languageToSpeechCode[language] || 'en-US';
         
         recognition.onresult = (event: any) => {
             const transcript = event.results[0][0].transcript;
-            if (transcript) {
-                processMood(transcript);
-            }
+            processMood(transcript);
         };
 
         recognition.onend = () => {
@@ -195,8 +184,22 @@ export default function LiveMoodPage() {
         };
         
         recognition.start();
-    }, [isRecording, isProcessing, language, toast, processMood]); 
+    }, [isRecording, isProcessing, language, toast, processMood]);
 
+    const stopListening = useCallback(() => {
+        if (recognitionRef.current) {
+            recognitionRef.current.abort();
+            setIsRecording(false);
+        }
+    }, []);
+
+    const handleMicClick = () => {
+        if (isRecording) {
+            stopListening();
+        } else {
+            startListening();
+        }
+    };
 
     return (
         <div className="h-full flex flex-col">
@@ -292,7 +295,7 @@ export default function LiveMoodPage() {
                             {isRecording ? <Square className="w-8 h-8 sm:w-10 sm:h-10" /> : <Mic className="w-8 h-8 sm:w-10 sm:h-10" />}
                         </Button>
                         <p className="text-sm text-muted-foreground mt-2">
-                            {isRecording ? 'Listening...' : 'Tap to Speak'}
+                            {isRecording ? 'Listening...' : (isProcessing ? 'Processing...' : 'Tap to Speak')}
                         </p>
                     </footer>
                 </div>
