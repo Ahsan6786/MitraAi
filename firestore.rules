@@ -1,50 +1,33 @@
+
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-  
-    // Helper function to check for the owner's email
     function isOwner() {
       return request.auth.token.email == 'ahsanimamkhan06@gmail.com';
     }
 
-    // Rules for the 'posts' collection
     match /posts/{postId} {
-      // Anyone authenticated can read posts
-      allow read: if request.auth != null;
-      
-      // Anyone authenticated can create a post
+      allow read: if true;
       allow create: if request.auth != null;
       
-      // Only the author of the post or the owner can delete it
+      // An author can delete their own post, OR the owner can delete any post.
       allow delete: if request.auth.uid == resource.data.authorId || isOwner();
-      
-      // Allow only the commentCount to be updated by any authenticated user.
-      // This prevents users from editing other parts of the post.
-      allow update: if request.auth != null &&
-                      request.resource.data.keys().hasOnly(['commentCount']) &&
-                      request.resource.data.commentCount is number;
-    }
-    
-    // Rules for the 'comments' subcollection
-    match /posts/{postId}/comments/{commentId} {
-      // Anyone authenticated can read comments
-      allow read: if request.auth != null;
-      
-      // Anyone authenticated can create a comment
-      allow create: if request.auth != null;
-      
-      // Only the author of the comment can delete it
-      allow delete: if request.auth.uid == resource.data.authorId;
-      
-      // Only the owner can update a comment (to hide/unhide it)
-      allow update: if isOwner();
+
+      // Allow anyone to update the commentCount, but only the author to update other fields.
+      allow update: if (request.auth.uid == resource.data.authorId && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['commentCount'])) ||
+                     (request.auth != null && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['commentCount']));
     }
 
-    // Default deny all other writes to collections
-    match /{document=**} {
-      allow write: if false;
+    match /posts/{postId}/comments/{commentId} {
+      allow read: if true;
+      allow create: if request.auth != null;
+      
+      // An author can delete their own comment, OR the owner can delete any comment.
+      allow delete: if request.auth.uid == resource.data.authorId || isOwner();
+      
+      // Owner can update the 'hidden' field on any comment.
+      allow update: if isOwner() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['hidden']);
     }
   }
 }
-    
