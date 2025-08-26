@@ -3,8 +3,8 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { SidebarTrigger } from '@/components/ui/sidebar';
-import { ThemeToggle } from '@/components/ui/theme-toggle';
-import { ClipboardClock } from 'lucide-react';
+import { ThemeToggle } from '@/components/theme-toggle';
+import { FileClock } from 'lucide-react';
 
 export default function ReportsPage() {
     return (
@@ -25,7 +25,7 @@ export default function ReportsPage() {
                 <Card className="w-full max-w-lg text-center">
                     <CardHeader>
                         <div className="mx-auto bg-muted rounded-full p-4 w-fit mb-4">
-                            <ClipboardClock className="w-12 h-12 text-primary" />
+                            <FileClock className="w-12 h-12 text-primary" />
                         </div>
                         <CardTitle>Feature Coming Soon!</CardTitle>
                         <CardDescription>
