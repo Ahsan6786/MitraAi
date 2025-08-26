@@ -8,7 +8,7 @@ import { Loader2, Mic, Square, Bot, Camera, User } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
 import { SidebarTrigger } from '@/components/ui/sidebar';
-import { ThemeToggle } from '@/components/theme-toggle';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { predictLiveMood } from '@/ai/flows/predict-live-mood';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -177,11 +177,13 @@ export default function LiveMoodPage() {
             const ttsResult = await textToSpeech({ text: result.response });
             if (ttsResult.audioDataUri) {
                 const audio = new Audio(ttsResult.audioDataUri);
-                audio.onended = () => {
-                    // Automatically start listening for the user's reply
-                    startListening();
-                };
                 audio.play();
+                // Automatically start listening for the user's reply after 1 second
+                setTimeout(() => {
+                    if (!isRecording) { // Check if not already recording
+                      startListening();
+                    }
+                }, 1000);
             } else {
                  // If no audio, start listening immediately
                  startListening();
