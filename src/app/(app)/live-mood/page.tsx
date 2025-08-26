@@ -82,6 +82,9 @@ export default function LiveMoodPage() {
             if (stream) {
                 stream.getTracks().forEach(track => track.stop());
             }
+             if (recognitionRef.current) {
+                recognitionRef.current.stop();
+            }
         };
     }, [toast]);
 
@@ -120,13 +123,12 @@ export default function LiveMoodPage() {
         }
         return '';
     };
-    
+
     const stopListening = useCallback(() => {
         if (recognitionRef.current) {
             recognitionRef.current.stop();
         }
     }, []);
-
 
     const startListening = useCallback(() => {
         if (!SpeechRecognition) {
@@ -162,16 +164,11 @@ export default function LiveMoodPage() {
 
         recognitionRef.current.onend = () => {
             if (silenceTimeoutRef.current) clearTimeout(silenceTimeoutRef.current);
-             // processMood is now called from here
             const finalTranscript = transcriptRef.current.trim();
             if (finalTranscript) {
-                // We're passing a callback to processMood to avoid circular dependencies
-                processMood(finalTranscript, () => {
-                    if (isRecording) startListening();
-                });
+                processMood(finalTranscript);
             }
             
-            // Check if it was stopped manually vs automatically
             if (recognitionRef.current) {
                recognitionRef.current = null;
                setIsRecording(false);
@@ -185,12 +182,12 @@ export default function LiveMoodPage() {
         };
 
         recognitionRef.current.start();
-    }, [toast, stopListening, language, isRecording]); // processMood is removed from here
+    }, [language, stopListening, toast]);
 
-    const processMood = useCallback(async (transcript: string, onComplete?: () => void) => {
+
+    const processMood = useCallback(async (transcript: string) => {
         if (!transcript.trim()) {
             setIsProcessing(false);
-            onComplete?.();
             return;
         }
 
@@ -203,7 +200,6 @@ export default function LiveMoodPage() {
         if (!photoDataUri) {
             toast({ title: 'Could not capture frame', variant: 'destructive' });
             setIsProcessing(false);
-            onComplete?.();
             return;
         }
 
@@ -221,11 +217,21 @@ export default function LiveMoodPage() {
             if (ttsResult.audioDataUri) {
                 const audio = new Audio(ttsResult.audioDataUri);
                 audio.onended = () => {
-                  setTimeout(() => onComplete?.(), 1000);
-                }
+                    setTimeout(() => {
+                        // Check if another recording hasn't been manually started
+                        if (!isRecording) {
+                           startListening();
+                        }
+                    }, 1000); // 1-second delay after AI finishes
+                };
                 audio.play();
             } else {
-                 setTimeout(() => onComplete?.(), 1000);
+                // If no audio, still start listening after a delay
+                setTimeout(() => {
+                   if (!isRecording) {
+                       startListening();
+                    }
+                }, 1000);
             }
 
         } catch (error) {
@@ -236,7 +242,7 @@ export default function LiveMoodPage() {
         } finally {
             setIsProcessing(false);
         }
-    }, [language, toast]);
+    }, [isRecording, language, startListening, toast]);
     
     const handleMicClick = () => {
         if (isRecording) {
