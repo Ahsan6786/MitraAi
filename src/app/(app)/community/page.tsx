@@ -17,7 +17,6 @@ import {
   getDocs,
   writeBatch,
   updateDoc,
-  increment,
 } from 'firebase/firestore';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { ThemeToggle } from '@/components/theme-toggle';
@@ -75,17 +74,19 @@ function PostCard({ post }: { post: Post }) {
   const canDelete = isAuthor || isOwner;
 
   const handleDeletePost = async () => {
-    if (!isAuthor) return; // Only author can delete their post
+    if (!canDelete) return; 
     setIsDeleting(true);
     try {
       // First, delete all comments in the subcollection
       const commentsQuery = query(collection(db, `posts/${post.id}/comments`));
       const commentsSnapshot = await getDocs(commentsQuery);
-      const batch = writeBatch(db);
-      commentsSnapshot.forEach(commentDoc => {
-        batch.delete(commentDoc.ref);
-      });
-      await batch.commit();
+      if (!commentsSnapshot.empty) {
+        const batch = writeBatch(db);
+        commentsSnapshot.forEach(commentDoc => {
+          batch.delete(commentDoc.ref);
+        });
+        await batch.commit();
+      }
       
       // Then, delete the post itself
       await deleteDoc(doc(db, 'posts', post.id));
@@ -113,7 +114,7 @@ function PostCard({ post }: { post: Post }) {
               {post.createdAt ? formatDistanceToNow(post.createdAt.toDate(), { addSuffix: true }) : 'Just now'}
             </CardDescription>
           </div>
-          {isAuthor && ( // Only show delete to the original author
+          {canDelete && (
             <AlertDialog>
                 <AlertDialogTrigger asChild>
                     <Button variant="ghost" size="icon" disabled={isDeleting}>
@@ -201,12 +202,8 @@ function CommentSection({ postId }: { postId: string }) {
                 hidden: false,
             });
             
-            const postRef = doc(db, 'posts', postId);
-            // Use atomic increment to avoid race conditions and permission issues
-            await updateDoc(postRef, {
-                commentCount: increment(1)
-            });
-
+            // The comment count will be updated by the Cloud Function.
+            // We no longer update it from the client.
             setNewComment('');
         } catch (error) {
             console.error("Error adding comment:", error);
