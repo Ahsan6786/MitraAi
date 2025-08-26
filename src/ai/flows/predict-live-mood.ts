@@ -59,8 +59,8 @@ const predictLiveMoodFlow = ai.defineFlow(
     outputSchema: PredictLiveMoodOutputSchema,
   },
   async (input) => {
-    // Use the faster preview model for this specific, latency-sensitive flow.
-    const { output } = await prompt(input, { model: googleAI.model('gemini-2.5-flash-preview') });
+    // Use the faster 1.5 flash model for this specific, latency-sensitive flow.
+    const { output } = await prompt(input, { model: googleAI.model('gemini-1.5-flash-latest') });
     return output!;
   }
 );
