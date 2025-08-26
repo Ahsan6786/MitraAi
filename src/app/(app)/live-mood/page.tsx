@@ -110,48 +110,7 @@ export default function LiveMoodPage() {
         }
         return '';
     };
-
-    const processMood = useCallback(async (transcript: string) => {
-        if (!transcript.trim()) {
-            setIsProcessing(false);
-            return;
-        }
-
-        setIsProcessing(true);
-        const photoDataUri = captureFrame();
-        const userMessage: ChatMessage = { sender: 'user', text: transcript };
-        setChatMessages(prev => [...prev, userMessage]);
-
-        if (!photoDataUri) {
-            toast({ title: 'Could not capture frame', variant: 'destructive' });
-            setIsProcessing(false);
-            return;
-        }
-
-        try {
-            const result = await predictLiveMood({ photoDataUri, description: transcript, language });
-            const aiMessage: ChatMessage = { sender: 'ai', text: result.response };
-            setChatMessages(prev => [...prev, aiMessage]);
-            
-            if (result.response.trim()) {
-                const ttsResult = await textToSpeech({ text: result.response });
-                if (ttsResult.audioDataUri) {
-                    const audio = new Audio(ttsResult.audioDataUri);
-                    audioRef.current = audio;
-                    audio.play();
-                }
-            }
-
-        } catch (error) {
-            console.error('Error predicting live mood:', error);
-            toast({ title: 'AI Analysis Failed', variant: 'destructive' });
-            const errorMessage: ChatMessage = { sender: 'ai', text: "Sorry, I couldn't process that right now." };
-            setChatMessages(prev => [...prev, errorMessage]);
-        } finally {
-            setIsProcessing(false);
-        }
-    }, [language, toast]);
-
+    
     const startListening = useCallback(() => {
         if (!SpeechRecognition) {
             toast({ title: 'Browser Not Supported', variant: 'destructive' });
@@ -184,7 +143,60 @@ export default function LiveMoodPage() {
         };
         
         recognition.start();
-    }, [isRecording, isProcessing, language, toast, processMood]);
+    }, [isRecording, isProcessing, language, toast, processMood]); // Eslint-disable-line react-hooks/exhaustive-deps
+
+    const processMood = useCallback(async (transcript: string) => {
+        if (!transcript.trim()) {
+            setIsProcessing(false);
+            return;
+        }
+
+        setIsProcessing(true);
+        const photoDataUri = captureFrame();
+        const userMessage: ChatMessage = { sender: 'user', text: transcript };
+        setChatMessages(prev => [...prev, userMessage]);
+
+        if (!photoDataUri) {
+            toast({ title: 'Could not capture frame', variant: 'destructive' });
+            setIsProcessing(false);
+            return;
+        }
+
+        try {
+            const result = await predictLiveMood({ photoDataUri, description: transcript, language });
+            const aiMessage: ChatMessage = { sender: 'ai', text: result.response };
+            setChatMessages(prev => [...prev, aiMessage]);
+            
+            const handleAudioEnd = () => {
+                setIsProcessing(false);
+                // After AI finishes speaking, wait 0.5s and then listen again.
+                setTimeout(() => {
+                    startListening();
+                }, 500);
+            };
+
+            if (result.response.trim()) {
+                const ttsResult = await textToSpeech({ text: result.response });
+                if (ttsResult.audioDataUri) {
+                    const audio = new Audio(ttsResult.audioDataUri);
+                    audioRef.current = audio;
+                    audio.onended = handleAudioEnd;
+                    audio.play();
+                } else {
+                    handleAudioEnd(); // If TTS fails, still proceed to listen again.
+                }
+            } else {
+                 handleAudioEnd(); // If AI gives no response, listen again.
+            }
+
+        } catch (error) {
+            console.error('Error predicting live mood:', error);
+            toast({ title: 'AI Analysis Failed', variant: 'destructive' });
+            const errorMessage: ChatMessage = { sender: 'ai', text: "Sorry, I couldn't process that right now." };
+            setChatMessages(prev => [...prev, errorMessage]);
+            setIsProcessing(false);
+        }
+    }, [language, toast, startListening]);
 
     const stopListening = useCallback(() => {
         if (recognitionRef.current) {
@@ -274,7 +286,7 @@ export default function LiveMoodPage() {
                                     {msg.sender === 'user' && <Avatar><AvatarFallback>{user?.email?.[0].toUpperCase() ?? <User />}</AvatarFallback></Avatar>}
                                 </div>
                             ))}
-                            {isProcessing && (
+                            {isProcessing && chatMessages[chatMessages.length - 1]?.sender === 'user' && (
                                 <div className="flex items-start gap-3 justify-start">
                                     <Avatar><AvatarFallback><Bot /></AvatarFallback></Avatar>
                                     <div className="bg-muted rounded-xl px-4 py-3 text-sm shadow-sm flex items-center">
