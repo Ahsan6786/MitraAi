@@ -17,6 +17,7 @@ import {
   getDocs,
   writeBatch,
   updateDoc,
+  increment,
 } from 'firebase/firestore';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { ThemeToggle } from '@/components/theme-toggle';
@@ -74,7 +75,7 @@ function PostCard({ post }: { post: Post }) {
   const canDelete = isAuthor || isOwner;
 
   const handleDeletePost = async () => {
-    if (!canDelete) return;
+    if (!isAuthor) return; // Only author can delete their post
     setIsDeleting(true);
     try {
       // First, delete all comments in the subcollection
@@ -112,7 +113,7 @@ function PostCard({ post }: { post: Post }) {
               {post.createdAt ? formatDistanceToNow(post.createdAt.toDate(), { addSuffix: true }) : 'Just now'}
             </CardDescription>
           </div>
-          {canDelete && (
+          {isAuthor && ( // Only show delete to the original author
             <AlertDialog>
                 <AlertDialogTrigger asChild>
                     <Button variant="ghost" size="icon" disabled={isDeleting}>
@@ -201,8 +202,10 @@ function CommentSection({ postId }: { postId: string }) {
             });
             
             const postRef = doc(db, 'posts', postId);
-            const currentComments = (await getDocs(commentCollectionRef)).size;
-            await updateDoc(postRef, { commentCount: currentComments });
+            // Use atomic increment to avoid race conditions and permission issues
+            await updateDoc(postRef, {
+                commentCount: increment(1)
+            });
 
             setNewComment('');
         } catch (error) {
