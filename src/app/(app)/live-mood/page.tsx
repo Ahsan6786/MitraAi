@@ -38,6 +38,7 @@ export default function LiveMoodPage() {
     const { toast } = useToast();
     const { user } = useAuth();
     const scrollAreaRef = useRef<HTMLDivElement>(null);
+    const scrollViewportRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         const getCameraPermission = async () => {
@@ -70,8 +71,8 @@ export default function LiveMoodPage() {
     }, [toast]);
 
     useEffect(() => {
-        if (scrollAreaRef.current) {
-          scrollAreaRef.current.scrollTo({ top: scrollAreaRef.current.scrollHeight, behavior: 'smooth' });
+        if (scrollViewportRef.current) {
+          scrollViewportRef.current.scrollTo({ top: scrollViewportRef.current.scrollHeight, behavior: 'smooth' });
         }
     }, [chatMessages]);
     
@@ -82,6 +83,11 @@ export default function LiveMoodPage() {
         if (recognitionRef.current) {
             recognitionRef.current.stop();
             recognitionRef.current = null;
+        }
+        // Stop camera stream
+        if (videoRef.current && videoRef.current.srcObject) {
+            const stream = videoRef.current.srcObject as MediaStream;
+            stream.getTracks().forEach(track => track.stop());
         }
       }
     }, []);
@@ -273,13 +279,13 @@ export default function LiveMoodPage() {
                             </p>
                         </div>
                     </div>
-                    <Card className="flex flex-col h-full overflow-hidden">
+                    <Card className="flex flex-col h-full max-h-[calc(100vh-12rem)] overflow-hidden">
                         <CardHeader>
                             <CardTitle>Live Interaction</CardTitle>
                             <CardDescription>Your conversation with the AI will appear here.</CardDescription>
                         </CardHeader>
                         <CardContent className="flex-1 overflow-hidden">
-                            <ScrollArea className="h-full" ref={scrollAreaRef}>
+                            <ScrollArea className="h-full" ref={scrollAreaRef} viewportRef={scrollViewportRef}>
                                 <div className="p-4 space-y-4">
                                     {chatMessages.length === 0 && !isProcessing && (
                                         <div className="flex flex-col items-center justify-center h-full text-center">
