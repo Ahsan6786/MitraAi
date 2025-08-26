@@ -44,6 +44,8 @@ export default function LiveMoodPage() {
     const { toast } = useToast();
     const { user } = useAuth();
     const scrollViewportRef = useRef<HTMLDivElement>(null);
+    const streamRef = useRef<MediaStream | null>(null);
+
 
     // Auto-scroll to bottom of chat
     useEffect(() => {
@@ -54,7 +56,6 @@ export default function LiveMoodPage() {
     
     // Setup and cleanup camera
     useEffect(() => {
-        let stream: MediaStream | null = null;
         const getCameraPermission = async () => {
             if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
                 setHasCameraPermission(false);
@@ -66,7 +67,8 @@ export default function LiveMoodPage() {
                 return;
             }
             try {
-                stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                streamRef.current = stream;
                 setHasCameraPermission(true);
                 if (videoRef.current) {
                     videoRef.current.srcObject = stream;
@@ -84,8 +86,8 @@ export default function LiveMoodPage() {
         getCameraPermission();
 
         return () => {
-            if (stream) {
-                stream.getTracks().forEach(track => track.stop());
+            if (streamRef.current) {
+                streamRef.current.getTracks().forEach(track => track.stop());
             }
             if (recognitionRef.current) {
                 recognitionRef.current.abort();
@@ -133,6 +135,10 @@ export default function LiveMoodPage() {
             if (ttsResult.audioDataUri) {
                 const audio = new Audio(ttsResult.audioDataUri);
                 audio.play();
+                audio.onended = () => {
+                   if (isRecording) return; // Don't start if already recording
+                   handleMicClick();
+                };
             }
 
         } catch (error) {
@@ -143,52 +149,54 @@ export default function LiveMoodPage() {
         } finally {
             setIsProcessing(false);
         }
-    }, [language, toast]);
+    }, [language, toast, isRecording]); // handleMicClick is not stable, so we add isRecording instead
 
-    const handleMicClick = () => {
+    const handleMicClick = useCallback(() => {
         if (isRecording) {
             recognitionRef.current?.stop();
-        } else {
-            if (!SpeechRecognition) {
-                toast({
-                    title: "Browser Not Supported",
-                    description: "Your browser does not support the Web Speech API for voice recognition.",
-                    variant: "destructive",
-                });
-                return;
-            }
-            
-            const recognition = new SpeechRecognition();
-            recognitionRef.current = recognition;
-            
-            recognition.continuous = false;
-            recognition.interimResults = false;
-            recognition.lang = languageToSpeechCode[language] || 'en-US';
-            
-            let finalTranscript = '';
-
-            recognition.onresult = (event: any) => {
-                finalTranscript = event.results[0][0].transcript;
-            };
-
-            recognition.onend = () => {
-                setIsRecording(false);
-                if (finalTranscript) {
-                    processMood(finalTranscript);
-                }
-            };
-
-            recognition.onerror = (event: any) => {
-                if (event.error !== 'aborted' && event.error !== 'no-speech') {
-                   toast({ title: 'Speech recognition error', description: `Error: ${event.error}`, variant: 'destructive' });
-                }
-                setIsRecording(false);
-            };
-
-            recognition.start();
-            setIsRecording(true);
+            setIsRecording(false);
+            return;
         }
-    };
+
+        if (!SpeechRecognition) {
+            toast({
+                title: "Browser Not Supported",
+                description: "Your browser does not support the Web Speech API for voice recognition.",
+                variant: "destructive",
+            });
+            return;
+        }
+        
+        const recognition = new SpeechRecognition();
+        recognitionRef.current = recognition;
+        
+        recognition.continuous = false;
+        recognition.interimResults = false;
+        recognition.lang = languageToSpeechCode[language] || 'en-US';
+        
+        let finalTranscript = '';
+
+        recognition.onresult = (event: any) => {
+            finalTranscript = event.results[0][0].transcript;
+        };
+
+        recognition.onend = () => {
+            setIsRecording(false);
+            if (finalTranscript) {
+                processMood(finalTranscript);
+            }
+        };
+
+        recognition.onerror = (event: any) => {
+            if (event.error !== 'aborted' && event.error !== 'no-speech') {
+                toast({ title: 'Speech recognition error', description: `Error: ${event.error}`, variant: 'destructive' });
+            }
+            setIsRecording(false);
+        };
+
+        recognition.start();
+        setIsRecording(true);
+    }, [isRecording, language, processMood, toast]);
 
 
     return (
@@ -216,8 +224,8 @@ export default function LiveMoodPage() {
                     <ThemeToggle />
                 </div>
             </header>
-            <main className="flex-1 overflow-hidden p-2 sm:p-4 md:p-6">
-                <div className="grid gap-6 grid-cols-1 lg:grid-cols-2 h-full max-h-[calc(100vh-15rem)] lg:max-h-[calc(100vh-10rem)]">
+            <main className="flex-1 overflow-auto p-2 sm:p-4 md:p-6">
+                <div className="grid gap-6 grid-cols-1 lg:grid-cols-2 h-full">
                     <div className="flex flex-col gap-4">
                         <Card className="flex-1 flex flex-col min-h-0">
                             <CardHeader>
