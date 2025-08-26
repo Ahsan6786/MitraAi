@@ -219,14 +219,18 @@ export default function LiveMoodPage() {
                 audio.onended = () => {
                     // Check if another recording hasn't been manually started
                     if (!isRecording) {
-                       startListening();
+                       setTimeout(() => {
+                           startListening();
+                       }, 500);
                     }
                 };
                 audio.play();
             } else {
                 // If no audio, still start listening
                 if (!isRecording) {
-                    startListening();
+                    setTimeout(() => {
+                       startListening();
+                   }, 500);
                 }
             }
 
@@ -355,4 +359,5 @@ export default function LiveMoodPage() {
             <canvas ref={canvasRef} className="hidden"></canvas>
         </div>
     );
-}
+
+    
