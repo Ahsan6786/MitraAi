@@ -217,21 +217,17 @@ export default function LiveMoodPage() {
             if (ttsResult.audioDataUri) {
                 const audio = new Audio(ttsResult.audioDataUri);
                 audio.onended = () => {
-                    setTimeout(() => {
-                        // Check if another recording hasn't been manually started
-                        if (!isRecording) {
-                           startListening();
-                        }
-                    }, 1000); // 1-second delay after AI finishes
+                    // Check if another recording hasn't been manually started
+                    if (!isRecording) {
+                       startListening();
+                    }
                 };
                 audio.play();
             } else {
-                // If no audio, still start listening after a delay
-                setTimeout(() => {
-                   if (!isRecording) {
-                       startListening();
-                    }
-                }, 1000);
+                // If no audio, still start listening
+                if (!isRecording) {
+                    startListening();
+                }
             }
 
         } catch (error) {
