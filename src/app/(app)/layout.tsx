@@ -131,14 +131,6 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
                 <SidebarMenuItem>
-                  <SidebarMenuButton asChild isActive={pathname === '/voice-journal'}>
-                    <Link href="/voice-journal" onClick={handleLinkClick}>
-                      <MicVocal />
-                      <span>Voice Journal</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
                   <SidebarMenuButton
                     asChild
                     isActive={pathname === '/live-mood'}

@@ -47,7 +47,6 @@
     "firebase-functions": "^5.0.1",
     "genkit": "^1.14.1",
     "lucide-react": "^0.475.0",
-    "mic-recorder-to-mp3": "^2.2.2",
     "next": "15.3.3",
     "next-themes": "^0.3.0",
     "patch-package": "^8.0.0",
