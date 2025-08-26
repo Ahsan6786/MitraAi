@@ -16,6 +16,7 @@ import {
   Timestamp,
   getDocs,
   writeBatch,
+  updateDoc,
 } from 'firebase/firestore';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { ThemeToggle } from '@/components/theme-toggle';
@@ -23,7 +24,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Loader2, MessageSquare, Send, Trash2 } from 'lucide-react';
+import { Loader2, MessageSquare, Send, Trash2, Eye, EyeOff } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { formatDistanceToNow } from 'date-fns';
 import { Separator } from '@/components/ui/separator';
@@ -39,6 +40,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import { cn } from '@/lib/utils';
 
 interface Post {
   id: string;
@@ -55,6 +57,7 @@ interface Comment {
   authorName: string;
   content: string;
   createdAt: Timestamp;
+  hidden?: boolean;
 }
 
 const OWNER_EMAIL = 'ahsanimamkhan06@gmail.com';
@@ -67,8 +70,7 @@ function PostCard({ post }: { post: Post }) {
   
   const authorInitial = post.authorName ? post.authorName[0].toUpperCase() : 'A';
   const isAuthor = user && user.uid === post.authorId;
-  const isOwner = user && user.email === OWNER_EMAIL;
-  const canDelete = isAuthor || isOwner;
+  const canDelete = isAuthor; // Only the author can delete their post
 
   const handleDeletePost = async () => {
     if (!canDelete) return;
@@ -120,7 +122,7 @@ function PostCard({ post }: { post: Post }) {
                     <AlertDialogHeader>
                     <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                     <AlertDialogDescription>
-                        This action cannot be undone. This will permanently delete this post and all of its comments.
+                        This action cannot be undone. This will permanently delete your post and all of its comments.
                     </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
@@ -152,16 +154,35 @@ function CommentSection({ postId }: { postId: string }) {
     const [isLoading, setIsLoading] = useState(true);
     const [newComment, setNewComment] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const isOwner = user?.email === OWNER_EMAIL;
 
     useEffect(() => {
         const q = query(collection(db, `posts/${postId}/comments`), orderBy('createdAt', 'asc'));
         const unsubscribe = onSnapshot(q, (snapshot) => {
-            const commentsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Comment));
+            let commentsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Comment));
+            // Filter hidden comments for non-owners
+            if (!isOwner) {
+                commentsData = commentsData.filter(comment => !comment.hidden);
+            }
             setComments(commentsData);
             setIsLoading(false);
         });
         return () => unsubscribe();
-    }, [postId]);
+    }, [postId, isOwner]);
+
+    const handleToggleHideComment = async (comment: Comment) => {
+        if (!isOwner) return;
+        try {
+            const commentRef = doc(db, `posts/${postId}/comments`, comment.id);
+            await updateDoc(commentRef, {
+                hidden: !comment.hidden,
+            });
+            toast({ title: `Comment ${comment.hidden ? 'unhidden' : 'hidden'}.` });
+        } catch (error) {
+            console.error('Error hiding comment:', error);
+            toast({ title: 'Error', description: 'Could not update comment visibility.', variant: 'destructive' });
+        }
+    };
 
     const handleAddComment = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -169,20 +190,17 @@ function CommentSection({ postId }: { postId: string }) {
         setIsSubmitting(true);
 
         try {
-            // This is a simplified transaction. For high-traffic apps, you might use a Cloud Function.
             const commentCollectionRef = collection(db, `posts/${postId}/comments`);
             await addDoc(commentCollectionRef, {
                 authorId: user.uid,
                 authorName: user.displayName || user.email,
                 content: newComment,
                 createdAt: serverTimestamp(),
+                hidden: false,
             });
             
-            // Note: This comment count update is not transactional with comment creation.
-            // For perfect accuracy, a more complex transaction or a Cloud Function would be needed.
             const currentComments = (await getDocs(commentCollectionRef)).size;
             await doc(db, 'posts', postId).set({ commentCount: currentComments }, { merge: true });
-
 
             setNewComment('');
         } catch (error) {
@@ -200,18 +218,25 @@ function CommentSection({ postId }: { postId: string }) {
                 {isLoading && <Loader2 className="w-5 h-5 animate-spin mx-auto" />}
                 {!isLoading && comments.length === 0 && <p className="text-sm text-muted-foreground text-center">No comments yet. Be the first to comment!</p>}
                 {comments.map(comment => (
-                    <div key={comment.id} className="flex items-start gap-3">
+                    <div key={comment.id} className={cn("flex items-start gap-3 transition-opacity", comment.hidden && 'opacity-50')}>
                         <Avatar className="w-8 h-8">
                            <AvatarFallback>{comment.authorName ? comment.authorName[0].toUpperCase() : 'A'}</AvatarFallback>
                         </Avatar>
                         <div className="flex-1 bg-muted p-3 rounded-lg">
                            <div className="flex justify-between items-center">
                                 <p className="text-sm font-semibold">{comment.authorName}</p>
-                                <p className="text-xs text-muted-foreground mr-2">
-                                    {comment.createdAt ? formatDistanceToNow(comment.createdAt.toDate(), { addSuffix: true }) : ''}
-                                </p>
+                                <div className="flex items-center gap-2">
+                                    <p className="text-xs text-muted-foreground mr-2">
+                                        {comment.createdAt ? formatDistanceToNow(comment.createdAt.toDate(), { addSuffix: true }) : ''}
+                                    </p>
+                                    {isOwner && (
+                                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleToggleHideComment(comment)}>
+                                            {comment.hidden ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                                        </Button>
+                                    )}
+                                </div>
                            </div>
-                            <p className="text-sm mt-1">{comment.content}</p>
+                            <p className="text-sm mt-1">{comment.hidden ? <i>Comment hidden by moderator</i> : comment.content}</p>
                         </div>
                     </div>
                 ))}
@@ -333,5 +358,3 @@ export default function CommunityPage() {
     </div>
   );
 }
-
-    

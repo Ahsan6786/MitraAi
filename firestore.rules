@@ -3,22 +3,37 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
   
+    // Helper function to check for owner
     function isOwner() {
       return request.auth.token.email == 'ahsanimamkhan06@gmail.com';
     }
-  
-    match /posts/{postId} {
-      allow read: if true;
-      allow create: if request.auth != null;
-      allow update: if request.auth.uid == resource.data.authorId;
-      allow delete: if request.auth.uid == resource.data.authorId || isOwner();
 
-      match /comments/{commentId} {
-        allow read: if true;
-        allow create: if request.auth != null;
-        // Only the comment author or the post owner can delete comments.
-        allow delete: if request.auth.uid == resource.data.authorId || isOwner();
-      }
+    // Rules for the 'posts' collection
+    match /posts/{postId} {
+      // Anyone can read posts
+      allow read;
+      // Authenticated users can create posts
+      allow create: if request.auth != null;
+      // Only the author can update or delete their own post
+      allow update, delete: if request.auth.uid == resource.data.authorId;
+    }
+
+    // Rules for the 'comments' subcollection
+    match /posts/{postId}/comments/{commentId} {
+      // Anyone can read comments
+      allow read;
+      // Authenticated users can create comments
+      allow create: if request.auth != null;
+      // Only the author can delete their own comment
+      allow delete: if request.auth.uid == resource.data.authorId;
+      // Owner can update the 'hidden' field of any comment for moderation
+      allow update: if isOwner() && request.resource.data.keys().hasOnly(['hidden']);
+    }
+
+    // Rules for the 'journalEntries' collection
+    match /journalEntries/{entryId} {
+      // Users can only manage their own journal entries
+      allow read, write: if request.auth.uid == request.resource.data.userId;
     }
   }
 }
