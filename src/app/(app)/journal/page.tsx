@@ -9,7 +9,7 @@ import { ref, uploadString, getDownloadURL, deleteObject } from 'firebase/storag
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2, BookHeart, Trash2, Mic, PenSquare, AlertTriangle, FileText } from 'lucide-react';
+import { Loader2, BookHeart, Trash2, Mic, PenSquare, AlertTriangle, FileText, CheckCircle2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { predictUserMood } from '@/ai/flows/predict-user-mood';
 import { SidebarTrigger } from '@/components/ui/sidebar';
