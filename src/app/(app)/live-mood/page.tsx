@@ -110,10 +110,52 @@ export default function LiveMoodPage() {
         return '';
     };
 
+    const processMood = useCallback(async (transcript: string) => {
+        if (!transcript) {
+            setIsProcessing(false);
+            return;
+        }
+        setIsProcessing(true);
+        const photoDataUri = captureFrame();
+        const userMessage: ChatMessage = { sender: 'user', text: transcript };
+        setChatMessages(prev => [...prev, userMessage]);
+
+        if (!photoDataUri) {
+            toast({ title: 'Could not capture frame', variant: 'destructive' });
+            setIsProcessing(false);
+            return;
+        }
+
+        try {
+            const result = await predictLiveMood({ photoDataUri, description: transcript, language });
+            const aiMessage: ChatMessage = { sender: 'ai', text: result.response };
+            setChatMessages(prev => [...prev, aiMessage]);
+            
+            const ttsResult = await textToSpeech({ text: result.response });
+            if (ttsResult.audioDataUri) {
+                const audio = new Audio(ttsResult.audioDataUri);
+                audio.play();
+                audio.onended = () => {
+                   if (isRecording) return;
+                   // Using a timeout allows the state to update before starting the next recognition
+                   setTimeout(() => handleMicClick(), 500);
+                };
+            }
+
+        } catch (error) {
+            console.error('Error predicting live mood:', error);
+            toast({ title: 'AI Analysis Failed', variant: 'destructive' });
+            const errorMessage: ChatMessage = { sender: 'ai', text: "Sorry, I couldn't process that right now." };
+            setChatMessages(prev => [...prev, errorMessage]);
+        } finally {
+            setIsProcessing(false);
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [language, toast, isRecording]);
+    
     const handleMicClick = useCallback(() => {
         if (isRecording) {
             recognitionRef.current?.stop();
-            // onend will handle the state change
             return;
         }
 
@@ -142,14 +184,7 @@ export default function LiveMoodPage() {
         recognition.onend = () => {
             setIsRecording(false);
             if (finalTranscript) {
-                // processMood is defined below but because of useCallback, it will be available.
-                // To avoid dependency cycle, we pass it as a function to the state setter.
-                // In this case, we'll just call it directly since processMood's callback is stable.
-                // But let's define processMood before handleMicClick to ensure it's safe.
-                // Re-ordering... no, let's keep it clean. processMood will be a dependency.
-                 (async () => {
-                    await processMood(finalTranscript);
-                })();
+                processMood(finalTranscript);
             }
         };
 
@@ -162,51 +197,7 @@ export default function LiveMoodPage() {
 
         recognition.start();
         setIsRecording(true);
-    // We'll define processMood later and add it as a dependency.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isRecording, language, toast]);
-
-
-    const processMood = useCallback(async (transcript: string) => {
-        if (!transcript) {
-            setIsProcessing(false);
-            return;
-        }
-        setIsProcessing(true);
-        const photoDataUri = captureFrame();
-        const userMessage: ChatMessage = { sender: 'user', text: transcript };
-        setChatMessages(prev => [...prev, userMessage]);
-
-        if (!photoDataUri) {
-            toast({ title: 'Could not capture frame', variant: 'destructive' });
-            setIsProcessing(false);
-            return;
-        }
-
-        try {
-            const result = await predictLiveMood({ photoDataUri, description: transcript, language });
-            const aiMessage: ChatMessage = { sender: 'ai', text: result.response };
-            setChatMessages(prev => [...prev, aiMessage]);
-            
-            const ttsResult = await textToSpeech({ text: result.response });
-            if (ttsResult.audioDataUri) {
-                const audio = new Audio(ttsResult.audioDataUri);
-                audio.play();
-                audio.onended = () => {
-                   if (isRecording) return;
-                   handleMicClick();
-                };
-            }
-
-        } catch (error) {
-            console.error('Error predicting live mood:', error);
-            toast({ title: 'AI Analysis Failed', variant: 'destructive' });
-            const errorMessage: ChatMessage = { sender: 'ai', text: "Sorry, I couldn't process that right now." };
-            setChatMessages(prev => [...prev, errorMessage]);
-        } finally {
-            setIsProcessing(false);
-        }
-    }, [language, toast, isRecording, handleMicClick]);
+    }, [isRecording, language, toast, processMood]);
 
 
     return (
@@ -234,7 +225,7 @@ export default function LiveMoodPage() {
                     <ThemeToggle />
                 </div>
             </header>
-            <main className="flex-1 overflow-auto p-2 sm:p-4 md:p-6">
+            <main className="flex-1 overflow-hidden p-2 sm:p-4 md:p-6">
                 <div className="grid gap-6 grid-cols-1 lg:grid-cols-2 h-full">
                     <div className="flex flex-col gap-4">
                         <Card className="flex-1 flex flex-col min-h-0">
@@ -315,5 +306,4 @@ export default function LiveMoodPage() {
             <canvas ref={canvasRef} className="hidden"></canvas>
         </div>
     );
-
-    
+}
