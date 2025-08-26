@@ -4,7 +4,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, Mic, Square, Bot, Camera, User } from 'lucide-react';
+import { Loader2, Mic, Square, Bot, Camera, User, Languages } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
 import { SidebarTrigger } from '@/components/ui/sidebar';
@@ -15,6 +15,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { textToSpeech } from '@/ai/flows/text-to-speech';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const SpeechRecognition =
   (typeof window !== 'undefined' && (window.SpeechRecognition || window.webkitSpeechRecognition));
@@ -24,11 +25,18 @@ interface ChatMessage {
     text: string;
 }
 
+const languageToSpeechCode: Record<string, string> = {
+    English: 'en-US',
+    Hindi: 'hi-IN',
+    Hinglish: 'en-IN',
+};
+
 export default function LiveMoodPage() {
     const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
     const [isRecording, setIsRecording] = useState(false);
     const [isProcessing, setIsProcessing] = useState(false);
     const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+    const [language, setLanguage] = useState('English');
     
     const videoRef = useRef<HTMLVideoElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -37,7 +45,6 @@ export default function LiveMoodPage() {
     const transcriptRef = useRef(''); // Ref to hold the latest transcript
     const { toast } = useToast();
     const { user } = useAuth();
-    const scrollAreaRef = useRef<HTMLDivElement>(null);
     const scrollViewportRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -105,6 +112,53 @@ export default function LiveMoodPage() {
         }
         return '';
     };
+    
+    const startListening = useCallback(() => {
+        if (!SpeechRecognition) {
+            toast({ title: 'Speech Recognition not supported', variant: 'destructive' });
+            return;
+        }
+
+        setIsRecording(true);
+        transcriptRef.current = '';
+        recognitionRef.current = new SpeechRecognition();
+        recognitionRef.current.continuous = true;
+        recognitionRef.current.interimResults = true;
+        recognitionRef.current.lang = languageToSpeechCode[language] || 'en-US';
+
+        recognitionRef.current.onresult = (event: any) => {
+            if (silenceTimeoutRef.current) clearTimeout(silenceTimeoutRef.current);
+            
+            let finalTranscript = '';
+            let interimTranscript = '';
+            for (let i = 0; i < event.results.length; ++i) {
+                if (event.results[i].isFinal) {
+                    finalTranscript += event.results[i][0].transcript;
+                } else {
+                    interimTranscript += event.results[i][0].transcript;
+                }
+            }
+            transcriptRef.current = finalTranscript + interimTranscript;
+
+            silenceTimeoutRef.current = setTimeout(() => {
+                stopListening();
+            }, 2000);
+        };
+
+        recognitionRef.current.onend = () => {
+            if (silenceTimeoutRef.current) clearTimeout(silenceTimeoutRef.current);
+            if (recognitionRef.current) {
+                stopListening();
+            }
+        };
+
+        recognitionRef.current.onerror = (event: any) => {
+            toast({ title: 'Speech recognition error', description: event.error, variant: 'destructive' });
+            setIsRecording(false);
+        };
+
+        recognitionRef.current.start();
+    }, [toast, stopListening, language]); // eslint-disable-line react-hooks/exhaustive-deps
 
     const processMood = async (transcript: string) => {
         if (!transcript.trim()) {
@@ -127,7 +181,8 @@ export default function LiveMoodPage() {
         try {
             const result = await predictLiveMood({
                 photoDataUri,
-                description: transcript
+                description: transcript,
+                language,
             });
 
             const aiMessage: ChatMessage = { sender: 'ai', text: result.response };
@@ -168,54 +223,8 @@ export default function LiveMoodPage() {
             }
             transcriptRef.current = '';
         }
-    }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [processMood]); // eslint-disable-line react-hooks/exhaustive-deps
 
-    const startListening = useCallback(() => {
-        if (!SpeechRecognition) {
-            toast({ title: 'Speech Recognition not supported', variant: 'destructive' });
-            return;
-        }
-
-        setIsRecording(true);
-        transcriptRef.current = '';
-        recognitionRef.current = new SpeechRecognition();
-        recognitionRef.current.continuous = true;
-        recognitionRef.current.interimResults = true;
-        recognitionRef.current.lang = 'en-US';
-
-        recognitionRef.current.onresult = (event: any) => {
-            if (silenceTimeoutRef.current) clearTimeout(silenceTimeoutRef.current);
-            
-            let finalTranscript = '';
-            let interimTranscript = '';
-            for (let i = 0; i < event.results.length; ++i) {
-                if (event.results[i].isFinal) {
-                    finalTranscript += event.results[i][0].transcript;
-                } else {
-                    interimTranscript += event.results[i][0].transcript;
-                }
-            }
-            transcriptRef.current = finalTranscript + interimTranscript;
-
-            silenceTimeoutRef.current = setTimeout(() => {
-                stopListening();
-            }, 2000);
-        };
-
-        recognitionRef.current.onend = () => {
-            if (silenceTimeoutRef.current) clearTimeout(silenceTimeoutRef.current);
-            if (recognitionRef.current) {
-                stopListening();
-            }
-        };
-
-        recognitionRef.current.onerror = (event: any) => {
-            toast({ title: 'Speech recognition error', description: event.error, variant: 'destructive' });
-            setIsRecording(false);
-        };
-
-        recognitionRef.current.start();
-    }, [toast, stopListening]); 
 
     const handleMicClick = () => {
         if (isRecording) {
@@ -236,7 +245,20 @@ export default function LiveMoodPage() {
                         <p className="text-sm text-muted-foreground">Interact with an AI that sees and hears you.</p>
                     </div>
                 </div>
-                <ThemeToggle />
+                <div className="flex items-center gap-2">
+                    <Select value={language} onValueChange={setLanguage} disabled={isRecording || isProcessing}>
+                        <SelectTrigger className="w-[120px]">
+                            <Languages className="w-4 h-4 mr-2"/>
+                            <SelectValue placeholder="Language" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="English">English</SelectItem>
+                            <SelectItem value="Hindi">Hindi</SelectItem>
+                            <SelectItem value="Hinglish">Hinglish</SelectItem>
+                        </SelectContent>
+                    </Select>
+                    <ThemeToggle />
+                </div>
             </header>
             <main className="flex-1 overflow-hidden p-2 sm:p-4 md:p-6">
                 <div className="grid gap-6 grid-cols-1 lg:grid-cols-2 h-full">
@@ -285,7 +307,7 @@ export default function LiveMoodPage() {
                             <CardDescription>Your conversation with the AI will appear here.</CardDescription>
                         </CardHeader>
                         <CardContent className="flex-1 overflow-hidden">
-                            <ScrollArea className="h-full" ref={scrollAreaRef} viewportRef={scrollViewportRef}>
+                            <ScrollArea className="h-full" viewportRef={scrollViewportRef}>
                                 <div className="p-4 space-y-4">
                                     {chatMessages.length === 0 && !isProcessing && (
                                         <div className="flex flex-col items-center justify-center h-full text-center">
