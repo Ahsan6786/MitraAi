@@ -1,273 +1,257 @@
+
 'use client';
 
-import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
-import { BookHeart, MessageSquare, MicVocal, ShieldCheck, LogOut, FileText, Puzzle, Phone, LayoutDashboard, Info, HeartPulse, Sparkles, Trophy, Newspaper, User, Users, Star, Camera, MessageCircleHeart } from 'lucide-react';
-import {
-  SidebarProvider,
-  Sidebar,
-  SidebarHeader,
-  SidebarContent,
-  SidebarMenu,
-  SidebarMenuItem,
-  SidebarMenuButton,
-  SidebarFooter,
-  SidebarInset,
-  SidebarTrigger,
-  useSidebar,
-} from '@/components/ui/sidebar';
-import { Logo } from '@/components/icons';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { AuthProvider, useAuth } from '@/hooks/use-auth';
-import { useEffect } from 'react';
+import { useState, useEffect } from 'react';
+import { useAuth } from '@/hooks/use-auth';
+import { db, storage } from '@/lib/firebase';
+import { collection, addDoc, serverTimestamp, query, where, onSnapshot, orderBy, doc, deleteDoc, Timestamp } from 'firebase/firestore';
+import { ref, uploadString, getDownloadURL, deleteObject } from 'firebase/storage';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { auth } from '@/lib/firebase';
-import { signOut } from 'firebase/auth';
-import { MusicProvider } from '@/hooks/use-music';
-import MusicPlayer from '@/components/music-player';
+import { Textarea } from '@/components/ui/textarea';
+import { Loader2, BookHeart, Trash2, Mic, PenSquare, AlertTriangle, FileText } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { predictUserMood } from '@/ai/flows/predict-user-mood';
+import { SidebarTrigger } from '@/components/ui/sidebar';
+import { ThemeToggle } from '@/components/theme-toggle';
+import { Badge } from '@/components/ui/badge';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import Link from 'next/link';
 
-const ADMIN_EMAIL = 'ahsan.khan@mitwpu.edu.in';
-
-function AppLayoutContent({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname();
-  const { user, loading } = useAuth();
-  const router = useRouter();
-  const sidebar = useSidebar();
-  const isAdmin = user?.email === ADMIN_EMAIL;
-
-  useEffect(() => {
-    if (!loading && !user) {
-      router.push('/signin');
-    }
-  }, [user, loading, router]);
-  
-  const handleSignOut = async () => {
-    await signOut(auth);
-    router.push('/signin');
-  };
-
-  const handleLinkClick = () => {
-    if (sidebar?.isMobile) {
-      sidebar.setOpenMobile(false);
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <div>Loading...</div>
-      </div>
-    );
-  }
-
-  if (!user) {
-    return null;
-  }
-
-  const userDisplayName = user.displayName || user.email;
-  const userAvatarFallback = user.displayName?.[0] || user.email?.[0] || 'U';
-
-
-  return (
-    <>
-      <Sidebar>
-        <SidebarHeader>
-           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Logo className="size-8 text-primary" />
-              <span className="text-lg font-semibold font-headline">MitraAI</span>
-            </div>
-            <SidebarTrigger className="md:hidden" />
-          </div>
-        </SidebarHeader>
-        <SidebarContent>
-          <SidebarMenu>
-            {isAdmin ? (
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={pathname === '/admin'}>
-                  <Link href="/admin" onClick={handleLinkClick}>
-                    <ShieldCheck />
-                    <span>Admin Panel</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            ) : (
-              <>
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild isActive={pathname === '/chat'}>
-                    <Link href="/chat" onClick={handleLinkClick}>
-                      <MessageSquare />
-                      <span>Chat</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild isActive={pathname === '/talk'}>
-                    <Link href="/talk" onClick={handleLinkClick} className="flex items-center justify-between w-full">
-                      <div className="flex items-center gap-2">
-                        <Phone />
-                        <span>Talk to Mitra</span>
-                      </div>
-                      <Trophy className="w-4 h-4 text-amber-500" />
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                 <SidebarMenuItem>
-                  <SidebarMenuButton asChild isActive={pathname === '/dashboard'}>
-                    <Link href="/dashboard" onClick={handleLinkClick}>
-                      <LayoutDashboard />
-                      <span>Dashboard</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild isActive={pathname === '/mood-chat'}>
-                    <Link href="/mood-chat" onClick={handleLinkClick}>
-                      <MessageCircleHeart />
-                      <span>Mood Chat</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={pathname === '/live-mood'}
-                  >
-                    <Link href="/live-mood" onClick={handleLinkClick} className="flex items-center justify-between w-full">
-                      <div className="flex items-center gap-2">
-                        <Camera />
-                        <span>Live Mood Analysis</span>
-                      </div>
-                      <Trophy className="w-4 h-4 text-amber-500" />
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                 <SidebarMenuItem>
-                  <SidebarMenuButton asChild isActive={pathname === '/community'}>
-                    <Link href="/community" onClick={handleLinkClick} className="flex items-center justify-between w-full">
-                       <div className="flex items-center gap-2">
-                        <Users />
-                        <span>Community</span>
-                      </div>
-                      <Star className="w-4 h-4 text-amber-500" />
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                 <SidebarMenuItem>
-                  <SidebarMenuButton asChild isActive={pathname === '/news'}>
-                    <Link href="/news" onClick={handleLinkClick}>
-                      <Newspaper />
-                      <span>AI News</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild isActive={pathname === '/affirmations'}>
-                    <Link href="/affirmations" onClick={handleLinkClick}>
-                      <Sparkles />
-                      <span>Affirmations</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                 <SidebarMenuItem>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={pathname === '/games'}
-                  >
-                    <Link href="/games" onClick={handleLinkClick}>
-                      <Puzzle />
-                      <span>Mind Games</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                 <SidebarMenuItem>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={pathname === '/exercises'}
-                  >
-                    <Link href="/exercises" onClick={handleLinkClick}>
-                      <HeartPulse />
-                      <span>Mindful Exercises</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={pathname === '/reports'}
-                  >
-                    <Link href="/reports" onClick={handleLinkClick} className="flex items-center justify-between w-full">
-                       <div className="flex items-center gap-2">
-                        <FileText />
-                        <span>Doctor's Reports</span>
-                      </div>
-                      <Trophy className="w-4 h-4 text-amber-500" />
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                 <SidebarMenuItem>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={pathname === '/about'}
-                  >
-                    <Link href="/about" onClick={handleLinkClick}>
-                      <Info />
-                      <span>About MitraAI</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              </>
-            )}
-          </SidebarMenu>
-        </SidebarContent>
-        <SidebarFooter>
-          <div className="flex flex-col gap-2 p-2">
-             <div className="flex items-center gap-3 p-2">
-                <Avatar>
-                  <AvatarFallback>{userAvatarFallback.toUpperCase()}</AvatarFallback>
-                </Avatar>
-                <div className="flex flex-col overflow-hidden">
-                  <span className="text-sm font-medium truncate">{userDisplayName}</span>
-                </div>
-              </div>
-              <Button variant="ghost" size="sm" asChild className="w-full justify-start">
-                  <Link href="/profile">
-                    <User className="mr-2 h-4 w-4" />
-                    Profile
-                  </Link>
-              </Button>
-              <Button variant="ghost" size="sm" onClick={handleSignOut} className="w-full justify-start">
-                <LogOut className="mr-2 h-4 w-4" />
-                Sign Out
-              </Button>
-          </div>
-        </SidebarFooter>
-      </Sidebar>
-      <SidebarInset>
-        <div className="flex flex-col h-full">
-          <div className="flex-1">
-            {children}
-          </div>
-          <footer className="p-4 border-t text-center text-xs text-muted-foreground bg-background">
-            <strong>A Gentle Reminder:</strong> MitraAI is a supportive friend, not a substitute for professional medical advice, diagnosis, or treatment. Its analysis may not be 100% correct. Always seek the advice of a qualified health provider for any medical questions.
-          </footer>
-        </div>
-        <MusicPlayer />
-      </SidebarInset>
-    </>
-  );
+interface JournalEntry {
+  id: string;
+  createdAt: Timestamp;
+  type: 'text';
+  mood: string;
+  content: string;
+  userId: string;
+  reviewed: boolean;
+  doctorReport?: string;
 }
 
+function JournalEntryCard({ entry }: { entry: JournalEntry }) {
+    const [isDeleting, setIsDeleting] = useState(false);
+    const { toast } = useToast();
 
-export default function AppLayout({ children }: { children: React.ReactNode }) {
+    const handleDelete = async () => {
+        setIsDeleting(true);
+        try {
+            // Delete Firestore document
+            await deleteDoc(doc(db, 'journalEntries', entry.id));
+            toast({ title: "Entry Deleted", description: "Your journal entry has been removed." });
+        } catch (error) {
+            console.error("Error deleting entry:", error);
+            toast({ title: "Error", description: "Could not delete the entry.", variant: "destructive" });
+        } finally {
+            setIsDeleting(false);
+        }
+    };
+
+    return (
+        <Card>
+            <CardHeader>
+                <div className="flex justify-between items-start">
+                    <div>
+                        <CardTitle className="flex items-center gap-2 text-lg">
+                            {entry.type === 'text' ? <PenSquare className="w-5 h-5 text-primary" /> : <Mic className="w-5 h-5 text-primary" />}
+                            <span>{entry.createdAt?.toDate().toLocaleDateString()}</span>
+                        </CardTitle>
+                        <CardDescription className="mt-1">
+                            {entry.createdAt?.toDate().toLocaleTimeString()}
+                        </CardDescription>
+                    </div>
+                     <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                             <Button variant="ghost" size="icon" disabled={isDeleting}>
+                                {isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                            </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                This action cannot be undone. This will permanently delete your journal entry.
+                            </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={handleDelete}>Continue</AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                </div>
+            </CardHeader>
+            <CardContent>
+                <p className="text-muted-foreground italic whitespace-pre-wrap">"{entry.content}"</p>
+            </CardContent>
+            <CardFooter className="flex-col items-start gap-2">
+                <div className="flex items-center gap-2">
+                    <span className="font-semibold">Detected Mood:</span>
+                    <Badge variant="secondary" className="capitalize">{entry.mood}</Badge>
+                </div>
+                {entry.reviewed && (
+                    <div className="flex items-center gap-2 text-sm text-green-600">
+                        <CheckCircle2 className="w-4 h-4" />
+                        <span>Reviewed by a doctor. <Link href="/reports" className="underline">View report</Link></span>
+                    </div>
+                )}
+            </CardFooter>
+        </Card>
+    )
+}
+
+export default function JournalPage() {
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const [entry, setEntry] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [entries, setEntries] = useState<JournalEntry[]>([]);
+  const [isLoadingEntries, setIsLoadingEntries] = useState(true);
+
+  useEffect(() => {
+    if (user) {
+      const q = query(
+        collection(db, 'journalEntries'),
+        where('userId', '==', user.uid),
+        orderBy('createdAt', 'desc')
+      );
+      const unsubscribe = onSnapshot(q, (snapshot) => {
+        const userEntries = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as JournalEntry));
+        setEntries(userEntries);
+        setIsLoadingEntries(false);
+      }, (error) => {
+        console.error("Error fetching journal entries:", error);
+        toast({ title: "Error", description: "Could not fetch your journal entries.", variant: "destructive" });
+        setIsLoadingEntries(false);
+      });
+      return () => unsubscribe();
+    }
+  }, [user, toast]);
+
+  const handleSaveTextEntry = async () => {
+    if (!entry.trim() || !user) return;
+    setIsSubmitting(true);
+    try {
+      // 1. Get mood from AI
+      const moodResult = await predictUserMood({ journalEntry: entry });
+
+      // 2. Save to Firestore
+      await addDoc(collection(db, 'journalEntries'), {
+        userId: user.uid,
+        userEmail: user.email,
+        type: 'text',
+        content: entry,
+        mood: moodResult.mood,
+        confidence: moodResult.confidence,
+        createdAt: serverTimestamp(),
+        reviewed: false,
+        doctorReport: null,
+      });
+
+      toast({ title: "Entry Saved", description: `We've logged your entry. Detected mood: ${moodResult.mood}` });
+      setEntry('');
+    } catch (error) {
+      console.error("Error saving entry:", error);
+      toast({ title: "Error", description: "There was an issue saving your entry.", variant: "destructive" });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+
   return (
-     <AuthProvider>
-        <SidebarProvider>
-          <MusicProvider>
-            <AppLayoutContent>{children}</AppLayoutContent>
-          </MusicProvider>
-        </SidebarProvider>
-    </AuthProvider>
+    <div className="h-full flex flex-col">
+      <header className="border-b p-3 md:p-4 flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+            <SidebarTrigger className="md:hidden" />
+            <div>
+              <h1 className="text-lg md:text-xl font-bold">Your Private Journal</h1>
+              <p className="text-sm text-muted-foreground">
+                Write down your thoughts to track your mood.
+              </p>
+            </div>
+        </div>
+        <ThemeToggle />
+      </header>
+
+      <main className="flex-1 overflow-auto p-2 sm:p-4 md:p-6">
+        <div className="grid gap-8 md:grid-cols-2">
+          {/* Left Column: Entry Form */}
+          <div className="space-y-6">
+             <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                        <PenSquare className="w-6 h-6 text-primary"/> How are you feeling today?
+                    </CardTitle>
+                    <CardDescription>
+                        Write anything that's on your mind. It's completely private.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                     <Textarea
+                        placeholder="Start writing here..."
+                        rows={10}
+                        value={entry}
+                        onChange={(e) => setEntry(e.target.value)}
+                        disabled={isSubmitting}
+                    />
+                </CardContent>
+                <CardFooter className="flex justify-between">
+                    <Button onClick={handleSaveTextEntry} disabled={isSubmitting || !entry.trim()}>
+                        {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Save & Analyze
+                    </Button>
+                </CardFooter>
+            </Card>
+
+             <Card className="bg-amber-50 border-amber-200 dark:bg-amber-950 dark:border-amber-800">
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-amber-800 dark:text-amber-200">
+                        <AlertTriangle className="w-5 h-5"/>
+                        Need Professional Review?
+                    </CardTitle>
+                </CardHeader>
+                 <CardContent>
+                    <p className="text-sm text-amber-700 dark:text-amber-300">
+                       After saving, your entries are sent to a certified doctor for review. You can view their feedback in the <Link href="/reports" className="font-semibold underline">Doctor's Reports</Link> section.
+                    </p>
+                </CardContent>
+             </Card>
+          </div>
+
+          {/* Right Column: Past Entries */}
+          <div className="space-y-6">
+            <h2 className="text-xl font-semibold">Recent Entries</h2>
+             {isLoadingEntries ? (
+                <div className="flex justify-center items-center h-48">
+                    <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                </div>
+            ) : entries.length === 0 ? (
+                <Card className="text-center p-6">
+                    <BookHeart className="mx-auto w-12 h-12 text-muted-foreground mb-4"/>
+                    <CardTitle>No Entries Yet</CardTitle>
+                    <CardDescription className="mt-2">
+                        Your past journal entries will appear here.
+                    </CardDescription>
+                </Card>
+            ) : (
+                <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2">
+                    {entries.map(e => <JournalEntryCard key={e.id} entry={e} />)}
+                </div>
+            )}
+          </div>
+        </div>
+      </main>
+    </div>
   );
 }

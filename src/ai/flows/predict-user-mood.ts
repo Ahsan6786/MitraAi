@@ -34,12 +34,14 @@ const prompt = ai.definePrompt({
   name: 'predictUserMoodPrompt',
   input: {schema: PredictUserMoodInputSchema},
   output: {schema: PredictUserMoodOutputSchema},
-  prompt: `Analyze the following journal entry and predict the user's mood. Return the mood and a confidence level between 0 and 1.
+  prompt: `Analyze the following journal entry and predict the user's primary mood. 
+  
+  The mood should be a single, common word (e.g., Happy, Sad, Anxious, Stressed, Calm, Angry, Neutral).
+  
+  Also provide a confidence score between 0 and 1 for your prediction.
 
-Journal Entry: {{{journalEntry}}}
-
-Mood: 
-Confidence: `,
+  Journal Entry: {{{journalEntry}}}
+  `,
 });
 
 const predictUserMoodFlow = ai.defineFlow(

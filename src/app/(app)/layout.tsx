@@ -102,7 +102,14 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
-                
+                 <SidebarMenuItem>
+                  <SidebarMenuButton asChild isActive={pathname === '/journal'}>
+                    <Link href="/journal" onClick={handleLinkClick}>
+                      <BookHeart />
+                      <span>Journal</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
                 <SidebarMenuItem>
                   <SidebarMenuButton asChild isActive={pathname === '/talk'}>
                     <Link href="/talk" onClick={handleLinkClick} className="flex items-center justify-between w-full">
