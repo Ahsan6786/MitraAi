@@ -57,6 +57,7 @@ interface Comment {
   createdAt: Timestamp;
 }
 
+const OWNER_EMAIL = 'ahsanimamkhan06@gmail.com';
 
 function PostCard({ post }: { post: Post }) {
   const { user } = useAuth();
@@ -66,9 +67,11 @@ function PostCard({ post }: { post: Post }) {
   
   const authorInitial = post.authorName ? post.authorName[0].toUpperCase() : 'A';
   const isAuthor = user && user.uid === post.authorId;
+  const isOwner = user && user.email === OWNER_EMAIL;
+  const canDelete = isAuthor || isOwner;
 
   const handleDeletePost = async () => {
-    if (!isAuthor) return;
+    if (!canDelete) return;
     setIsDeleting(true);
     try {
       // First, delete all comments in the subcollection
@@ -83,7 +86,7 @@ function PostCard({ post }: { post: Post }) {
       // Then, delete the post itself
       await deleteDoc(doc(db, 'posts', post.id));
 
-      toast({ title: "Post Deleted", description: "Your post and all its comments have been removed." });
+      toast({ title: "Post Deleted", description: "The post and all its comments have been removed." });
     } catch (error) {
       console.error("Error deleting post:", error);
       toast({ title: "Error", description: "Could not delete the post.", variant: "destructive" });
@@ -106,7 +109,7 @@ function PostCard({ post }: { post: Post }) {
               {post.createdAt ? formatDistanceToNow(post.createdAt.toDate(), { addSuffix: true }) : 'Just now'}
             </CardDescription>
           </div>
-          {isAuthor && (
+          {canDelete && (
             <AlertDialog>
                 <AlertDialogTrigger asChild>
                     <Button variant="ghost" size="icon" disabled={isDeleting}>
@@ -117,7 +120,7 @@ function PostCard({ post }: { post: Post }) {
                     <AlertDialogHeader>
                     <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                     <AlertDialogDescription>
-                        This action cannot be undone. This will permanently delete your post and all of its comments.
+                        This action cannot be undone. This will permanently delete this post and all of its comments.
                     </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
@@ -330,3 +333,5 @@ export default function CommunityPage() {
     </div>
   );
 }
+
+    
