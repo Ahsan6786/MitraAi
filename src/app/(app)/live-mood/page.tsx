@@ -45,6 +45,7 @@ export default function LiveMoodPage() {
     const { user } = useAuth();
     const scrollViewportRef = useRef<HTMLDivElement>(null);
     const streamRef = useRef<MediaStream | null>(null);
+    const audioRef = useRef<HTMLAudioElement | null>(null);
 
     // Auto-scroll to bottom of chat
     useEffect(() => {
@@ -109,56 +110,15 @@ export default function LiveMoodPage() {
         return '';
     };
     
-    const startListening = useCallback(() => {
-        if (isRecording || isProcessing || !SpeechRecognition) {
-            return;
-        }
-
-        setIsRecording(true);
-        const recognition = new SpeechRecognition();
-        recognitionRef.current = recognition;
-        
-        recognition.continuous = false; // Process after a single utterance
-        recognition.interimResults = false;
-        recognition.lang = languageToSpeechCode[language] || 'en-US';
-        
-        recognition.onresult = (event: any) => {
-            const transcript = event.results[0][0].transcript;
-            if (transcript) {
-                // eslint-disable-next-line @typescript-eslint/no-use-before-define
-                processMood(transcript);
-            }
-        };
-
-        recognition.onend = () => {
-            setIsRecording(false);
-        };
-
-        recognition.onerror = (event: any) => {
-            if (event.error !== 'aborted' && event.error !== 'no-speech') {
-                toast({ title: 'Speech recognition error', description: `Error: ${event.error}`, variant: 'destructive' });
-            }
-            setIsRecording(false); // Ensure state is reset on error
-        };
-        
-        recognition.start();
-    }, [isRecording, isProcessing, language, toast]); // eslint-disable-line react-hooks/exhaustive-deps
-
-    const stopListening = useCallback(() => {
-        if (recognitionRef.current) {
-            recognitionRef.current.stop();
-        }
-        setIsRecording(false);
-    }, []);
-
     const handleMicClick = useCallback(() => {
         if (isRecording) {
-            stopListening();
+            recognitionRef.current?.stop();
         } else {
+             // eslint-disable-next-line @typescript-eslint/no-use-before-define
             startListening();
         }
-    }, [isRecording, startListening, stopListening]);
-
+    }, [isRecording]); // eslint-disable-line react-hooks/exhaustive-deps
+    
     const processMood = useCallback(async (transcript: string) => {
         setIsProcessing(true);
         const photoDataUri = captureFrame();
@@ -180,19 +140,16 @@ export default function LiveMoodPage() {
                 const ttsResult = await textToSpeech({ text: result.response });
                 if (ttsResult.audioDataUri) {
                     const audio = new Audio(ttsResult.audioDataUri);
+                    audioRef.current = audio;
                     audio.play();
                     audio.onended = () => {
-                        // Automatically start listening again after AI finishes.
-                        // Use a short timeout to prevent immediate re-triggering if there's an echo.
-                        setTimeout(() => startListening(), 500);
+                       setTimeout(() => handleMicClick(), 500);
                     };
                 } else {
-                    // If no audio, still start listening again
-                    setTimeout(() => startListening(), 500);
+                    setTimeout(() => handleMicClick(), 500);
                 }
             } else {
-                // If AI response is empty, start listening again
-                 setTimeout(() => startListening(), 500);
+                 setTimeout(() => handleMicClick(), 500);
             }
 
         } catch (error) {
@@ -203,7 +160,43 @@ export default function LiveMoodPage() {
         } finally {
             setIsProcessing(false);
         }
-    }, [language, toast, startListening]);
+    }, [language, toast, handleMicClick]);
+
+
+    const startListening = useCallback(() => {
+        if (isRecording || isProcessing || !SpeechRecognition) {
+            return;
+        }
+
+        setIsRecording(true);
+        const recognition = new SpeechRecognition();
+        recognitionRef.current = recognition;
+        
+        recognition.continuous = false;
+        recognition.interimResults = false;
+        recognition.lang = languageToSpeechCode[language] || 'en-US';
+        
+        recognition.onresult = (event: any) => {
+            const transcript = event.results[0][0].transcript;
+            if (transcript) {
+                processMood(transcript);
+            }
+        };
+
+        recognition.onend = () => {
+            setIsRecording(false);
+        };
+
+        recognition.onerror = (event: any) => {
+            if (event.error !== 'aborted' && event.error !== 'no-speech') {
+                toast({ title: 'Speech recognition error', description: `Error: ${event.error}`, variant: 'destructive' });
+            }
+            setIsRecording(false);
+        };
+        
+        recognition.start();
+    }, [isRecording, isProcessing, language, toast, processMood]); 
+
 
     return (
         <div className="h-full flex flex-col">
@@ -231,9 +224,9 @@ export default function LiveMoodPage() {
                 </div>
             </header>
 
-             <main className="flex-1 flex flex-col lg:flex-row overflow-hidden">
+             <main className="flex-1 flex flex-col md:flex-row overflow-hidden">
                 {/* Left Side: Camera View */}
-                <div className="lg:w-1/2 xl:w-2/5 p-2 sm:p-4 flex flex-col gap-4">
+                <div className="w-full md:w-1/2 p-2 sm:p-4 flex flex-col">
                     <Card className="flex-1 flex flex-col">
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2">
@@ -241,8 +234,8 @@ export default function LiveMoodPage() {
                                 Your Camera
                             </CardTitle>
                         </CardHeader>
-                        <CardContent className="flex-grow flex items-center justify-center">
-                            <div className="relative w-full aspect-video bg-muted rounded-md overflow-hidden">
+                        <CardContent className="flex-grow flex items-center justify-center p-2 sm:p-4 md:p-6">
+                            <div className="relative w-full max-w-md aspect-video bg-muted rounded-md overflow-hidden">
                                 <video ref={videoRef} className="w-full h-full object-cover" autoPlay muted playsInline />
                                 {hasCameraPermission === false && (
                                     <div className="absolute inset-0 flex items-center justify-center p-4">
@@ -294,9 +287,9 @@ export default function LiveMoodPage() {
                             disabled={hasCameraPermission !== true || isProcessing}
                             size="lg"
                             variant={isRecording ? 'destructive' : 'default'}
-                            className="rounded-full w-24 h-24 shadow-lg"
+                            className="rounded-full w-20 h-20 sm:w-24 sm:h-24 shadow-lg"
                         >
-                            {isRecording ? <Square className="w-10 h-10" /> : <Mic className="w-10 h-10" />}
+                            {isRecording ? <Square className="w-8 h-8 sm:w-10 sm:h-10" /> : <Mic className="w-8 h-8 sm:w-10 sm:h-10" />}
                         </Button>
                         <p className="text-sm text-muted-foreground mt-2">
                             {isRecording ? 'Listening...' : 'Tap to Speak'}
