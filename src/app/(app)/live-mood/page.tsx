@@ -79,7 +79,10 @@ export default function LiveMoodPage() {
     useEffect(() => {
       return () => {
         if (silenceTimeoutRef.current) clearTimeout(silenceTimeoutRef.current);
-        if (recognitionRef.current) recognitionRef.current.stop();
+        if (recognitionRef.current) {
+            recognitionRef.current.stop();
+            recognitionRef.current = null;
+        }
       }
     }, []);
 
@@ -96,65 +99,8 @@ export default function LiveMoodPage() {
         }
         return '';
     };
-    
-    const processMood = async (transcript: string) => {
-        if (!transcript.trim()) {
-            setIsProcessing(false);
-            return;
-        }
 
-        setIsProcessing(true);
-        const photoDataUri = captureFrame();
-
-        const userMessage: ChatMessage = { sender: 'user', text: transcript };
-        setChatMessages(prev => [...prev, userMessage]);
-
-        if (!photoDataUri) {
-            toast({ title: 'Could not capture frame', variant: 'destructive' });
-            setIsProcessing(false);
-            return;
-        }
-
-        try {
-            const result = await predictLiveMood({
-                photoDataUri,
-                description: transcript
-            });
-
-            const aiMessage: ChatMessage = { sender: 'ai', text: result.response };
-            setChatMessages(prev => [...prev, aiMessage]);
-            
-            const ttsResult = await textToSpeech({ text: result.response });
-            if (ttsResult.audioDataUri) {
-                const audio = new Audio(ttsResult.audioDataUri);
-                audio.play();
-            }
-
-        } catch (error) {
-            console.error('Error predicting live mood:', error);
-            toast({ title: 'AI Analysis Failed', variant: 'destructive' });
-            const errorMessage: ChatMessage = { sender: 'ai', text: "Sorry, I couldn't process that right now." };
-            setChatMessages(prev => [...prev, errorMessage]);
-        } finally {
-            setIsProcessing(false);
-        }
-    };
-
-    const stopListening = useCallback(() => {
-        if (recognitionRef.current) {
-            recognitionRef.current.stop();
-            recognitionRef.current = null;
-            setIsRecording(false);
-            
-            const finalTranscript = transcriptRef.current.trim();
-            if (finalTranscript) {
-                processMood(finalTranscript);
-            }
-            transcriptRef.current = '';
-        }
-    }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-    const startListening = () => {
+    const startListening = useCallback(() => {
         if (!SpeechRecognition) {
             toast({ title: 'Speech Recognition not supported', variant: 'destructive' });
             return;
@@ -188,7 +134,7 @@ export default function LiveMoodPage() {
 
         recognitionRef.current.onend = () => {
             if (silenceTimeoutRef.current) clearTimeout(silenceTimeoutRef.current);
-            if (recognitionRef.current) {
+            if (recognitionRef.current) { // Check if it's still supposed to be recording
                 stopListening();
             }
         };
@@ -199,7 +145,71 @@ export default function LiveMoodPage() {
         };
 
         recognitionRef.current.start();
+    }, [toast]); // eslint-disable-line react-hooks/exhaustive-deps
+    
+    const processMood = async (transcript: string) => {
+        if (!transcript.trim()) {
+            setIsProcessing(false);
+            return;
+        }
+
+        setIsProcessing(true);
+        const photoDataUri = captureFrame();
+
+        const userMessage: ChatMessage = { sender: 'user', text: transcript };
+        setChatMessages(prev => [...prev, userMessage]);
+
+        if (!photoDataUri) {
+            toast({ title: 'Could not capture frame', variant: 'destructive' });
+            setIsProcessing(false);
+            return;
+        }
+
+        try {
+            const result = await predictLiveMood({
+                photoDataUri,
+                description: transcript
+            });
+
+            const aiMessage: ChatMessage = { sender: 'ai', text: result.response };
+            setChatMessages(prev => [...prev, aiMessage]);
+            
+            const ttsResult = await textToSpeech({ text: result.response });
+            if (ttsResult.audioDataUri) {
+                const audio = new Audio(ttsResult.audioDataUri);
+                audio.onended = () => {
+                    // Automatically start listening for the user's reply
+                    startListening();
+                };
+                audio.play();
+            } else {
+                 // If no audio, start listening immediately
+                 startListening();
+            }
+
+        } catch (error) {
+            console.error('Error predicting live mood:', error);
+            toast({ title: 'AI Analysis Failed', variant: 'destructive' });
+            const errorMessage: ChatMessage = { sender: 'ai', text: "Sorry, I couldn't process that right now." };
+            setChatMessages(prev => [...prev, errorMessage]);
+        } finally {
+            setIsProcessing(false);
+        }
     };
+
+    const stopListening = useCallback(() => {
+        if (recognitionRef.current) {
+            recognitionRef.current.stop();
+            recognitionRef.current = null;
+            setIsRecording(false);
+            
+            const finalTranscript = transcriptRef.current.trim();
+            if (finalTranscript) {
+                processMood(finalTranscript);
+            }
+            transcriptRef.current = '';
+        }
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
     const handleMicClick = () => {
         if (isRecording) {
