@@ -15,6 +15,7 @@ import { z } from 'genkit';
 const ChatEmpatheticToneInputSchema = z.object({
   message: z.string().describe('The user message to the AI companion.'),
   language: z.string().describe('The regional language to respond in (e.g., English, Hindi, Hinglish).'),
+  imageDataUri: z.string().optional().describe("An optional image from the user, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."),
 });
 export type ChatEmpatheticToneInput = z.infer<typeof ChatEmpatheticToneInputSchema>;
 
@@ -31,7 +32,7 @@ const prompt = ai.definePrompt({
   name: 'chatEmpatheticTonePrompt',
   input: { schema: ChatEmpatheticToneInputSchema },
   output: { schema: ChatEmpatheticToneOutputSchema },
-  prompt: `You are an AI companion named Mitra, designed to provide empathetic responses to users in their regional language.
+  prompt: `You are an AI companion named Mitra, designed to provide empathetic responses to users in their regional language. Analyze the user's text and any accompanying image to understand their mood and context.
   
   If a user asks "who made you?" or any similar question about your creator, you must respond with: "Ahsan imam khan made me".
 
@@ -45,6 +46,9 @@ const prompt = ai.definePrompt({
   - If the language is 'German', you must respond in German.
 
   User Message: {{{message}}}
+  {{#if imageDataUri}}
+  User Image: {{media url=imageDataUri}}
+  {{/if}}
 
   Response in {{language}}:
   `,
@@ -56,8 +60,8 @@ const chatEmpatheticToneFlow = ai.defineFlow(
     inputSchema: ChatEmpatheticToneInputSchema,
     outputSchema: ChatEmpatheticToneOutputSchema,
   },
-  async ({ message, language }) => {
-    const { output } = await prompt({ message, language });
+  async ({ message, language, imageDataUri }) => {
+    const { output } = await prompt({ message, language, imageDataUri });
     return output!;
   }
 );

@@ -2,12 +2,13 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import Image from 'next/image';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
-import { Languages, Loader2, Mic, Send, User, Square } from 'lucide-react';
+import { Languages, Loader2, Mic, Send, User, Square, Paperclip, X } from 'lucide-react';
 import { chatEmpatheticTone } from '@/ai/flows/chat-empathetic-tone';
 import { Logo } from '@/components/icons';
 import { SidebarTrigger } from '@/components/ui/sidebar';
@@ -22,6 +23,7 @@ import { ThemeToggle } from '@/components/theme-toggle';
 interface Message {
   sender: 'user' | 'ai';
   text: string;
+  imageUrl?: string;
 }
 
 // Check for SpeechRecognition API
@@ -35,10 +37,13 @@ export default function ChatPage() {
   const [language, setLanguage] = useState('English');
   const [isRecording, setIsRecording] = useState(false);
   const [showCrisisModal, setShowCrisisModal] = useState(false);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
   
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { toast } = useToast();
   const { user } = useAuth();
@@ -52,12 +57,30 @@ export default function ChatPage() {
     }
   }, [messages]);
 
+  const fileToDataUri = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  };
+
   const handleSendMessage = async (messageText: string) => {
-    if (!messageText.trim() || isLoading || !user) return;
+    if ((!messageText.trim() && !imageFile) || isLoading || !user) return;
 
     const userMessage: Message = { sender: 'user', text: messageText };
+    let imageDataUri: string | undefined;
+
+    if (imageFile) {
+        imageDataUri = await fileToDataUri(imageFile);
+        userMessage.imageUrl = imageDataUri;
+    }
+
     setMessages((prev) => [...prev, userMessage]);
     setInput('');
+    setImageFile(null);
+    setImagePreview(null);
     setIsLoading(true);
 
     try {
@@ -65,17 +88,15 @@ export default function ChatPage() {
       const crisisResult = await detectCrisis({ message: messageText });
       if (crisisResult.isCrisis) {
         setShowCrisisModal(true);
-        // We can stop here and not get a regular chat response
         setIsLoading(false);
         return;
       }
 
-      const chatResult = await chatEmpatheticTone({ message: messageText, language });
+      const chatResult = await chatEmpatheticTone({ message: messageText, language, imageDataUri });
       
       const aiMessage: Message = { sender: 'ai', text: chatResult.response };
       setMessages((prev) => [...prev, aiMessage]);
 
-      // If voice was used, convert AI response to speech
       if (isRecording) {
         if (chatResult.response.trim()) {
             const ttsResult = await textToSpeech({ text: chatResult.response });
@@ -93,7 +114,6 @@ export default function ChatPage() {
       setMessages((prev) => [...prev, errorMessage]);
     } finally {
       setIsLoading(false);
-      // Only set isRecording to false if it was a voice message
       if (recognitionRef.current) {
         setIsRecording(false);
       }
@@ -141,7 +161,6 @@ export default function ChatPage() {
         };
         
          recognitionRef.current.onend = () => {
-            // Check if it ended naturally or was stopped manually
             if (recognitionRef.current) {
                setIsRecording(false);
             }
@@ -150,6 +169,27 @@ export default function ChatPage() {
         recognitionRef.current.start();
     }
   };
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setImageFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removeImage = () => {
+    setImageFile(null);
+    setImagePreview(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
 
   return (
     <div className="h-full flex flex-col bg-muted/20">
@@ -217,7 +257,12 @@ export default function ChatPage() {
                         : 'bg-background text-card-foreground rounded-bl-none border'
                     )}
                   >
-                    <p>{message.text}</p>
+                    {message.imageUrl && (
+                        <div className="relative w-full aspect-video rounded-md overflow-hidden mb-2">
+                            <Image src={message.imageUrl} alt="User upload" layout="fill" objectFit="cover" />
+                        </div>
+                    )}
+                    {message.text && <p>{message.text}</p>}
                   </div>
                    {message.sender === 'user' && (
                     <Avatar className="w-8 h-8 md:w-9 md:h-9 border">
@@ -252,7 +297,26 @@ export default function ChatPage() {
         </ScrollArea>
       </main>
       <footer className="border-t bg-background p-2 md:p-4">
+        {imagePreview && (
+            <div className="relative w-24 h-24 mb-2 rounded-md overflow-hidden border">
+                <Image src={imagePreview} alt="Image preview" layout="fill" objectFit="cover" />
+                <Button variant="destructive" size="icon" className="absolute top-1 right-1 h-6 w-6" onClick={removeImage}>
+                    <X className="w-4 h-4" />
+                </Button>
+            </div>
+        )}
         <form onSubmit={handleFormSubmit} className="flex items-center gap-2">
+          <input
+            type="file"
+            accept="image/*"
+            ref={fileInputRef}
+            onChange={handleImageChange}
+            className="hidden"
+          />
+           <Button type="button" variant="ghost" size="icon" onClick={() => fileInputRef.current?.click()} disabled={isLoading || isRecording}>
+            <Paperclip className="w-5 h-5" />
+            <span className="sr-only">Attach Image</span>
+          </Button>
           <Input
             value={input}
             onChange={(e) => setInput(e.target.value)}
@@ -265,7 +329,7 @@ export default function ChatPage() {
             {isRecording ? <Square className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
             <span className="sr-only">{isRecording ? 'Stop Recording' : 'Use Voice'}</span>
           </Button>
-          <Button type="submit" size="icon" disabled={isLoading || isRecording || !input.trim()}>
+          <Button type="submit" size="icon" disabled={isLoading || isRecording || (!input.trim() && !imageFile)}>
             {isLoading ? <Loader2 className="w-5 h-5 animate-spin"/> : <Send className="w-5 h-5" />}
             <span className="sr-only">Send Message</span>
           </Button>
