@@ -34,7 +34,7 @@ const languageToSpeechCode: Record<string, string> = {
 export default function LiveMoodPage() {
     const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
     const [isRecording, setIsRecording] = useState(false);
-    const [isProcessing, setIsProcessing] = useState(isProcessing);
+    const [isProcessing, setIsProcessing] = useState(false);
     const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
     const [language, setLanguage] = useState('English');
     
@@ -121,69 +121,7 @@ export default function LiveMoodPage() {
         return '';
     };
 
-    const stopListening = useCallback(() => {
-        if (recognitionRef.current) {
-            recognitionRef.current.stop();
-            recognitionRef.current = null;
-            setIsRecording(false);
-            
-            const finalTranscript = transcriptRef.current.trim();
-            if (finalTranscript) {
-                processMood(finalTranscript);
-            }
-            transcriptRef.current = '';
-        }
-    }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-    const startListening = useCallback(() => {
-        if (!SpeechRecognition) {
-            toast({ title: 'Speech Recognition not supported', variant: 'destructive' });
-            return;
-        }
-
-        setIsRecording(true);
-        transcriptRef.current = '';
-        recognitionRef.current = new SpeechRecognition();
-        recognitionRef.current.continuous = true;
-        recognitionRef.current.interimResults = true;
-        recognitionRef.current.lang = languageToSpeechCode[language] || 'en-US';
-
-        recognitionRef.current.onresult = (event: any) => {
-            if (silenceTimeoutRef.current) clearTimeout(silenceTimeoutRef.current);
-            
-            let finalTranscript = '';
-            let interimTranscript = '';
-            for (let i = 0; i < event.results.length; ++i) {
-                if (event.results[i].isFinal) {
-                    finalTranscript += event.results[i][0].transcript;
-                } else {
-                    interimTranscript += event.results[i][0].transcript;
-                }
-            }
-            transcriptRef.current = finalTranscript + interimTranscript;
-
-            silenceTimeoutRef.current = setTimeout(() => {
-                stopListening();
-            }, 2000);
-        };
-
-        recognitionRef.current.onend = () => {
-            if (silenceTimeoutRef.current) clearTimeout(silenceTimeoutRef.current);
-            if (recognitionRef.current) {
-                stopListening();
-            }
-        };
-
-        recognitionRef.current.onerror = (event: any) => {
-            toast({ title: 'Speech recognition error', description: event.error, variant: 'destructive' });
-            setIsRecording(false);
-        };
-
-        recognitionRef.current.start();
-    }, [toast, stopListening, language]);
-    
-
-     const processMood = useCallback(async (transcript: string) => {
+    const processMood = useCallback(async (transcript: string) => {
         if (!transcript.trim()) {
             setIsProcessing(false);
             return;
@@ -232,8 +170,69 @@ export default function LiveMoodPage() {
         } finally {
             setIsProcessing(false);
         }
-    }, [isRecording, language, toast, startListening]);
+    }, [isRecording, language, toast, startListening]); // eslint-disable-line react-hooks/exhaustive-deps
+    
+    const stopListening = useCallback(() => {
+        if (recognitionRef.current) {
+            recognitionRef.current.stop();
+            recognitionRef.current = null;
+            setIsRecording(false);
+            
+            const finalTranscript = transcriptRef.current.trim();
+            if (finalTranscript) {
+                processMood(finalTranscript);
+            }
+            transcriptRef.current = '';
+        }
+    }, [processMood]);
 
+    const startListening = useCallback(() => {
+        if (!SpeechRecognition) {
+            toast({ title: 'Speech Recognition not supported', variant: 'destructive' });
+            return;
+        }
+
+        setIsRecording(true);
+        transcriptRef.current = '';
+        recognitionRef.current = new SpeechRecognition();
+        recognitionRef.current.continuous = true;
+        recognitionRef.current.interimResults = true;
+        recognitionRef.current.lang = languageToSpeechCode[language] || 'en-US';
+
+        recognitionRef.current.onresult = (event: any) => {
+            if (silenceTimeoutRef.current) clearTimeout(silenceTimeoutRef.current);
+            
+            let finalTranscript = '';
+            let interimTranscript = '';
+            for (let i = 0; i < event.results.length; ++i) {
+                if (event.results[i].isFinal) {
+                    finalTranscript += event.results[i][0].transcript;
+                } else {
+                    interimTranscript += event.results[i][0].transcript;
+                }
+            }
+            transcriptRef.current = finalTranscript + interimTranscript;
+
+            silenceTimeoutRef.current = setTimeout(() => {
+                stopListening();
+            }, 2000);
+        };
+
+        recognitionRef.current.onend = () => {
+            if (silenceTimeoutRef.current) clearTimeout(silenceTimeoutRef.current);
+            if (recognitionRef.current) {
+                stopListening();
+            }
+        };
+
+        recognitionRef.current.onerror = (event: any) => {
+            toast({ title: 'Speech recognition error', description: event.error, variant: 'destructive' });
+            setIsRecording(false);
+        };
+
+        recognitionRef.current.start();
+    }, [toast, stopListening, language]);
+    
     const handleMicClick = () => {
         if (isRecording) {
             stopListening();
