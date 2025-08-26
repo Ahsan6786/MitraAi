@@ -13,6 +13,9 @@ import { SidebarTrigger } from '@/components/ui/sidebar';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { predictChatMood } from '@/ai/flows/predict-chat-mood';
 import { Badge } from '@/components/ui/badge';
+import { useToast } from '@/hooks/use-toast';
+import { db } from '@/lib/firebase';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 
 interface Message {
   id: number;
@@ -43,6 +46,7 @@ export default function MoodChatPage() {
   const [isLoading, setIsLoading] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const { user } = useAuth();
+  const { toast } = useToast();
 
   useEffect(() => {
     if (scrollAreaRef.current) {
@@ -69,6 +73,24 @@ export default function MoodChatPage() {
         mood: result.mood,
       };
       setMessages((prev) => [...prev, userMessage]);
+      
+      // Save to Firestore for admin review
+      await addDoc(collection(db, 'journalEntries'), {
+        userId: user.uid,
+        userEmail: user.email,
+        type: 'mood-chat',
+        content: messageText,
+        mood: result.mood,
+        createdAt: serverTimestamp(),
+        reviewed: false,
+        doctorReport: null,
+      });
+      
+      toast({
+          title: "Mood Analyzed",
+          description: `Your message has been saved with the mood: ${result.mood}. A doctor may review it.`
+      })
+
     } catch (error) {
       console.error('Error getting mood analysis:', error);
        const userMessage: Message = {
@@ -78,6 +100,11 @@ export default function MoodChatPage() {
         mood: "Error",
       };
       setMessages((prev) => [...prev, userMessage]);
+      toast({
+          title: "Analysis Failed",
+          description: "Could not analyze or save your message.",
+          variant: "destructive"
+      })
     } finally {
       setIsLoading(false);
     }
@@ -107,7 +134,7 @@ export default function MoodChatPage() {
               <div className="flex flex-col items-center justify-center h-full pt-10 md:pt-20 text-center">
                  <MessageCircleHeart className="w-16 h-16 md:w-20 md:h-20 text-primary mb-6" />
                  <h2 className="text-xl md:text-2xl font-semibold">How are you feeling right now?</h2>
-                 <p className="text-muted-foreground mt-2 max-w-xs sm:max-w-sm">Type a message below and the AI will analyze its mood.</p>
+                 <p className="text-muted-foreground mt-2 max-w-xs sm:max-w-sm">Type a message below. The AI will analyze its mood and save it for professional review.</p>
               </div>
             ) : (
               messages.map((message) => (

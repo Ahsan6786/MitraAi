@@ -4,44 +4,23 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
   
-    // Make the entire database publicly readable and writable.
-    // This is NOT secure and should only be used for early development.
+    // Default deny all
     match /{document=**} {
-      allow read, write: if true;
+      allow read, write: if false;
+    }
+    
+    // Allow any authenticated user to read/write/delete any post or comment
+    match /posts/{postId}/{documents=**} {
+       allow read, write, delete: if request.auth.uid != null;
     }
 
-    // Secure rules for journal entries
+    // Allow authenticated users to create and manage their own journal entries
     match /journalEntries/{entryId} {
-      // Allow users to create, read, and delete their own entries
       allow read, delete: if request.auth.uid == resource.data.userId;
       allow create: if request.auth.uid == request.resource.data.userId;
       
-      // Allow admin to read and write any journal entry
+      // Allow the admin to read and write/update any journal entry
       allow read, write: if request.auth.token.email == 'ahsan.khan@mitwpu.edu.in';
-    }
-
-    // Secure rules for community posts
-    match /posts/{postId} {
-      // Allow any authenticated user to read and create posts
-      allow read, create: if request.auth != null;
-      
-      // Allow the author or the owner to delete a post
-      allow delete: if request.auth.uid == resource.data.authorId || request.auth.token.email == 'ahsanimamkhan06@gmail.com';
-      
-      // Allow any authenticated user to update the comment count
-      allow update: if request.auth != null && request.resource.data.keys().hasOnly(['commentCount']);
-    }
-
-    // Secure rules for comments
-    match /posts/{postId}/comments/{commentId} {
-      // Allow any authenticated user to read and create comments
-      allow read, create: if request.auth != null;
-
-      // Allow the author or the owner to delete a comment
-      allow delete: if request.auth.uid == resource.data.authorId || request.auth.token.email == 'ahsanimamkhan06@gmail.com';
-
-      // Allow the owner to hide/unhide a comment
-      allow update: if request.auth.token.email == 'ahsanimamkhan06@gmail.com' && request.resource.data.keys().hasOnly(['hidden']);
     }
   }
 }

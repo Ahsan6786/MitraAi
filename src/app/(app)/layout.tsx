@@ -103,10 +103,10 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
                  <SidebarMenuItem>
-                  <SidebarMenuButton asChild isActive={pathname === '/journal'}>
-                    <Link href="/journal" onClick={handleLinkClick}>
-                      <BookHeart />
-                      <span>Journal</span>
+                  <SidebarMenuButton asChild isActive={pathname === '/mood-chat'}>
+                    <Link href="/mood-chat" onClick={handleLinkClick}>
+                      <MessageCircleHeart />
+                      <span>Mood Chat</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -126,14 +126,6 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
                     <Link href="/dashboard" onClick={handleLinkClick}>
                       <LayoutDashboard />
                       <span>Dashboard</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild isActive={pathname === '/mood-chat'}>
-                    <Link href="/mood-chat" onClick={handleLinkClick}>
-                      <MessageCircleHeart />
-                      <span>Mood Chat</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
