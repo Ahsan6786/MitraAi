@@ -109,6 +109,16 @@ export default function LiveMoodPage() {
         }
         return '';
     };
+
+    const handleMicClick = useCallback(() => {
+        if (isRecording) {
+            // eslint-disable-next-line @typescript-eslint/no-use-before-define
+            stopListening();
+        } else {
+            // eslint-disable-next-line @typescript-eslint/no-use-before-define
+            startListening();
+        }
+    }, [isRecording]); // eslint-disable-line react-hooks/exhaustive-deps
     
     const processMood = useCallback(async (transcript: string) => {
         if (!transcript) {
@@ -138,7 +148,6 @@ export default function LiveMoodPage() {
                 audio.play();
                 audio.onended = () => {
                    if (isRecording) return;
-                   // eslint-disable-next-line @typescript-eslint/no-use-before-define
                    handleMicClick();
                 };
             }
@@ -151,7 +160,7 @@ export default function LiveMoodPage() {
         } finally {
             setIsProcessing(false);
         }
-    }, [language, toast, isRecording]);
+    }, [language, toast, isRecording, handleMicClick]);
 
 
     const startListening = useCallback(() => {
@@ -202,14 +211,6 @@ export default function LiveMoodPage() {
         }
         setIsRecording(false);
     }, []);
-
-    const handleMicClick = useCallback(() => {
-        if (isRecording) {
-            stopListening();
-        } else {
-            startListening();
-        }
-    }, [isRecording, startListening, stopListening]);
 
 
     return (
@@ -314,5 +315,4 @@ export default function LiveMoodPage() {
             <canvas ref={canvasRef} className="hidden"></canvas>
         </div>
     );
-
-    
+}
