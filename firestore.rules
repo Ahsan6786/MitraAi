@@ -2,35 +2,23 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    
-    // Defines security rules for the 'posts' collection.
-    match /posts/{postId} {
-      // Any authenticated user can read posts.
-      allow read: if request.auth != null;
-      
-      // Users can only create or update their own posts.
-      allow create, update: if request.auth.uid == request.resource.data.authorId;
-      
-      // The post author or the designated owner can delete a post.
-      allow delete: if request.auth.uid == resource.data.authorId || request.auth.token.email == 'ahsanimamkhan06@gmail.com';
-      
-      // Defines security rules for the 'comments' subcollection within each post.
-      match /comments/{commentId} {
-        // Any authenticated user can read or create comments.
-        allow read, create: if request.auth != null;
-        
-        // The comment author or the designated owner can delete a comment.
-        allow delete: if request.auth.uid == resource.data.authorId || request.auth.token.email == 'ahsanimamkhan06@gmail.com';
-      }
+  
+    function isOwner() {
+      return request.auth.token.email == 'ahsanimamkhan06@gmail.com';
     }
+  
+    match /posts/{postId} {
+      allow read: if true;
+      allow create: if request.auth != null;
+      allow update: if request.auth.uid == resource.data.authorId;
+      allow delete: if request.auth.uid == resource.data.authorId || isOwner();
 
-    // Defines security rules for the 'journalEntries' collection.
-    match /journalEntries/{entryId} {
-      // Users can only create their own journal entries.
-      allow create: if request.auth.uid == request.resource.data.userId;
-      
-      // The entry's author or the admin can read or update journal entries.
-      allow read, update: if request.auth.uid == resource.data.userId || request.auth.token.email == 'ahsan.khan@mitwpu.edu.in';
+      match /comments/{commentId} {
+        allow read: if true;
+        allow create: if request.auth != null;
+        // Only the comment author or the post owner can delete comments.
+        allow delete: if request.auth.uid == resource.data.authorId || isOwner();
+      }
     }
   }
 }
