@@ -34,7 +34,7 @@ const languageToSpeechCode: Record<string, string> = {
 export default function LiveMoodPage() {
     const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
     const [isRecording, setIsRecording] = useState(false);
-    const [isProcessing, setIsProcessing] = useState(false);
+    const [isProcessing, setIsProcessing] = useState(isProcessing);
     const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
     const [language, setLanguage] = useState('English');
     
@@ -48,6 +48,7 @@ export default function LiveMoodPage() {
     const scrollViewportRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
+        let stream: MediaStream | null = null;
         const getCameraPermission = async () => {
             if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
                 setHasCameraPermission(false);
@@ -59,7 +60,7 @@ export default function LiveMoodPage() {
                 return;
             }
             try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                stream = await navigator.mediaDevices.getUserMedia({ video: true });
                 setHasCameraPermission(true);
                 if (videoRef.current) {
                     videoRef.current.srcObject = stream;
@@ -75,6 +76,13 @@ export default function LiveMoodPage() {
             }
         };
         getCameraPermission();
+
+        // Cleanup function to stop the camera stream when the component unmounts
+        return () => {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+            }
+        };
     }, [toast]);
 
     useEffect(() => {
@@ -91,7 +99,7 @@ export default function LiveMoodPage() {
             recognitionRef.current.stop();
             recognitionRef.current = null;
         }
-        // Stop camera stream
+        // Stop camera stream (redundant but safe)
         if (videoRef.current && videoRef.current.srcObject) {
             const stream = videoRef.current.srcObject as MediaStream;
             stream.getTracks().forEach(track => track.stop());
@@ -113,57 +121,6 @@ export default function LiveMoodPage() {
         return '';
     };
 
-    const processMood = useCallback(async (transcript: string) => {
-        if (!transcript.trim()) {
-            setIsProcessing(false);
-            return;
-        }
-
-        setIsProcessing(true);
-        const photoDataUri = captureFrame();
-
-        const userMessage: ChatMessage = { sender: 'user', text: transcript };
-        setChatMessages(prev => [...prev, userMessage]);
-
-        if (!photoDataUri) {
-            toast({ title: 'Could not capture frame', variant: 'destructive' });
-            setIsProcessing(false);
-            return;
-        }
-
-        try {
-            const result = await predictLiveMood({
-                photoDataUri,
-                description: transcript,
-                language,
-            });
-
-            const aiMessage: ChatMessage = { sender: 'ai', text: result.response };
-            setChatMessages(prev => [...prev, aiMessage]);
-            
-            const ttsResult = await textToSpeech({ text: result.response });
-            if (ttsResult.audioDataUri) {
-                const audio = new Audio(ttsResult.audioDataUri);
-                 setTimeout(() => {
-                    if (!isRecording) {
-                      startListening();
-                    }
-                }, 1000);
-                audio.play();
-            } else {
-                 startListening();
-            }
-
-        } catch (error) {
-            console.error('Error predicting live mood:', error);
-            toast({ title: 'AI Analysis Failed', variant: 'destructive' });
-            const errorMessage: ChatMessage = { sender: 'ai', text: "Sorry, I couldn't process that right now." };
-            setChatMessages(prev => [...prev, errorMessage]);
-        } finally {
-            setIsProcessing(false);
-        }
-    }, [isRecording, language, toast]); // eslint-disable-line react-hooks/exhaustive-deps
-    
     const stopListening = useCallback(() => {
         if (recognitionRef.current) {
             recognitionRef.current.stop();
@@ -176,7 +133,7 @@ export default function LiveMoodPage() {
             }
             transcriptRef.current = '';
         }
-    }, [processMood]);
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
     const startListening = useCallback(() => {
         if (!SpeechRecognition) {
@@ -226,6 +183,57 @@ export default function LiveMoodPage() {
     }, [toast, stopListening, language]);
     
 
+     const processMood = useCallback(async (transcript: string) => {
+        if (!transcript.trim()) {
+            setIsProcessing(false);
+            return;
+        }
+
+        setIsProcessing(true);
+        const photoDataUri = captureFrame();
+
+        const userMessage: ChatMessage = { sender: 'user', text: transcript };
+        setChatMessages(prev => [...prev, userMessage]);
+
+        if (!photoDataUri) {
+            toast({ title: 'Could not capture frame', variant: 'destructive' });
+            setIsProcessing(false);
+            return;
+        }
+
+        try {
+            const result = await predictLiveMood({
+                photoDataUri,
+                description: transcript,
+                language,
+            });
+
+            const aiMessage: ChatMessage = { sender: 'ai', text: result.response };
+            setChatMessages(prev => [...prev, aiMessage]);
+            
+            const ttsResult = await textToSpeech({ text: result.response });
+            if (ttsResult.audioDataUri) {
+                const audio = new Audio(ttsResult.audioDataUri);
+                 setTimeout(() => {
+                    if (!isRecording) {
+                      startListening();
+                    }
+                }, 1000);
+                audio.play();
+            } else {
+                 startListening();
+            }
+
+        } catch (error) {
+            console.error('Error predicting live mood:', error);
+            toast({ title: 'AI Analysis Failed', variant: 'destructive' });
+            const errorMessage: ChatMessage = { sender: 'ai', text: "Sorry, I couldn't process that right now." };
+            setChatMessages(prev => [...prev, errorMessage]);
+        } finally {
+            setIsProcessing(false);
+        }
+    }, [isRecording, language, toast, startListening]);
+
     const handleMicClick = () => {
         if (isRecording) {
             stopListening();
@@ -261,7 +269,7 @@ export default function LiveMoodPage() {
                 </div>
             </header>
             <main className="flex-1 overflow-hidden p-2 sm:p-4 md:p-6">
-                <div className="grid gap-6 grid-cols-1 lg:grid-cols-2 h-full">
+                <div className="grid gap-6 grid-cols-1 lg:grid-cols-2 h-full max-h-[calc(100vh-12rem)]">
                     <div className="flex flex-col gap-4">
                         <Card className="flex-1 flex flex-col">
                             <CardHeader>
@@ -301,7 +309,7 @@ export default function LiveMoodPage() {
                             </p>
                         </div>
                     </div>
-                    <Card className="flex flex-col h-full max-h-[calc(100vh-12rem)] overflow-hidden">
+                    <Card className="flex flex-col h-full overflow-hidden">
                         <CardHeader>
                             <CardTitle>Live Interaction</CardTitle>
                             <CardDescription>Your conversation with the AI will appear here.</CardDescription>
@@ -342,3 +350,5 @@ export default function LiveMoodPage() {
         </div>
     );
 }
+
+    
