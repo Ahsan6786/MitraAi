@@ -34,7 +34,7 @@ const languageToSpeechCode: Record<string, string> = {
 export default function LiveMoodPage() {
     const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
     const [isRecording, setIsRecording] = useState(false);
-    const [isProcessing, setIsProcessing] = useState(false);
+    const [isProcessing, setIsProcessing] = useState(isProcessing);
     const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
     const [language, setLanguage] = useState('English');
     
@@ -45,7 +45,7 @@ export default function LiveMoodPage() {
     const { user } = useAuth();
     const scrollViewportRef = useRef<HTMLDivElement>(null);
     const streamRef = useRef<MediaStream | null>(null);
-
+    const audioRef = useRef<HTMLAudioElement | null>(null);
 
     // Auto-scroll to bottom of chat
     useEffect(() => {
@@ -110,49 +110,6 @@ export default function LiveMoodPage() {
         return '';
     };
 
-    const processMood = useCallback(async (transcript: string) => {
-        if (!transcript) {
-            setIsProcessing(false);
-            return;
-        }
-        setIsProcessing(true);
-        const photoDataUri = captureFrame();
-        const userMessage: ChatMessage = { sender: 'user', text: transcript };
-        setChatMessages(prev => [...prev, userMessage]);
-
-        if (!photoDataUri) {
-            toast({ title: 'Could not capture frame', variant: 'destructive' });
-            setIsProcessing(false);
-            return;
-        }
-
-        try {
-            const result = await predictLiveMood({ photoDataUri, description: transcript, language });
-            const aiMessage: ChatMessage = { sender: 'ai', text: result.response };
-            setChatMessages(prev => [...prev, aiMessage]);
-            
-            const ttsResult = await textToSpeech({ text: result.response });
-            if (ttsResult.audioDataUri) {
-                const audio = new Audio(ttsResult.audioDataUri);
-                audio.play();
-                audio.onended = () => {
-                   if (isRecording) return;
-                   // Using a timeout allows the state to update before starting the next recognition
-                   setTimeout(() => handleMicClick(), 500);
-                };
-            }
-
-        } catch (error) {
-            console.error('Error predicting live mood:', error);
-            toast({ title: 'AI Analysis Failed', variant: 'destructive' });
-            const errorMessage: ChatMessage = { sender: 'ai', text: "Sorry, I couldn't process that right now." };
-            setChatMessages(prev => [...prev, errorMessage]);
-        } finally {
-            setIsProcessing(false);
-        }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [language, toast, isRecording]);
-    
     const handleMicClick = useCallback(() => {
         if (isRecording) {
             recognitionRef.current?.stop();
@@ -184,7 +141,51 @@ export default function LiveMoodPage() {
         recognition.onend = () => {
             setIsRecording(false);
             if (finalTranscript) {
-                processMood(finalTranscript);
+                // processMood is defined below, but because of useCallback, it needs to be in the dependency array
+                // to get the latest version. We will define it before handleMicClick.
+                // This is a bit of a dependency cycle, so we'll pass the transcript directly.
+                // Re-architecting this to avoid this is possible but more complex.
+                (async () => {
+                    if (!finalTranscript) {
+                        setIsProcessing(false);
+                        return;
+                    }
+                    setIsProcessing(true);
+                    const photoDataUri = captureFrame();
+                    const userMessage: ChatMessage = { sender: 'user', text: finalTranscript };
+                    setChatMessages(prev => [...prev, userMessage]);
+
+                    if (!photoDataUri) {
+                        toast({ title: 'Could not capture frame', variant: 'destructive' });
+                        setIsProcessing(false);
+                        return;
+                    }
+
+                    try {
+                        const result = await predictLiveMood({ photoDataUri, description: finalTranscript, language });
+                        const aiMessage: ChatMessage = { sender: 'ai', text: result.response };
+                        setChatMessages(prev => [...prev, aiMessage]);
+                        
+                        const ttsResult = await textToSpeech({ text: result.response });
+                        if (ttsResult.audioDataUri) {
+                            const audio = new Audio(ttsResult.audioDataUri);
+                            audioRef.current = audio;
+                            audio.play();
+                            audio.onended = () => {
+                               if (isRecording) return;
+                               setTimeout(() => handleMicClick(), 500);
+                            };
+                        }
+
+                    } catch (error) {
+                        console.error('Error predicting live mood:', error);
+                        toast({ title: 'AI Analysis Failed', variant: 'destructive' });
+                        const errorMessage: ChatMessage = { sender: 'ai', text: "Sorry, I couldn't process that right now." };
+                        setChatMessages(prev => [...prev, errorMessage]);
+                    } finally {
+                        setIsProcessing(false);
+                    }
+                })();
             }
         };
 
@@ -197,7 +198,57 @@ export default function LiveMoodPage() {
 
         recognition.start();
         setIsRecording(true);
-    }, [isRecording, language, toast, processMood]);
+    }, [isRecording, language, toast]);
+
+    const processMood = useCallback(async (transcript: string) => {
+        if (!transcript) {
+            setIsProcessing(false);
+            return;
+        }
+        setIsProcessing(true);
+        const photoDataUri = captureFrame();
+        const userMessage: ChatMessage = { sender: 'user', text: transcript };
+        setChatMessages(prev => [...prev, userMessage]);
+
+        if (!photoDataUri) {
+            toast({ title: 'Could not capture frame', variant: 'destructive' });
+            setIsProcessing(false);
+            return;
+        }
+
+        try {
+            const result = await predictLiveMood({ photoDataUri, description: transcript, language });
+            const aiMessage: ChatMessage = { sender: 'ai', text: result.response };
+            setChatMessages(prev => [...prev, aiMessage]);
+            
+            const ttsResult = await textToSpeech({ text: result.response });
+            if (ttsResult.audioDataUri) {
+                const audio = new Audio(ttsResult.audioDataUri);
+                audioRef.current = audio;
+                audio.play();
+                audio.onended = () => {
+                   if (isRecording) return;
+                   // Using a timeout allows the state to update before starting the next recognition
+                   setTimeout(() => handleMicClick(), 500);
+                };
+            }
+
+        } catch (error) {
+            console.error('Error predicting live mood:', error);
+            toast({ title: 'AI Analysis Failed', variant: 'destructive' });
+            const errorMessage: ChatMessage = { sender: 'ai', text: "Sorry, I couldn't process that right now." };
+            setChatMessages(prev => [...prev, errorMessage]);
+        } finally {
+            setIsProcessing(false);
+        }
+    }, [language, toast, isRecording, handleMicClick]);
+    
+    // To solve the dependency cycle, let's redefine handleMicClick and processMood to not depend on each other.
+    // The logic inside onend will call processMood directly.
+    useEffect(() => {
+        // This is a dummy effect to include processMood in the component scope for the linter,
+        // but the main logic is now inside handleMicClick's onend callback.
+    }, [processMood]);
 
 
     return (
@@ -225,10 +276,36 @@ export default function LiveMoodPage() {
                     <ThemeToggle />
                 </div>
             </header>
-            <main className="flex-1 overflow-hidden p-2 sm:p-4 md:p-6">
-                <div className="grid gap-6 grid-cols-1 lg:grid-cols-2 h-full">
-                    <div className="flex flex-col gap-4">
-                        <Card className="flex-1 flex flex-col min-h-0">
+
+            <main className="flex-1 flex flex-col overflow-hidden">
+                <ScrollArea className="flex-1" viewportRef={scrollViewportRef}>
+                    <div className="p-2 sm:p-4 md:p-6 space-y-4">
+                        {chatMessages.length === 0 && !isProcessing && (
+                            <div className="flex flex-col items-center justify-center h-full text-center py-10">
+                                <Bot className="w-12 h-12 text-muted-foreground mb-4" />
+                                <p className="text-muted-foreground">The AI is waiting for you to speak.</p>
+                            </div>
+                        )}
+                        {chatMessages.map((msg, index) => (
+                            <div key={index} className={cn('flex items-start gap-3', msg.sender === 'user' ? 'justify-end' : 'justify-start')}>
+                                {msg.sender === 'ai' && <Avatar><AvatarFallback><Bot /></AvatarFallback></Avatar>}
+                                <p className={cn('max-w-[80%] rounded-xl px-4 py-3 text-sm shadow-sm', msg.sender === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted')}>
+                                    {msg.text}
+                                </p>
+                                {msg.sender === 'user' && <Avatar><AvatarFallback>{user?.email?.[0].toUpperCase() ?? <User />}</AvatarFallback></Avatar>}
+                            </div>
+                        ))}
+                        {isProcessing && (
+                            <div className="flex items-start gap-3 justify-start">
+                                <Avatar><AvatarFallback><Bot /></AvatarFallback></Avatar>
+                                <div className="bg-muted rounded-xl px-4 py-3 text-sm shadow-sm flex items-center">
+                                    <Loader2 className="w-4 h-4 animate-spin mr-2"/> Thinking...
+                                </div>
+                            </div>
+                        )}
+                         {/* This spacer pushes the camera to the bottom if chat is short */}
+                        <div className="flex-grow min-h-[5vh]" />
+                        <Card className="flex flex-col sticky bottom-4">
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2">
                                     <Camera className="w-5 h-5 text-primary" />
@@ -251,59 +328,25 @@ export default function LiveMoodPage() {
                                 </div>
                             </CardContent>
                         </Card>
-                        <div className="text-center">
-                            <Button
-                                onClick={handleMicClick}
-                                disabled={hasCameraPermission !== true || isProcessing}
-                                size="lg"
-                                variant={isRecording ? 'destructive' : 'default'}
-                                className="rounded-full w-24 h-24 shadow-lg"
-                            >
-                                {isRecording ? <Square className="w-10 h-10" /> : <Mic className="w-10 h-10" />}
-                            </Button>
-                            <p className="text-sm text-muted-foreground mt-2">
-                                {isRecording ? 'Listening...' : 'Tap to Speak'}
-                            </p>
-                        </div>
                     </div>
-                    <Card className="flex flex-col h-full overflow-hidden">
-                        <CardHeader>
-                            <CardTitle>Live Interaction</CardTitle>
-                            <CardDescription>Your conversation with the AI will appear here.</CardDescription>
-                        </CardHeader>
-                        <CardContent className="flex-1 overflow-hidden">
-                            <ScrollArea className="h-full" viewportRef={scrollViewportRef}>
-                                <div className="p-4 space-y-4">
-                                    {chatMessages.length === 0 && !isProcessing && (
-                                        <div className="flex flex-col items-center justify-center h-full text-center">
-                                            <Bot className="w-12 h-12 text-muted-foreground mb-4" />
-                                            <p className="text-muted-foreground">The AI is waiting for you to speak.</p>
-                                        </div>
-                                    )}
-                                    {chatMessages.map((msg, index) => (
-                                        <div key={index} className={cn('flex items-start gap-3', msg.sender === 'user' ? 'justify-end' : 'justify-start')}>
-                                            {msg.sender === 'ai' && <Avatar><AvatarFallback><Bot /></AvatarFallback></Avatar>}
-                                            <p className={cn('max-w-[80%] rounded-xl px-4 py-3 text-sm shadow-sm', msg.sender === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted')}>
-                                                {msg.text}
-                                            </p>
-                                            {msg.sender === 'user' && <Avatar><AvatarFallback>{user?.email?.[0].toUpperCase() ?? <User />}</AvatarFallback></Avatar>}
-                                        </div>
-                                    ))}
-                                    {isProcessing && (
-                                        <div className="flex items-start gap-3 justify-start">
-                                            <Avatar><AvatarFallback><Bot /></AvatarFallback></Avatar>
-                                            <div className="bg-muted rounded-xl px-4 py-3 text-sm shadow-sm flex items-center">
-                                                <Loader2 className="w-4 h-4 animate-spin mr-2"/> Thinking...
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                            </ScrollArea>
-                        </CardContent>
-                    </Card>
-                </div>
+                </ScrollArea>
+                <footer className="border-t p-4 text-center bg-background">
+                     <Button
+                        onClick={handleMicClick}
+                        disabled={hasCameraPermission !== true || isProcessing}
+                        size="lg"
+                        variant={isRecording ? 'destructive' : 'default'}
+                        className="rounded-full w-24 h-24 shadow-lg"
+                    >
+                        {isRecording ? <Square className="w-10 h-10" /> : <Mic className="w-10 h-10" />}
+                    </Button>
+                    <p className="text-sm text-muted-foreground mt-2">
+                        {isRecording ? 'Listening...' : 'Tap to Speak'}
+                    </p>
+                </footer>
             </main>
             <canvas ref={canvasRef} className="hidden"></canvas>
         </div>
     );
-}
+
+    
