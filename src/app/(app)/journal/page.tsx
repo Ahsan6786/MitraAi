@@ -63,16 +63,18 @@ export default function JournalPage() {
             id: doc.id,
             ...doc.data(),
           } as JournalEntry))
-          .filter(entry => entry.type === 'text');
+          .filter(entry => entry.type === 'text'); // Only show text entries
 
         setEntries(entriesData);
         setIsLoadingEntries(false);
       }, (error) => {
         console.error("Error fetching journal entries:", error);
+        // This toast might be shown if the required index is not created yet.
         toast({
-          title: "Error",
-          description: "Could not fetch journal entries. Please ensure the Firestore index is created.",
-          variant: "destructive"
+          title: "Error Loading Entries",
+          description: "Could not fetch journal entries. This can sometimes happen if you're saving your first entry.",
+          variant: "destructive",
+          duration: 10000,
         });
         setIsLoadingEntries(false);
       });
@@ -172,14 +174,14 @@ export default function JournalPage() {
         </Card>
 
         <div className="space-y-4">
-            <h2 className="text-lg font-semibold">Recent Entries</h2>
+            <h2 className="text-lg font-semibold">Recent Text Entries</h2>
              {isLoadingEntries ? (
                 <div className="flex justify-center items-center py-10">
                     <Loader2 className="w-8 h-8 animate-spin text-primary" />
                 </div>
              ) : entries.length === 0 ? (
                 <div className="text-center text-muted-foreground bg-background rounded-lg py-10 px-4">
-                    <p>Your saved journal entries will appear here.</p>
+                    <p>Your saved text journal entries will appear here.</p>
                 </div>
             ) : (
                 entries.map((entry) => (
