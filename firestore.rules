@@ -1,26 +1,11 @@
-
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    match /journalEntries/{entryId} {
-      allow read, create: if request.auth != null && request.resource.data.userId == request.auth.uid;
-      allow update: if request.auth != null && resource.data.userId == request.auth.uid;
-    }
-
-    match /posts/{postId} {
-      allow read: if true;
-      allow create: if request.auth != null;
-      allow update: if request.auth.uid == resource.data.authorId;
-      allow delete: if request.auth.uid == resource.data.authorId || request.auth.token.email == 'ahsanimamkhan06@gmail.com';
-
-      match /comments/{commentId} {
-        allow read: if true;
-        allow create: if request.auth != null;
-        allow update: if request.auth.uid == resource.data.authorId || request.auth.token.email == 'ahsanimamkhan06@gmail.com';
-        allow delete: if request.auth.uid == resource.data.authorId || request.auth.token.email == 'ahsanimamkhan06@gmail.com';
-      }
+    // Allow read and write access to the entire database for any authenticated user.
+    // WARNING: This is insecure for production apps.
+    match /{document=**} {
+      allow read, write: if request.auth != null;
     }
   }
 }
