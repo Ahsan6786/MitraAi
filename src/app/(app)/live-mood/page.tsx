@@ -141,10 +141,6 @@ export default function LiveMoodPage() {
         recognition.onend = () => {
             setIsRecording(false);
             if (finalTranscript) {
-                // processMood is defined below, but because of useCallback, it needs to be in the dependency array
-                // to get the latest version. We will define it before handleMicClick.
-                // This is a bit of a dependency cycle, so we'll pass the transcript directly.
-                // Re-architecting this to avoid this is possible but more complex.
                 (async () => {
                     if (!finalTranscript) {
                         setIsProcessing(false);
@@ -243,11 +239,7 @@ export default function LiveMoodPage() {
         }
     }, [language, toast, isRecording, handleMicClick]);
     
-    // To solve the dependency cycle, let's redefine handleMicClick and processMood to not depend on each other.
-    // The logic inside onend will call processMood directly.
     useEffect(() => {
-        // This is a dummy effect to include processMood in the component scope for the linter,
-        // but the main logic is now inside handleMicClick's onend callback.
     }, [processMood]);
 
 
@@ -277,76 +269,80 @@ export default function LiveMoodPage() {
                 </div>
             </header>
 
-            <main className="flex-1 flex flex-col overflow-hidden">
-                <ScrollArea className="flex-1" viewportRef={scrollViewportRef}>
-                    <div className="p-2 sm:p-4 md:p-6 space-y-4">
-                        {chatMessages.length === 0 && !isProcessing && (
-                            <div className="flex flex-col items-center justify-center h-full text-center py-10">
-                                <Bot className="w-12 h-12 text-muted-foreground mb-4" />
-                                <p className="text-muted-foreground">The AI is waiting for you to speak.</p>
+            <main className="flex-1 flex flex-col lg:flex-row overflow-hidden">
+                {/* Left Side: Camera View */}
+                <div className="lg:w-1/2 xl:w-2/5 p-2 sm:p-4 flex flex-col gap-4">
+                    <Card className="flex-1 flex flex-col">
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                                <Camera className="w-5 h-5 text-primary" />
+                                Your Camera
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="flex-grow flex items-center justify-center">
+                            <div className="relative w-full aspect-video bg-muted rounded-md overflow-hidden">
+                                <video ref={videoRef} className="w-full h-full object-cover" autoPlay muted playsInline />
+                                {hasCameraPermission === false && (
+                                    <div className="absolute inset-0 flex items-center justify-center p-4">
+                                        <Alert variant="destructive">
+                                            <AlertTitle>Camera Access Required</AlertTitle>
+                                            <AlertDescription>
+                                                Please allow camera access in your browser to use this feature.
+                                            </AlertDescription>
+                                        </Alert>
+                                    </div>
+                                )}
                             </div>
-                        )}
-                        {chatMessages.map((msg, index) => (
-                            <div key={index} className={cn('flex items-start gap-3', msg.sender === 'user' ? 'justify-end' : 'justify-start')}>
-                                {msg.sender === 'ai' && <Avatar><AvatarFallback><Bot /></AvatarFallback></Avatar>}
-                                <p className={cn('max-w-[80%] rounded-xl px-4 py-3 text-sm shadow-sm', msg.sender === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted')}>
-                                    {msg.text}
-                                </p>
-                                {msg.sender === 'user' && <Avatar><AvatarFallback>{user?.email?.[0].toUpperCase() ?? <User />}</AvatarFallback></Avatar>}
-                            </div>
-                        ))}
-                        {isProcessing && (
-                            <div className="flex items-start gap-3 justify-start">
-                                <Avatar><AvatarFallback><Bot /></AvatarFallback></Avatar>
-                                <div className="bg-muted rounded-xl px-4 py-3 text-sm shadow-sm flex items-center">
-                                    <Loader2 className="w-4 h-4 animate-spin mr-2"/> Thinking...
+                        </CardContent>
+                    </Card>
+                </div>
+                
+                {/* Right Side: Chat and Controls */}
+                <div className="flex-1 flex flex-col overflow-hidden">
+                     <ScrollArea className="flex-1" viewportRef={scrollViewportRef}>
+                        <div className="p-2 sm:p-4 md:p-6 space-y-4">
+                            {chatMessages.length === 0 && !isProcessing && (
+                                <div className="flex flex-col items-center justify-center h-full text-center py-10">
+                                    <Bot className="w-12 h-12 text-muted-foreground mb-4" />
+                                    <p className="text-muted-foreground">The AI is waiting for you to speak.</p>
                                 </div>
-                            </div>
-                        )}
-                         {/* This spacer pushes the camera to the bottom if chat is short */}
-                        <div className="flex-grow min-h-[5vh]" />
-                        <Card className="flex flex-col sticky bottom-4">
-                            <CardHeader>
-                                <CardTitle className="flex items-center gap-2">
-                                    <Camera className="w-5 h-5 text-primary" />
-                                    Your Camera
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent className="flex-grow flex items-center justify-center">
-                                <div className="relative w-full aspect-video bg-muted rounded-md overflow-hidden">
-                                    <video ref={videoRef} className="w-full h-full object-cover" autoPlay muted playsInline />
-                                    {hasCameraPermission === false && (
-                                        <div className="absolute inset-0 flex items-center justify-center p-4">
-                                            <Alert variant="destructive">
-                                                <AlertTitle>Camera Access Required</AlertTitle>
-                                                <AlertDescription>
-                                                    Please allow camera access in your browser to use this feature.
-                                                </AlertDescription>
-                                            </Alert>
-                                        </div>
-                                    )}
+                            )}
+                            {chatMessages.map((msg, index) => (
+                                <div key={index} className={cn('flex items-start gap-3', msg.sender === 'user' ? 'justify-end' : 'justify-start')}>
+                                    {msg.sender === 'ai' && <Avatar><AvatarFallback><Bot /></AvatarFallback></Avatar>}
+                                    <p className={cn('max-w-[80%] rounded-xl px-4 py-3 text-sm shadow-sm', msg.sender === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted')}>
+                                        {msg.text}
+                                    </p>
+                                    {msg.sender === 'user' && <Avatar><AvatarFallback>{user?.email?.[0].toUpperCase() ?? <User />}</AvatarFallback></Avatar>}
                                 </div>
-                            </CardContent>
-                        </Card>
-                    </div>
-                </ScrollArea>
-                <footer className="border-t p-4 text-center bg-background">
-                     <Button
-                        onClick={handleMicClick}
-                        disabled={hasCameraPermission !== true || isProcessing}
-                        size="lg"
-                        variant={isRecording ? 'destructive' : 'default'}
-                        className="rounded-full w-24 h-24 shadow-lg"
-                    >
-                        {isRecording ? <Square className="w-10 h-10" /> : <Mic className="w-10 h-10" />}
-                    </Button>
-                    <p className="text-sm text-muted-foreground mt-2">
-                        {isRecording ? 'Listening...' : 'Tap to Speak'}
-                    </p>
-                </footer>
+                            ))}
+                            {isProcessing && (
+                                <div className="flex items-start gap-3 justify-start">
+                                    <Avatar><AvatarFallback><Bot /></AvatarFallback></Avatar>
+                                    <div className="bg-muted rounded-xl px-4 py-3 text-sm shadow-sm flex items-center">
+                                        <Loader2 className="w-4 h-4 animate-spin mr-2"/> Thinking...
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </ScrollArea>
+                    <footer className="border-t p-4 text-center bg-background">
+                        <Button
+                            onClick={handleMicClick}
+                            disabled={hasCameraPermission !== true || isProcessing}
+                            size="lg"
+                            variant={isRecording ? 'destructive' : 'default'}
+                            className="rounded-full w-24 h-24 shadow-lg"
+                        >
+                            {isRecording ? <Square className="w-10 h-10" /> : <Mic className="w-10 h-10" />}
+                        </Button>
+                        <p className="text-sm text-muted-foreground mt-2">
+                            {isRecording ? 'Listening...' : 'Tap to Speak'}
+                        </p>
+                    </footer>
+                </div>
             </main>
             <canvas ref={canvasRef} className="hidden"></canvas>
         </div>
     );
-
-    
+}
