@@ -112,55 +112,8 @@ export default function LiveMoodPage() {
         }
         return '';
     };
-    
-    const startListening = useCallback(() => {
-        if (!SpeechRecognition) {
-            toast({ title: 'Speech Recognition not supported', variant: 'destructive' });
-            return;
-        }
 
-        setIsRecording(true);
-        transcriptRef.current = '';
-        recognitionRef.current = new SpeechRecognition();
-        recognitionRef.current.continuous = true;
-        recognitionRef.current.interimResults = true;
-        recognitionRef.current.lang = languageToSpeechCode[language] || 'en-US';
-
-        recognitionRef.current.onresult = (event: any) => {
-            if (silenceTimeoutRef.current) clearTimeout(silenceTimeoutRef.current);
-            
-            let finalTranscript = '';
-            let interimTranscript = '';
-            for (let i = 0; i < event.results.length; ++i) {
-                if (event.results[i].isFinal) {
-                    finalTranscript += event.results[i][0].transcript;
-                } else {
-                    interimTranscript += event.results[i][0].transcript;
-                }
-            }
-            transcriptRef.current = finalTranscript + interimTranscript;
-
-            silenceTimeoutRef.current = setTimeout(() => {
-                stopListening();
-            }, 2000);
-        };
-
-        recognitionRef.current.onend = () => {
-            if (silenceTimeoutRef.current) clearTimeout(silenceTimeoutRef.current);
-            if (recognitionRef.current) {
-                stopListening();
-            }
-        };
-
-        recognitionRef.current.onerror = (event: any) => {
-            toast({ title: 'Speech recognition error', description: event.error, variant: 'destructive' });
-            setIsRecording(false);
-        };
-
-        recognitionRef.current.start();
-    }, [toast, stopListening, language]); // eslint-disable-line react-hooks/exhaustive-deps
-
-    const processMood = async (transcript: string) => {
+    const processMood = useCallback(async (transcript: string) => {
         if (!transcript.trim()) {
             setIsProcessing(false);
             return;
@@ -209,7 +162,7 @@ export default function LiveMoodPage() {
         } finally {
             setIsProcessing(false);
         }
-    };
+    }, [isRecording, language, toast]); // eslint-disable-line react-hooks/exhaustive-deps
     
     const stopListening = useCallback(() => {
         if (recognitionRef.current) {
@@ -223,8 +176,55 @@ export default function LiveMoodPage() {
             }
             transcriptRef.current = '';
         }
-    }, [processMood]); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [processMood]);
 
+    const startListening = useCallback(() => {
+        if (!SpeechRecognition) {
+            toast({ title: 'Speech Recognition not supported', variant: 'destructive' });
+            return;
+        }
+
+        setIsRecording(true);
+        transcriptRef.current = '';
+        recognitionRef.current = new SpeechRecognition();
+        recognitionRef.current.continuous = true;
+        recognitionRef.current.interimResults = true;
+        recognitionRef.current.lang = languageToSpeechCode[language] || 'en-US';
+
+        recognitionRef.current.onresult = (event: any) => {
+            if (silenceTimeoutRef.current) clearTimeout(silenceTimeoutRef.current);
+            
+            let finalTranscript = '';
+            let interimTranscript = '';
+            for (let i = 0; i < event.results.length; ++i) {
+                if (event.results[i].isFinal) {
+                    finalTranscript += event.results[i][0].transcript;
+                } else {
+                    interimTranscript += event.results[i][0].transcript;
+                }
+            }
+            transcriptRef.current = finalTranscript + interimTranscript;
+
+            silenceTimeoutRef.current = setTimeout(() => {
+                stopListening();
+            }, 2000);
+        };
+
+        recognitionRef.current.onend = () => {
+            if (silenceTimeoutRef.current) clearTimeout(silenceTimeoutRef.current);
+            if (recognitionRef.current) {
+                stopListening();
+            }
+        };
+
+        recognitionRef.current.onerror = (event: any) => {
+            toast({ title: 'Speech recognition error', description: event.error, variant: 'destructive' });
+            setIsRecording(false);
+        };
+
+        recognitionRef.current.start();
+    }, [toast, stopListening, language]);
+    
 
     const handleMicClick = () => {
         if (isRecording) {
