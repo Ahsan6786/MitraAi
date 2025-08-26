@@ -33,6 +33,8 @@ export default function LiveMoodPage() {
     const videoRef = useRef<HTMLVideoElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const recognitionRef = useRef<any>(null);
+    const silenceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const transcriptRef = useRef(''); // Ref to hold the latest transcript
     const { toast } = useToast();
     const { user } = useAuth();
     const scrollAreaRef = useRef<HTMLDivElement>(null);
@@ -72,6 +74,14 @@ export default function LiveMoodPage() {
           scrollAreaRef.current.scrollTo({ top: scrollAreaRef.current.scrollHeight, behavior: 'smooth' });
         }
     }, [chatMessages]);
+    
+    // Cleanup on unmount
+    useEffect(() => {
+      return () => {
+        if (silenceTimeoutRef.current) clearTimeout(silenceTimeoutRef.current);
+        if (recognitionRef.current) recognitionRef.current.stop();
+      }
+    }, []);
 
     const captureFrame = (): string => {
         if (!videoRef.current || !canvasRef.current) return '';
@@ -86,49 +96,18 @@ export default function LiveMoodPage() {
         }
         return '';
     };
-
-    const handleMicClick = () => {
-        if (isRecording) {
-            recognitionRef.current?.stop();
-        } else {
-            startListening();
-        }
-    };
-
-    const startListening = () => {
-        if (!SpeechRecognition) {
-            toast({ title: 'Speech Recognition not supported', variant: 'destructive' });
+    
+    const processMood = async (transcript: string) => {
+        if (!transcript.trim()) {
+            setIsProcessing(false);
             return;
         }
-        setIsRecording(true);
-        setChatMessages([]);
-        recognitionRef.current = new SpeechRecognition();
-        recognitionRef.current.continuous = false;
-        recognitionRef.current.interimResults = false;
-        recognitionRef.current.lang = 'en-US';
 
-        recognitionRef.current.onresult = (event: any) => {
-            const transcript = event.results[0][0].transcript;
-            const userMessage: ChatMessage = { sender: 'user', text: transcript };
-            setChatMessages(prev => [...prev, userMessage]);
-            processMood(transcript);
-        };
-
-        recognitionRef.current.onend = () => {
-            setIsRecording(false);
-        };
-
-        recognitionRef.current.onerror = (event: any) => {
-            toast({ title: 'Speech recognition error', description: event.error, variant: 'destructive' });
-            setIsRecording(false);
-        };
-
-        recognitionRef.current.start();
-    };
-
-    const processMood = async (transcript: string) => {
         setIsProcessing(true);
         const photoDataUri = captureFrame();
+
+        const userMessage: ChatMessage = { sender: 'user', text: transcript };
+        setChatMessages(prev => [...prev, userMessage]);
 
         if (!photoDataUri) {
             toast({ title: 'Could not capture frame', variant: 'destructive' });
@@ -145,7 +124,6 @@ export default function LiveMoodPage() {
             const aiMessage: ChatMessage = { sender: 'ai', text: result.response };
             setChatMessages(prev => [...prev, aiMessage]);
             
-            // Text to speech for AI response
             const ttsResult = await textToSpeech({ text: result.response });
             if (ttsResult.audioDataUri) {
                 const audio = new Audio(ttsResult.audioDataUri);
@@ -161,6 +139,76 @@ export default function LiveMoodPage() {
             setIsProcessing(false);
         }
     };
+
+    const stopListening = useCallback(() => {
+        if (recognitionRef.current) {
+            recognitionRef.current.stop();
+            recognitionRef.current = null;
+            setIsRecording(false);
+            
+            const finalTranscript = transcriptRef.current.trim();
+            if (finalTranscript) {
+                processMood(finalTranscript);
+            }
+            transcriptRef.current = '';
+        }
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+    const startListening = () => {
+        if (!SpeechRecognition) {
+            toast({ title: 'Speech Recognition not supported', variant: 'destructive' });
+            return;
+        }
+
+        setIsRecording(true);
+        transcriptRef.current = '';
+        recognitionRef.current = new SpeechRecognition();
+        recognitionRef.current.continuous = true;
+        recognitionRef.current.interimResults = true;
+        recognitionRef.current.lang = 'en-US';
+
+        recognitionRef.current.onresult = (event: any) => {
+            if (silenceTimeoutRef.current) clearTimeout(silenceTimeoutRef.current);
+            
+            let finalTranscript = '';
+            let interimTranscript = '';
+            for (let i = 0; i < event.results.length; ++i) {
+                if (event.results[i].isFinal) {
+                    finalTranscript += event.results[i][0].transcript;
+                } else {
+                    interimTranscript += event.results[i][0].transcript;
+                }
+            }
+            transcriptRef.current = finalTranscript + interimTranscript;
+
+            silenceTimeoutRef.current = setTimeout(() => {
+                stopListening();
+            }, 2000);
+        };
+
+        recognitionRef.current.onend = () => {
+            if (silenceTimeoutRef.current) clearTimeout(silenceTimeoutRef.current);
+            if (recognitionRef.current) {
+                stopListening();
+            }
+        };
+
+        recognitionRef.current.onerror = (event: any) => {
+            toast({ title: 'Speech recognition error', description: event.error, variant: 'destructive' });
+            setIsRecording(false);
+        };
+
+        recognitionRef.current.start();
+    };
+
+    const handleMicClick = () => {
+        if (isRecording) {
+            stopListening();
+        } else {
+            startListening();
+        }
+    };
+
 
     return (
         <div className="h-full flex flex-col">
