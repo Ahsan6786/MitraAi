@@ -120,71 +120,13 @@ export default function LiveMoodPage() {
         }
         return '';
     };
-
-    const processMood = useCallback(async (transcript: string) => {
-        if (!transcript.trim()) {
-            setIsProcessing(false);
-            return;
-        }
-
-        setIsProcessing(true);
-        const photoDataUri = captureFrame();
-
-        const userMessage: ChatMessage = { sender: 'user', text: transcript };
-        setChatMessages(prev => [...prev, userMessage]);
-
-        if (!photoDataUri) {
-            toast({ title: 'Could not capture frame', variant: 'destructive' });
-            setIsProcessing(false);
-            return;
-        }
-
-        try {
-            const result = await predictLiveMood({
-                photoDataUri,
-                description: transcript,
-                language,
-            });
-
-            const aiMessage: ChatMessage = { sender: 'ai', text: result.response };
-            setChatMessages(prev => [...prev, aiMessage]);
-            
-            const ttsResult = await textToSpeech({ text: result.response });
-            if (ttsResult.audioDataUri) {
-                const audio = new Audio(ttsResult.audioDataUri);
-                 setTimeout(() => {
-                    if (!isRecording) {
-                      startListening();
-                    }
-                }, 1000);
-                audio.play();
-            } else {
-                 startListening();
-            }
-
-        } catch (error) {
-            console.error('Error predicting live mood:', error);
-            toast({ title: 'AI Analysis Failed', variant: 'destructive' });
-            const errorMessage: ChatMessage = { sender: 'ai', text: "Sorry, I couldn't process that right now." };
-            setChatMessages(prev => [...prev, errorMessage]);
-        } finally {
-            setIsProcessing(false);
-        }
-    }, [isRecording, language, toast, startListening]); // eslint-disable-line react-hooks/exhaustive-deps
     
     const stopListening = useCallback(() => {
         if (recognitionRef.current) {
             recognitionRef.current.stop();
-            recognitionRef.current = null;
-            setIsRecording(false);
-            
-            const finalTranscript = transcriptRef.current.trim();
-            if (finalTranscript) {
-                processMood(finalTranscript);
-            }
-            transcriptRef.current = '';
         }
-    }, [processMood]);
+    }, []);
+
 
     const startListening = useCallback(() => {
         if (!SpeechRecognition) {
@@ -220,8 +162,20 @@ export default function LiveMoodPage() {
 
         recognitionRef.current.onend = () => {
             if (silenceTimeoutRef.current) clearTimeout(silenceTimeoutRef.current);
+             // processMood is now called from here
+            const finalTranscript = transcriptRef.current.trim();
+            if (finalTranscript) {
+                // We're passing a callback to processMood to avoid circular dependencies
+                processMood(finalTranscript, () => {
+                    if (isRecording) startListening();
+                });
+            }
+            
+            // Check if it was stopped manually vs automatically
             if (recognitionRef.current) {
-                stopListening();
+               recognitionRef.current = null;
+               setIsRecording(false);
+               transcriptRef.current = '';
             }
         };
 
@@ -231,7 +185,58 @@ export default function LiveMoodPage() {
         };
 
         recognitionRef.current.start();
-    }, [toast, stopListening, language]);
+    }, [toast, stopListening, language, isRecording]); // processMood is removed from here
+
+    const processMood = useCallback(async (transcript: string, onComplete?: () => void) => {
+        if (!transcript.trim()) {
+            setIsProcessing(false);
+            onComplete?.();
+            return;
+        }
+
+        setIsProcessing(true);
+        const photoDataUri = captureFrame();
+
+        const userMessage: ChatMessage = { sender: 'user', text: transcript };
+        setChatMessages(prev => [...prev, userMessage]);
+
+        if (!photoDataUri) {
+            toast({ title: 'Could not capture frame', variant: 'destructive' });
+            setIsProcessing(false);
+            onComplete?.();
+            return;
+        }
+
+        try {
+            const result = await predictLiveMood({
+                photoDataUri,
+                description: transcript,
+                language,
+            });
+
+            const aiMessage: ChatMessage = { sender: 'ai', text: result.response };
+            setChatMessages(prev => [...prev, aiMessage]);
+            
+            const ttsResult = await textToSpeech({ text: result.response });
+            if (ttsResult.audioDataUri) {
+                const audio = new Audio(ttsResult.audioDataUri);
+                audio.onended = () => {
+                  setTimeout(() => onComplete?.(), 1000);
+                }
+                audio.play();
+            } else {
+                 setTimeout(() => onComplete?.(), 1000);
+            }
+
+        } catch (error) {
+            console.error('Error predicting live mood:', error);
+            toast({ title: 'AI Analysis Failed', variant: 'destructive' });
+            const errorMessage: ChatMessage = { sender: 'ai', text: "Sorry, I couldn't process that right now." };
+            setChatMessages(prev => [...prev, errorMessage]);
+        } finally {
+            setIsProcessing(false);
+        }
+    }, [language, toast]);
     
     const handleMicClick = () => {
         if (isRecording) {
@@ -349,5 +354,3 @@ export default function LiveMoodPage() {
         </div>
     );
 }
-
-    
