@@ -1,47 +1,36 @@
-
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-  
-    // Helper function to check for admin role
-    function isAdmin() {
-      return request.auth.token.email == 'ahsan.khan@mitwpu.edu.in';
+    
+    // Rules for journal entries
+    match /journalEntries/{entryId} {
+      allow read, update: if request.auth.token.email == 'ahsan.khan@mitwpu.edu.in';
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow read: if request.auth != null && resource.data.userId == request.auth.uid;
     }
 
-    // Journal Entries
-    match /journalEntries/{entryId} {
-      // Admin can do anything
-      allow read, write: if isAdmin();
-      
-      // Regular users can create their own entries
-      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
-      
-      // Regular users can read, update, and delete ONLY their own entries
-      allow read, update, delete: if request.auth != null && resource.data.userId == request.auth.uid;
-    }
-    
-    // Community Posts
+    // Rules for community posts
     match /posts/{postId} {
-      // Any authenticated user can read all posts
+      // Anyone authenticated can read posts.
       allow read: if request.auth != null;
       
-      // Any authenticated user can create a post, ensuring they are the author
+      // A user can create a post if they are authenticated and the authorId matches their UID.
       allow create: if request.auth != null && request.resource.data.authorId == request.auth.uid;
       
-      // Users can only update or delete their own posts
-      allow update, delete: if request.auth != null && resource.data.authorId == request.auth.uid;
+      // A user can update their own post (e.g., comment count).
+      allow update: if request.auth != null && resource.data.authorId == request.auth.uid;
       
-      // Rules for the comments subcollection
+      // A user can delete their own post OR if the user is the owner.
+      allow delete: if request.auth != null && (resource.data.authorId == request.auth.uid || request.auth.token.email == 'ahsanimamkhan06@gmail.com');
+
+      // Rules for comments within a post
       match /comments/{commentId} {
-        // Any authenticated user can read comments
-        allow read: if request.auth != null;
+        // Anyone authenticated can read and create comments.
+        allow read, create: if request.auth != null;
         
-        // Any authenticated user can create a comment
-        allow create: if request.auth != null && request.resource.data.authorId == request.auth.uid;
-        
-        // Users can only delete their own comments
-        allow delete: if request.auth != null && resource.data.authorId == request.auth.uid;
+        // A user can delete their own comment OR if the user is the owner of the parent post.
+        allow delete: if request.auth != null && (resource.data.authorId == request.auth.uid || get(/databases/$(database)/documents/posts/$(postId)).data.authorId == request.auth.uid);
       }
     }
   }
