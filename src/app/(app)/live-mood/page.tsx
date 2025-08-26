@@ -110,6 +110,50 @@ export default function LiveMoodPage() {
         return '';
     };
     
+    const processMood = useCallback(async (transcript: string) => {
+        if (!transcript) {
+            setIsProcessing(false);
+            return;
+        }
+        setIsProcessing(true);
+        const photoDataUri = captureFrame();
+        const userMessage: ChatMessage = { sender: 'user', text: transcript };
+        setChatMessages(prev => [...prev, userMessage]);
+
+        if (!photoDataUri) {
+            toast({ title: 'Could not capture frame', variant: 'destructive' });
+            setIsProcessing(false);
+            return;
+        }
+
+        try {
+            const result = await predictLiveMood({ photoDataUri, description: transcript, language });
+            const aiMessage: ChatMessage = { sender: 'ai', text: result.response };
+            setChatMessages(prev => [...prev, aiMessage]);
+            
+            const ttsResult = await textToSpeech({ text: result.response });
+            if (ttsResult.audioDataUri) {
+                const audio = new Audio(ttsResult.audioDataUri);
+                audioRef.current = audio;
+                audio.play();
+                audio.onended = () => {
+                   if (isRecording) return;
+                   // eslint-disable-next-line @typescript-eslint/no-use-before-define
+                   handleMicClick();
+                };
+            }
+
+        } catch (error) {
+            console.error('Error predicting live mood:', error);
+            toast({ title: 'AI Analysis Failed', variant: 'destructive' });
+            const errorMessage: ChatMessage = { sender: 'ai', text: "Sorry, I couldn't process that right now." };
+            setChatMessages(prev => [...prev, errorMessage]);
+        } finally {
+            setIsProcessing(false);
+        }
+    }, [language, toast, isRecording]);
+
+
     const startListening = useCallback(() => {
         if (!SpeechRecognition) {
             toast({
@@ -167,48 +211,6 @@ export default function LiveMoodPage() {
         }
     }, [isRecording, startListening, stopListening]);
 
-    const processMood = useCallback(async (transcript: string) => {
-        if (!transcript) {
-            setIsProcessing(false);
-            return;
-        }
-        setIsProcessing(true);
-        const photoDataUri = captureFrame();
-        const userMessage: ChatMessage = { sender: 'user', text: transcript };
-        setChatMessages(prev => [...prev, userMessage]);
-
-        if (!photoDataUri) {
-            toast({ title: 'Could not capture frame', variant: 'destructive' });
-            setIsProcessing(false);
-            return;
-        }
-
-        try {
-            const result = await predictLiveMood({ photoDataUri, description: transcript, language });
-            const aiMessage: ChatMessage = { sender: 'ai', text: result.response };
-            setChatMessages(prev => [...prev, aiMessage]);
-            
-            const ttsResult = await textToSpeech({ text: result.response });
-            if (ttsResult.audioDataUri) {
-                const audio = new Audio(ttsResult.audioDataUri);
-                audioRef.current = audio;
-                audio.play();
-                audio.onended = () => {
-                   if (isRecording) return;
-                   setTimeout(() => handleMicClick(), 500);
-                };
-            }
-
-        } catch (error) {
-            console.error('Error predicting live mood:', error);
-            toast({ title: 'AI Analysis Failed', variant: 'destructive' });
-            const errorMessage: ChatMessage = { sender: 'ai', text: "Sorry, I couldn't process that right now." };
-            setChatMessages(prev => [...prev, errorMessage]);
-        } finally {
-            setIsProcessing(false);
-        }
-    }, [language, toast, isRecording, handleMicClick]);
-
 
     return (
         <div className="h-full flex flex-col">
@@ -236,7 +238,7 @@ export default function LiveMoodPage() {
                 </div>
             </header>
 
-            <main className="flex-1 flex flex-col lg:flex-row overflow-hidden">
+             <main className="flex-1 flex flex-col lg:flex-row overflow-hidden">
                 {/* Left Side: Camera View */}
                 <div className="lg:w-1/2 xl:w-2/5 p-2 sm:p-4 flex flex-col gap-4">
                     <Card className="flex-1 flex flex-col">
@@ -312,4 +314,5 @@ export default function LiveMoodPage() {
             <canvas ref={canvasRef} className="hidden"></canvas>
         </div>
     );
-}
+
+    
