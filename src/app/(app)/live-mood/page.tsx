@@ -3,7 +3,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, Mic, Square, Bot, Camera, User, Languages } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
@@ -45,8 +45,6 @@ export default function LiveMoodPage() {
     const { user } = useAuth();
     const scrollViewportRef = useRef<HTMLDivElement>(null);
     const streamRef = useRef<MediaStream | null>(null);
-    const audioRef = useRef<HTMLAudioElement | null>(null);
-    const manualStopRef = useRef(false);
 
     // Auto-scroll to bottom of chat
     useEffect(() => {
@@ -111,18 +109,57 @@ export default function LiveMoodPage() {
         return '';
     };
     
-    const handleMicClick = useCallback(() => {
-        // eslint-disable-next-line @typescript-eslint/no-use-before-define
-        if (isRecording) stopListening();
-        // eslint-disable-next-line @typescript-eslint/no-use-before-define
-        else startListening();
-    }, [isRecording]); // eslint-disable-line react-hooks/exhaustive-deps
-
-    const processMood = useCallback(async (transcript: string) => {
-        if (!transcript) {
-            setIsProcessing(false);
+    const startListening = useCallback(() => {
+        if (isRecording || isProcessing || !SpeechRecognition) {
             return;
         }
+
+        setIsRecording(true);
+        const recognition = new SpeechRecognition();
+        recognitionRef.current = recognition;
+        
+        recognition.continuous = false; // Process after a single utterance
+        recognition.interimResults = false;
+        recognition.lang = languageToSpeechCode[language] || 'en-US';
+        
+        recognition.onresult = (event: any) => {
+            const transcript = event.results[0][0].transcript;
+            if (transcript) {
+                // eslint-disable-next-line @typescript-eslint/no-use-before-define
+                processMood(transcript);
+            }
+        };
+
+        recognition.onend = () => {
+            setIsRecording(false);
+        };
+
+        recognition.onerror = (event: any) => {
+            if (event.error !== 'aborted' && event.error !== 'no-speech') {
+                toast({ title: 'Speech recognition error', description: `Error: ${event.error}`, variant: 'destructive' });
+            }
+            setIsRecording(false); // Ensure state is reset on error
+        };
+        
+        recognition.start();
+    }, [isRecording, isProcessing, language, toast]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    const stopListening = useCallback(() => {
+        if (recognitionRef.current) {
+            recognitionRef.current.stop();
+        }
+        setIsRecording(false);
+    }, []);
+
+    const handleMicClick = useCallback(() => {
+        if (isRecording) {
+            stopListening();
+        } else {
+            startListening();
+        }
+    }, [isRecording, startListening, stopListening]);
+
+    const processMood = useCallback(async (transcript: string) => {
         setIsProcessing(true);
         const photoDataUri = captureFrame();
         const userMessage: ChatMessage = { sender: 'user', text: transcript };
@@ -143,17 +180,19 @@ export default function LiveMoodPage() {
                 const ttsResult = await textToSpeech({ text: result.response });
                 if (ttsResult.audioDataUri) {
                     const audio = new Audio(ttsResult.audioDataUri);
-                    audioRef.current = audio;
                     audio.play();
                     audio.onended = () => {
-                        // Automatically start listening again after AI finishes
-                        handleMicClick();
+                        // Automatically start listening again after AI finishes.
+                        // Use a short timeout to prevent immediate re-triggering if there's an echo.
+                        setTimeout(() => startListening(), 500);
                     };
                 } else {
-                    handleMicClick();
+                    // If no audio, still start listening again
+                    setTimeout(() => startListening(), 500);
                 }
             } else {
-                 handleMicClick();
+                // If AI response is empty, start listening again
+                 setTimeout(() => startListening(), 500);
             }
 
         } catch (error) {
@@ -164,60 +203,7 @@ export default function LiveMoodPage() {
         } finally {
             setIsProcessing(false);
         }
-    }, [language, toast, handleMicClick]);
-
-
-    const startListening = useCallback(() => {
-        if (!SpeechRecognition) {
-            toast({
-                title: "Browser Not Supported",
-                description: "Your browser does not support the Web Speech API for voice recognition.",
-                variant: "destructive",
-            });
-            return;
-        }
-        manualStopRef.current = false;
-        setIsRecording(true);
-        const recognition = new SpeechRecognition();
-        recognitionRef.current = recognition;
-        
-        recognition.continuous = false;
-        recognition.interimResults = false;
-        recognition.lang = languageToSpeechCode[language] || 'en-US';
-        
-        let finalTranscript = '';
-
-        recognition.onresult = (event: any) => {
-            finalTranscript = event.results[0][0].transcript;
-        };
-
-        recognition.onend = () => {
-            setIsRecording(false);
-            // Only process if it wasn't a manual stop and there is a transcript
-            if (!manualStopRef.current && finalTranscript) {
-                processMood(finalTranscript);
-            }
-        };
-
-        recognition.onerror = (event: any) => {
-            if (event.error !== 'aborted' && event.error !== 'no-speech') {
-                toast({ title: 'Speech recognition error', description: `Error: ${event.error}`, variant: 'destructive' });
-            }
-            setIsRecording(false);
-        };
-        
-        recognition.start();
-    }, [language, toast, processMood]);
-
-
-    const stopListening = useCallback(() => {
-        manualStopRef.current = true;
-        if (recognitionRef.current) {
-            recognitionRef.current.stop();
-        }
-        setIsRecording(false);
-    }, []);
-
+    }, [language, toast, startListening]);
 
     return (
         <div className="h-full flex flex-col">
@@ -321,5 +307,4 @@ export default function LiveMoodPage() {
             <canvas ref={canvasRef} className="hidden"></canvas>
         </div>
     );
-
-    
+}
