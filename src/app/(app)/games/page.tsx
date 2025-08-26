@@ -1,12 +1,11 @@
-
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { CheckCircle, Lightbulb, Gamepad2, Hand, Scissors, Gem, RotateCcw, User, Bot } from 'lucide-react';
+import { CheckCircle, Lightbulb, Gamepad2, Hand, Scissors, Gem, RotateCcw, User, Bot, Brain, Puzzle, Smile } from 'lucide-react';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
@@ -179,7 +178,7 @@ function TicTacToeGame() {
                 </CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col items-center justify-center gap-4">
-                <RadioGroup defaultValue="human" onValueChange={handleModeChange} className="flex gap-4">
+                <RadioGroup defaultValue="human" onValueChange={handleModeChange as (value: string) => void} className="flex gap-4">
                     <div className="flex items-center space-x-2">
                         <RadioGroupItem value="human" id="human" />
                         <Label htmlFor="human" className="flex items-center gap-2 cursor-pointer"><User className="w-4 h-4"/> Play vs Human</Label>
@@ -355,6 +354,192 @@ function RockPaperScissorsGame() {
     )
 }
 
+// --- Memory Match Game ---
+const icons = ['☀️', '🌙', '⭐', '❤️', '😊', '🎉'];
+
+const createShuffledDeck = () => {
+  const deck = [...icons, ...icons];
+  return deck.sort(() => Math.random() - 0.5).map((icon, index) => ({
+    id: index,
+    icon,
+    isFlipped: false,
+    isMatched: false,
+  }));
+};
+
+function MemoryMatchGame() {
+    const [cards, setCards] = useState(createShuffledDeck());
+    const [flippedCards, setFlippedCards] = useState<number[]>([]);
+    const [moves, setMoves] = useState(0);
+
+    const handleCardClick = (id: number) => {
+        const currentCard = cards.find(card => card.id === id);
+        if (!currentCard || currentCard.isFlipped || flippedCards.length === 2) {
+            return;
+        }
+
+        const newFlippedCards = [...flippedCards, id];
+        setFlippedCards(newFlippedCards);
+
+        setCards(cards.map(card => card.id === id ? { ...card, isFlipped: true } : card));
+
+        if (newFlippedCards.length === 2) {
+            setMoves(m => m + 1);
+            const [firstId, secondId] = newFlippedCards;
+            const firstCard = cards.find(c => c.id === firstId);
+            const secondCard = cards.find(c => c.id === secondId);
+
+            if (firstCard?.icon === secondCard?.icon) {
+                setCards(cards => cards.map(card => 
+                    (card.id === firstId || card.id === secondId) ? { ...card, isMatched: true, isFlipped: true } : card
+                ));
+                setFlippedCards([]);
+            } else {
+                setTimeout(() => {
+                    setCards(cards => cards.map(card => 
+                        (card.id === firstId || card.id === secondId) ? { ...card, isFlipped: false } : card
+                    ));
+                    setFlippedCards([]);
+                }, 1000);
+            }
+        }
+    };
+
+    const resetGame = () => {
+        setCards(createShuffledDeck());
+        setFlippedCards([]);
+        setMoves(0);
+    };
+
+    const allMatched = cards.every(card => card.isMatched);
+
+    return (
+        <Card className="w-full">
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                    <Brain className="w-6 h-6 text-primary" />
+                    Memory Match
+                </CardTitle>
+                <CardDescription>
+                    Find all the matching pairs of icons.
+                </CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-col items-center justify-center gap-4">
+                <div className="grid grid-cols-4 gap-2 sm:gap-3">
+                    {cards.map(card => (
+                        <div key={card.id} className="perspective-[1000px]" onClick={() => handleCardClick(card.id)}>
+                            <div className={cn(
+                                "w-12 h-12 sm:w-16 sm:h-16 rounded-md transition-transform duration-500 transform-style-3d cursor-pointer",
+                                card.isFlipped ? 'rotate-y-180' : ''
+                            )}>
+                                <div className="absolute w-full h-full backface-hidden bg-muted flex items-center justify-center"></div>
+                                <div className="absolute w-full h-full backface-hidden rotate-y-180 bg-primary/20 flex items-center justify-center text-2xl sm:text-3xl">
+                                    {card.icon}
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+                {allMatched && (
+                    <Alert className="border-green-500 mt-4">
+                        <CheckCircle className="h-4 w-4 text-green-600" />
+                        <AlertTitle>You did it!</AlertTitle>
+                        <AlertDescription>
+                            Great job! You found all pairs in {moves} moves.
+                        </AlertDescription>
+                    </Alert>
+                )}
+            </CardContent>
+            <CardFooter className="flex-col gap-4 items-start">
+                <p className="text-sm text-muted-foreground">Moves: {moves}</p>
+                <Button onClick={resetGame} className="w-full">
+                    <RotateCcw className="mr-2 h-4 w-4" />
+                    Play Again
+                </Button>
+            </CardFooter>
+        </Card>
+    );
+}
+
+
+// --- Word Unscramble Game ---
+const wordList = ['SMILE', 'HAPPY', 'CALM', 'BRAVE', 'HOPE', 'PEACE', 'GRACE', 'DREAM'];
+
+const getRandomWord = () => {
+    const word = wordList[Math.floor(Math.random() * wordList.length)];
+    const scrambled = word.split('').sort(() => 0.5 - Math.random()).join('');
+    return { original: word, scrambled };
+};
+
+function WordUnscrambleGame() {
+    const [word, setWord] = useState(getRandomWord());
+    const [guess, setGuess] = useState('');
+    const [message, setMessage] = useState('');
+    const [isCorrect, setIsCorrect] = useState(false);
+
+    const handleGuess = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (guess.toUpperCase() === word.original) {
+            setMessage('Correct! Well done.');
+            setIsCorrect(true);
+        } else {
+            setMessage('Not quite, try again!');
+        }
+    };
+
+    const nextWord = () => {
+        setWord(getRandomWord());
+        setGuess('');
+        setMessage('');
+        setIsCorrect(false);
+    };
+
+    return (
+        <Card className="w-full">
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                    <Puzzle className="w-6 h-6 text-primary" />
+                    Word Unscramble
+                </CardTitle>
+                <CardDescription>
+                    Can you figure out the hidden positive word?
+                </CardDescription>
+            </CardHeader>
+            <form onSubmit={handleGuess}>
+                <CardContent className="space-y-4">
+                    <div className="flex items-center justify-center bg-muted p-4 rounded-md">
+                        <p className="text-3xl font-bold tracking-widest">{word.scrambled}</p>
+                    </div>
+                    <div className="flex gap-2">
+                        <Input
+                            placeholder="Your answer..."
+                            value={guess}
+                            onChange={e => setGuess(e.target.value)}
+                            disabled={isCorrect}
+                            autoCapitalize="off"
+                        />
+                        <Button type="submit" disabled={isCorrect}>
+                            Check
+                        </Button>
+                    </div>
+                    {message && (
+                        <Alert variant={isCorrect ? 'default' : 'destructive'} className={isCorrect ? 'border-green-500' : 'border-red-500'}>
+                             {isCorrect ? <Smile className="h-4 w-4 text-green-600" /> : <Lightbulb className="h-4 w-4" />}
+                            <AlertTitle>{isCorrect ? 'Awesome!' : 'Hint'}</AlertTitle>
+                            <AlertDescription>{message}</AlertDescription>
+                        </Alert>
+                    )}
+                </CardContent>
+            </form>
+            <CardFooter>
+                 <Button onClick={nextWord} className="w-full">
+                    <RotateCcw className="mr-2 h-4 w-4" />
+                    New Word
+                </Button>
+            </CardFooter>
+        </Card>
+    );
+}
 
 // --- Main Page Component ---
 export default function GamesPage() {
@@ -381,12 +566,20 @@ export default function GamesPage() {
                 <ThemeToggle />
             </header>
             <main className="flex-1 overflow-auto p-2 sm:p-4 md:p-6 flex justify-center items-start">
-               <Tabs defaultValue="guess-the-number" className="w-full max-w-md">
-                  <TabsList className="grid w-full grid-cols-3">
-                    <TabsTrigger value="guess-the-number">Guess Number</TabsTrigger>
-                    <TabsTrigger value="tic-tac-toe">Tic-Tac-Toe</TabsTrigger>
-                    <TabsTrigger value="rock-paper-scissors">R-P-S</TabsTrigger>
+               <Tabs defaultValue="memory-match" className="w-full max-w-md">
+                  <TabsList className="grid w-full grid-cols-2 sm:grid-cols-5 h-auto">
+                    <TabsTrigger value="memory-match" className="sm:col-span-2">Memory Match</TabsTrigger>
+                    <TabsTrigger value="word-unscramble" className="sm:col-span-3">Word Unscramble</TabsTrigger>
+                    <TabsTrigger value="guess-the-number" className="sm:col-span-3">Guess Number</TabsTrigger>
+                    <TabsTrigger value="tic-tac-toe" className="sm:col-span-2">Tic-Tac-Toe</TabsTrigger>
+                    <TabsTrigger value="rock-paper-scissors" className="sm:col-span-5">Rock-Paper-Scissors</TabsTrigger>
                   </TabsList>
+                  <TabsContent value="memory-match" className="mt-4">
+                     <MemoryMatchGame />
+                  </TabsContent>
+                   <TabsContent value="word-unscramble" className="mt-4">
+                     <WordUnscrambleGame />
+                  </TabsContent>
                   <TabsContent value="guess-the-number" className="mt-4">
                      <GuessTheNumberGame />
                   </TabsContent>
@@ -398,6 +591,21 @@ export default function GamesPage() {
                   </TabsContent>
                 </Tabs>
             </main>
+             <style jsx global>{`
+                .perspective-1000 {
+                    perspective: 1000px;
+                }
+                .transform-style-3d {
+                    transform-style: preserve-3d;
+                }
+                .rotate-y-180 {
+                    transform: rotateY(180deg);
+                }
+                .backface-hidden {
+                    backface-visibility: hidden;
+                    -webkit-backface-visibility: hidden;
+                }
+            `}</style>
         </div>
     );
 }
