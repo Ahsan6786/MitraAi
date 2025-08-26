@@ -120,13 +120,18 @@ export default function JournalPage() {
 
   useEffect(() => {
     if (user) {
+      // Simplified query to fetch entries for the user, without ordering.
       const q = query(
         collection(db, 'journalEntries'),
-        where('userId', '==', user.uid),
-        orderBy('createdAt', 'desc')
+        where('userId', '==', user.uid)
       );
+
       const unsubscribe = onSnapshot(q, (snapshot) => {
         const userEntries = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as JournalEntry));
+        
+        // Sort the entries by date here in the code, instead of in the query.
+        userEntries.sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis());
+        
         setEntries(userEntries);
         setIsLoadingEntries(false);
       }, (error) => {
@@ -160,9 +165,9 @@ export default function JournalPage() {
 
       toast({ title: "Entry Saved", description: `We've logged your entry. Detected mood: ${moodResult.mood}` });
       setEntry('');
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error saving entry:", error);
-      toast({ title: "Error", description: "There was an issue saving your entry.", variant: "destructive" });
+      toast({ title: "Error saving entry", description: error.message, variant: "destructive" });
     } finally {
       setIsSubmitting(false);
     }
