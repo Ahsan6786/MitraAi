@@ -9,8 +9,6 @@ import { Bot, HeartPulse, Mic, FileText, Instagram, Mail, AlertTriangle, ShieldC
 import { ThemeToggle } from '@/components/theme-toggle';
 import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
-import ChatInterface from '@/components/chat-interface';
-import { ChatHistoryProvider } from '@/hooks/use-chat-history';
 
 // --- Interactive Hero Section Component ---
 function InteractiveHero() {
@@ -194,34 +192,6 @@ function LandingPageContent() {
               </div>
             </div>
         </section>
-
-        <section id="try-chat" className="w-full py-12 md:py-24 lg:py-32">
-          <div className="container mx-auto px-4 md:px-6">
-            <div className="flex flex-col items-center justify-center space-y-4 text-center">
-              <div className="space-y-2">
-                <div className="inline-block rounded-lg bg-muted px-3 py-1 text-sm">Try it Now</div>
-                <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl flex items-center gap-3">
-                  <MessageSquare className="w-8 h-8 text-primary" />
-                  Talk with MitraAI
-                </h2>
-                <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                  Experience our empathetic AI companion firsthand. No sign-up required. Your conversation here is temporary and will not be saved.
-                </p>
-              </div>
-            </div>
-            <div className="mt-12 h-[70vh] max-h-[700px]">
-              <ChatHistoryProvider>
-                <ChatInterface />
-              </ChatHistoryProvider>
-            </div>
-             <div className="text-center mt-8">
-                <Button asChild>
-                    <Link href="/signup">Sign Up to Save Your Conversations</Link>
-                </Button>
-            </div>
-          </div>
-        </section>
-
 
         <section id="features" className="w-full py-12 md:py-24 lg:py-32 bg-muted/20 mt-20">
           <div className="container mx-auto px-4 md:px-6">
