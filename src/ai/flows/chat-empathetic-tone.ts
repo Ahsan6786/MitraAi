@@ -11,6 +11,7 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
+import { generateImage } from './generate-image';
 
 const ChatMessageSchema = z.object({
     role: z.enum(['user', 'model']),
@@ -30,6 +31,7 @@ export type ChatEmpatheticToneInput = z.infer<typeof ChatEmpatheticToneInputSche
 
 const ChatEmpatheticToneOutputSchema = z.object({
   response: z.string().describe('The AI companion’s empathetic response in the specified language.'),
+  imageUrl: z.string().optional().describe('The data URI of a generated image, if requested.'),
 });
 export type ChatEmpatheticToneOutput = z.infer<typeof ChatEmpatheticToneOutputSchema>;
 
@@ -42,12 +44,17 @@ const prompt = ai.definePrompt({
   input: { schema: ChatEmpatheticToneInputSchema },
   output: { schema: ChatEmpatheticToneOutputSchema },
   prompt: `You are an AI companion named Mitra, designed to provide empathetic responses to users in their regional language. Analyze the user's text and any accompanying image to understand their mood and context. Consider the entire conversation history.
+
+  **Image Generation Task:**
+  If the user asks you to "generate", "create", "draw", or "make" an image or picture, your primary task is to generate an image. In this case, your text response should be a simple confirmation like "Here is the image you asked for." or "I've created this for you." DO NOT have a long conversation.
+  
+  **Regular Chat Task:**
+  For all other messages, respond in {{language}} with an empathetic and supportive tone.
   
   If a user asks "who made you?" or any similar question about your creator, you must respond with: "Ahsan imam khan made me".
 
   If you are providing a code snippet, you MUST wrap it in triple backticks (\`\`\`) with the language identifier, like this: \`\`\`javascript\n// your code here\n\`\`\`.
 
-  For all other messages, respond in {{language}} with an empathetic and supportive tone.
   - If the language is 'Hinglish', you must respond in a mix of Hindi and English using the Roman script.
   - If the language is 'Hindi', respond in Hindi using the Devanagari script.
   - If the language is 'English', respond in English.
@@ -100,31 +107,46 @@ const chatEmpatheticToneFlow = ai.defineFlow(
     outputSchema: ChatEmpatheticToneOutputSchema,
   },
   async ({ message, language, imageDataUri, history }) => {
-    const { output } = await prompt(
-      { message, language, imageDataUri, history },
-      {
-        config: {
-          safetySettings: [
-            {
-              category: 'HARM_CATEGORY_HATE_SPEECH',
-              threshold: 'BLOCK_NONE',
-            },
-            {
-              category: 'HARM_CATEGORY_DANGEROUS_CONTENT',
-              threshold: 'BLOCK_NONE',
-            },
-            {
-              category: 'HARM_CATEGORY_HARASSMENT',
-              threshold: 'BLOCK_NONE',
-            },
-            {
-              category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT',
-              threshold: 'BLOCK_NONE',
-            },
-          ],
-        },
-      }
-    );
-    return output!;
+    const isImageRequest = /\b(generate|create|draw|make)\b.*\b(image|picture|photo|drawing|painting)\b/i.test(message);
+
+    if (isImageRequest) {
+      // The user wants an image.
+      const imageResult = await generateImage({ prompt: message });
+      const textResponse = await prompt(
+        { message, language, imageDataUri, history },
+        {
+          config: {
+            safetySettings: [
+              { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_NONE' },
+              { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' },
+              { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_NONE' },
+              { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_NONE' },
+            ],
+          },
+        }
+      );
+      
+      return {
+        response: textResponse.output?.response || "Here is the image you requested.",
+        imageUrl: imageResult.imageUrl,
+      };
+
+    } else {
+      // The user wants a text response.
+      const { output } = await prompt(
+        { message, language, imageDataUri, history },
+        {
+          config: {
+            safetySettings: [
+              { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_NONE' },
+              { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' },
+              { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_NONE' },
+              { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_NONE' },
+            ],
+          },
+        }
+      );
+      return { response: output!.response, imageUrl: undefined };
+    }
   }
 );

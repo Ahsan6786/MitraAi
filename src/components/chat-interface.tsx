@@ -258,7 +258,7 @@ export default function ChatInterface() {
         history,
       });
       
-      const aiMessage: Message = { sender: 'ai', text: chatResult.response };
+      const aiMessage: Message = { sender: 'ai', text: chatResult.response, imageUrl: chatResult.imageUrl };
       setMessages((prev) => [...prev, aiMessage]);
 
       if (isRecording) {
@@ -491,7 +491,7 @@ export default function ChatInterface() {
             autoComplete="off"
           />
           <Button type="button" variant={isRecording ? 'destructive' : 'ghost'} size="icon" onClick={handleVoiceButtonClick} disabled={isLoading}>
-            {isRecording ? <Square className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+            {isRecording ? <Square className="w-5 h-5" /> : <Mic className="w-5 h-f" />}
             <span className="sr-only">{isRecording ? 'Stop Recording' : 'Use Voice'}</span>
           </Button>
           <Button type="submit" size="icon" disabled={isLoading || isRecording || (!input.trim() && !imageFile)}>
