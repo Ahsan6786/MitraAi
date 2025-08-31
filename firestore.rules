@@ -5,35 +5,56 @@ service cloud.firestore {
     function isAdmin() {
       return request.auth.token.email == 'ahsan.khan@mitwpu.edu.in';
     }
+    
+    // A function to check if the user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
 
     // Rules for the journalEntries collection
     match /journalEntries/{entryId} {
-      // Users can create their own journal entries
-      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
-
-      // Users can read their own entries. The admin can read any entry.
-      allow read: if (request.auth != null && resource.data.userId == request.auth.uid) || isAdmin();
-      
-      // The admin can update any entry (to add reports and mark as reviewed)
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow read: if (isAuthenticated() && resource.data.userId == request.auth.uid) || isAdmin();
       allow update: if isAdmin();
-      
-      // Users cannot delete their entries from the app, only admin can
-      allow delete: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
     }
 
     // Rules for the questionnaires collection
     match /questionnaires/{questionnaireId} {
-      // Users can create their own questionnaire submissions
-      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
-
-      // Users can read their own submissions. The admin can read any submission.
-      allow read: if (request.auth != null && resource.data.userId == request.auth.uid) || isAdmin();
-      
-      // The admin can update any submission (to add feedback and mark as reviewed)
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow read: if (isAuthenticated() && resource.data.userId == request.auth.uid) || isAdmin();
       allow update: if isAdmin();
-      
-      // Submissions cannot be deleted
       allow delete: if false;
+    }
+
+    // Rules for the community posts collection
+    match /posts/{postId} {
+      // Any authenticated user can read all posts
+      allow list, get: if isAuthenticated();
+      
+      // Any authenticated user can create a post
+      allow create: if isAuthenticated() && request.resource.data.authorId == request.auth.uid;
+
+      // Users can delete their own posts. Admin can delete any post.
+      allow delete: if isAuthenticated() && (resource.data.authorId == request.auth.uid || isAdmin());
+      
+      // Allow Cloud Functions (or admin) to update comment counts
+      allow update: if isAdmin();
+
+      // Rules for the comments subcollection
+      match /comments/{commentId} {
+        // Any authenticated user can read comments
+        allow list, get: if isAuthenticated();
+
+        // Any authenticated user can create a comment
+        allow create: if isAuthenticated() && request.resource.data.authorId == request.auth.uid;
+
+        // Users can delete their own comments. Admin can delete any comment.
+        allow delete: if isAuthenticated() && (resource.data.authorId == request.auth.uid || isAdmin());
+        
+        // Admin can update comments (to hide them)
+        allow update: if isAdmin();
+      }
     }
   }
 }
