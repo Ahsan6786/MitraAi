@@ -10,6 +10,7 @@ import { ThemeToggle } from '@/components/theme-toggle';
 import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import ChatInterface from '@/components/chat-interface';
+import { ChatHistoryProvider } from '@/hooks/use-chat-history';
 
 // --- Interactive Hero Section Component ---
 function InteractiveHero() {
@@ -209,7 +210,9 @@ function LandingPageContent() {
               </div>
             </div>
             <div className="mt-12 h-[70vh] max-h-[700px]">
-              <ChatInterface />
+              <ChatHistoryProvider>
+                <ChatInterface />
+              </ChatHistoryProvider>
             </div>
              <div className="text-center mt-8">
                 <Button asChild>
