@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { Languages, Loader2, Mic, Send, User, Square, Paperclip, X } from 'lucide-react';
-import { chatEmpatheticTone } from '@/ai/flows/chat-empathetic-tone';
+import { chatEmpatheticTone, ChatEmpatheticToneInput } from '@/ai/flows/chat-empathetic-tone';
 import { Logo } from '@/components/icons';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -71,13 +71,15 @@ export default function ChatPage() {
 
     const userMessage: Message = { sender: 'user', text: messageText };
     let imageDataUri: string | undefined;
+    
+    const currentMessages = [...messages, userMessage];
+    setMessages(currentMessages);
 
     if (imageFile) {
         imageDataUri = await fileToDataUri(imageFile);
         userMessage.imageUrl = imageDataUri;
     }
 
-    setMessages((prev) => [...prev, userMessage]);
     setInput('');
     setImageFile(null);
     setImagePreview(null);
@@ -89,10 +91,23 @@ export default function ChatPage() {
       if (crisisResult.isCrisis) {
         setShowCrisisModal(true);
         setIsLoading(false);
+        // Remove the crisis message from history to not affect the AI
+        setMessages(messages);
         return;
       }
 
-      const chatResult = await chatEmpatheticTone({ message: messageText, language, imageDataUri });
+      // Convert message history to the format expected by the flow
+      const history: ChatEmpatheticToneInput['history'] = messages.map(msg => ({
+        role: msg.sender === 'user' ? 'user' : 'model',
+        content: [{ text: msg.text }],
+      }));
+
+      const chatResult = await chatEmpatheticTone({ 
+        message: messageText, 
+        language, 
+        imageDataUri,
+        history,
+      });
       
       const aiMessage: Message = { sender: 'ai', text: chatResult.response };
       setMessages((prev) => [...prev, aiMessage]);
@@ -237,6 +252,9 @@ export default function ChatPage() {
                     <SelectItem value="Tamil">Tamil</SelectItem>
                     <SelectItem value="Telugu">Telugu</SelectItem>
                     <SelectItem value="Kokborok">Kokborok</SelectItem>
+                    <SelectItem value="Bhojpuri">Bhojpuri</SelectItem>
+                    <SelectItem value="French">French</SelectItem>
+                    <SelectItem value="German">German</SelectItem>
                 </SelectContent>
             </Select>
             <ThemeToggle />
