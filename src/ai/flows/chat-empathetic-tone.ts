@@ -78,7 +78,7 @@ const prompt = ai.definePrompt({
   {{#if history}}
   Conversation History:
   {{#each history}}
-  {{#if (eq role 'user')}}User: {{content.[0].text}}{{else}}Mitra: {{content.[0].text}}{{/if}}
+  {{role}}: {{content.[0].text}}
   {{/each}}
   {{/if}}
 
@@ -98,14 +98,7 @@ const chatEmpatheticToneFlow = ai.defineFlow(
     outputSchema: ChatEmpatheticToneOutputSchema,
   },
   async ({ message, language, imageDataUri, history }) => {
-    const { output } = await prompt({ message, language, imageDataUri, history }, {
-        // Allow the 'eq' helper for conditional logic in the template.
-        // This is a common pattern but requires explicitly enabling it.
-        // Note: This might not be supported in all Genkit Handlebars versions.
-        // A safer alternative would be to process the history into a simpler string before passing it.
-        // For now, we assume a more feature-rich Handlebars environment.
-        // If this fails, the template should be simplified.
-    });
+    const { output } = await prompt({ message, language, imageDataUri, history });
     return output!;
   }
 );
