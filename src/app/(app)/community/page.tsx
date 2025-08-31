@@ -17,6 +17,7 @@ import {
   getDocs,
   writeBatch,
   updateDoc,
+  increment,
 } from 'firebase/firestore';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { ThemeToggle } from '@/components/theme-toggle';
@@ -189,7 +190,9 @@ function CommentSection({ postId }: { postId: string }) {
     
     const handleDeleteComment = async (commentId: string) => {
         try {
+            const postRef = doc(db, 'posts', postId);
             await deleteDoc(doc(db, `posts/${postId}/comments`, commentId));
+            await updateDoc(postRef, { commentCount: increment(-1) });
             toast({ title: 'Comment Deleted' });
         } catch (error) {
             console.error('Error deleting comment:', error);
@@ -204,7 +207,9 @@ function CommentSection({ postId }: { postId: string }) {
         setIsSubmitting(true);
 
         try {
+            const postRef = doc(db, 'posts', postId);
             const commentCollectionRef = collection(db, `posts/${postId}/comments`);
+            
             await addDoc(commentCollectionRef, {
                 authorId: user.uid,
                 authorName: user.displayName || user.email,
@@ -212,9 +217,9 @@ function CommentSection({ postId }: { postId: string }) {
                 createdAt: serverTimestamp(),
                 hidden: false,
             });
+
+            await updateDoc(postRef, { commentCount: increment(1) });
             
-            // The comment count will be updated by the Cloud Function.
-            // We no longer update it from the client.
             setNewComment('');
         } catch (error) {
             console.error("Error adding comment:", error);
@@ -249,7 +254,7 @@ function CommentSection({ postId }: { postId: string }) {
                                                 {comment.hidden ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
                                             </Button>
                                         )}
-                                        {isCommentAuthor && (
+                                        {(isCommentAuthor || isOwner) && (
                                              <AlertDialog>
                                                 <AlertDialogTrigger asChild>
                                                     <Button variant="ghost" size="icon" className="h-6 w-6">
@@ -395,5 +400,3 @@ export default function CommunityPage() {
     </div>
   );
 }
-
-    
