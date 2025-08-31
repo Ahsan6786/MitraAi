@@ -30,12 +30,32 @@ const SpeechRecognition =
   
 const languageToSpeechCode: Record<string, string> = {
     English: 'en-US',
-    Hindi: 'hi-IN',
     Hinglish: 'en-IN',
+    Hindi: 'hi-IN',
+    Sanskrit: 'sa-IN',
+    Urdu: 'ur-IN',
     Arabic: 'ar-SA',
+    Assamese: 'as-IN',
+    Bodo: 'en-IN', // Fallback
+    Bengali: 'bn-IN',
+    Konkani: 'en-IN', // Fallback
+    Marathi: 'mr-IN',
+    Gujarati: 'gu-IN',
+    Kannada: 'kn-IN',
+    Malayalam: 'ml-IN',
+    Meitei: 'en-IN', // Fallback
+    Mizo: 'en-IN', // Fallback
+    Odia: 'or-IN',
+    Punjabi: 'pa-IN',
+    Nepali: 'ne-NP',
+    Sikkimese: 'en-IN', // Fallback
+    Lepcha: 'en-IN', // Fallback
+    Limbu: 'en-IN', // Fallback
+    Tamil: 'ta-IN',
+    Telugu: 'te-IN',
+    Kokborok: 'en-IN', // Fallback
     French: 'fr-FR',
     German: 'de-DE',
-    Bhojpuri: 'en-IN', // No specific code, fallback to a regional one
 };
 
 
@@ -250,17 +270,35 @@ export default function TalkPage() {
         <div className="flex items-center gap-2">
            <Languages className="w-5 h-5 text-muted-foreground hidden sm:block"/>
             <Select value={language} onValueChange={setLanguage}>
-                <SelectTrigger className="w-[100px] sm:w-[120px]">
+                <SelectTrigger className="w-auto sm:w-[120px]">
                     <SelectValue placeholder="Language" />
                 </SelectTrigger>
                 <SelectContent>
                     <SelectItem value="English">English</SelectItem>
-                    <SelectItem value="Hindi">Hindi</SelectItem>
                     <SelectItem value="Hinglish">Hinglish</SelectItem>
-                    <SelectItem value="Bhojpuri">Bhojpuri</SelectItem>
+                    <SelectItem value="Hindi">Hindi</SelectItem>
+                    <SelectItem value="Sanskrit">Sanskrit</SelectItem>
+                    <SelectItem value="Urdu">Urdu</SelectItem>
                     <SelectItem value="Arabic">Arabic</SelectItem>
-                    <SelectItem value="French">French</SelectItem>
-                    <SelectItem value="German">German</SelectItem>
+                    <SelectItem value="Assamese">Assamese</SelectItem>
+                    <SelectItem value="Bodo">Bodo</SelectItem>
+                    <SelectItem value="Bengali">Bengali</SelectItem>
+                    <SelectItem value="Konkani">Konkani</SelectItem>
+                    <SelectItem value="Marathi">Marathi</SelectItem>
+                    <SelectItem value="Gujarati">Gujarati</SelectItem>
+                    <SelectItem value="Kannada">Kannada</SelectItem>
+                    <SelectItem value="Malayalam">Malayalam</SelectItem>
+                    <SelectItem value="Meitei">Meitei (Manipuri)</SelectItem>
+                    <SelectItem value="Mizo">Mizo</SelectItem>
+                    <SelectItem value="Odia">Odia</SelectItem>
+                    <SelectItem value="Punjabi">Punjabi</SelectItem>
+                    <SelectItem value="Nepali">Nepali</SelectItem>
+                    <SelectItem value="Sikkimese">Sikkimese</SelectItem>
+                    <SelectItem value="Lepcha">Lepcha</SelectItem>
+                    <SelectItem value="Limbu">Limbu</SelectItem>
+                    <SelectItem value="Tamil">Tamil</SelectItem>
+                    <SelectItem value="Telugu">Telugu</SelectItem>
+                    <SelectItem value="Kokborok">Kokborok</SelectItem>
                 </SelectContent>
             </Select>
             <ThemeToggle />

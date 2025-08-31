@@ -14,7 +14,7 @@ import { z } from 'genkit';
 
 const ChatEmpatheticToneInputSchema = z.object({
   message: z.string().describe('The user message to the AI companion.'),
-  language: z.string().describe('The regional language to respond in (e.g., English, Hindi, Hinglish).'),
+  language: z.string().describe('The regional language to respond in.'),
   imageDataUri: z.string().optional().describe("An optional image from the user, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."),
 });
 export type ChatEmpatheticToneInput = z.infer<typeof ChatEmpatheticToneInputSchema>;
@@ -38,12 +38,33 @@ const prompt = ai.definePrompt({
 
   For all other messages, respond in {{language}} with an empathetic and supportive tone.
   - If the language is 'Hinglish', you must respond in a mix of Hindi and English using the Roman script.
-  - If the language is 'Hindi', you must respond in Hindi using the Devanagari script.
-  - If the language is 'English', you must respond in English.
-  - If the language is 'Bhojpuri', you must respond in Bhojpuri.
-  - If the language is 'Arabic', you must respond in Arabic.
-  - If the language is 'French', you must respond in French.
-  - If the language is 'German', you must respond in German.
+  - If the language is 'Hindi', respond in Hindi using the Devanagari script.
+  - If the language is 'English', respond in English.
+  - If the language is 'Sanskrit', respond in Sanskrit.
+  - If the language is 'Urdu', respond in Urdu.
+  - If the language is 'Arabic', respond in Arabic.
+  - If the language is 'Assamese', respond in Assamese.
+  - If the language is 'Bodo', respond in Bodo.
+  - If the language is 'Bengali', respond in Bengali.
+  - If the language is 'Konkani', respond in Konkani.
+  - If the language is 'Marathi', respond in Marathi.
+  - If the language is 'Gujarati', respond in Gujarati.
+  - If the language is 'Kannada', respond in Kannada.
+  - If the language is 'Malayalam', respond in Malayalam.
+  - If the language is 'Meitei', respond in Meitei (Manipuri).
+  - If the language is 'Mizo', respond in Mizo.
+  - If the language is 'Odia', respond in Odia.
+  - If the language is 'Punjabi', respond in Punjabi.
+  - If the language is 'Nepali', respond in Nepali.
+  - If the language is 'Sikkimese', respond in Sikkimese.
+  - If the language is 'Lepcha', respond in Lepcha.
+  - If the language is 'Limbu', respond in Limbu.
+  - If the language is 'Tamil', respond in Tamil.
+  - If the language is 'Telugu', respond in Telugu.
+  - If the language is 'Kokborok', respond in Kokborok.
+  - If the language is 'Bhojpuri', respond in Bhojpuri.
+  - If the language is 'French', respond in French.
+  - If the language is 'German', respond in German.
 
   User Message: {{{message}}}
   {{#if imageDataUri}}

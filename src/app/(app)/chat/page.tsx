@@ -208,17 +208,35 @@ export default function ChatPage() {
         <div className="flex items-center gap-2">
            <Languages className="w-5 h-5 text-muted-foreground hidden sm:block"/>
             <Select value={language} onValueChange={setLanguage}>
-                <SelectTrigger className="w-[100px] sm:w-[120px]">
+                <SelectTrigger className="w-auto sm:w-[120px]">
                     <SelectValue placeholder="Language" />
                 </SelectTrigger>
                 <SelectContent>
                     <SelectItem value="English">English</SelectItem>
-                    <SelectItem value="Hindi">Hindi</SelectItem>
                     <SelectItem value="Hinglish">Hinglish</SelectItem>
-                    <SelectItem value="Bhojpuri">Bhojpuri</SelectItem>
+                    <SelectItem value="Hindi">Hindi</SelectItem>
+                    <SelectItem value="Sanskrit">Sanskrit</SelectItem>
+                    <SelectItem value="Urdu">Urdu</SelectItem>
                     <SelectItem value="Arabic">Arabic</SelectItem>
-                    <SelectItem value="French">French</SelectItem>
-                    <SelectItem value="German">German</SelectItem>
+                    <SelectItem value="Assamese">Assamese</SelectItem>
+                    <SelectItem value="Bodo">Bodo</SelectItem>
+                    <SelectItem value="Bengali">Bengali</SelectItem>
+                    <SelectItem value="Konkani">Konkani</SelectItem>
+                    <SelectItem value="Marathi">Marathi</SelectItem>
+                    <SelectItem value="Gujarati">Gujarati</SelectItem>
+                    <SelectItem value="Kannada">Kannada</SelectItem>
+                    <SelectItem value="Malayalam">Malayalam</SelectItem>
+                    <SelectItem value="Meitei">Meitei (Manipuri)</SelectItem>
+                    <SelectItem value="Mizo">Mizo</SelectItem>
+                    <SelectItem value="Odia">Odia</SelectItem>
+                    <SelectItem value="Punjabi">Punjabi</SelectItem>
+                    <SelectItem value="Nepali">Nepali</SelectItem>
+                    <SelectItem value="Sikkimese">Sikkimese</SelectItem>
+                    <SelectItem value="Lepcha">Lepcha</SelectItem>
+                    <SelectItem value="Limbu">Limbu</SelectItem>
+                    <SelectItem value="Tamil">Tamil</SelectItem>
+                    <SelectItem value="Telugu">Telugu</SelectItem>
+                    <SelectItem value="Kokborok">Kokborok</SelectItem>
                 </SelectContent>
             </Select>
             <ThemeToggle />
