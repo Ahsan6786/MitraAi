@@ -17,23 +17,23 @@ service cloud.firestore {
       // The admin can update any entry (to add reports and mark as reviewed)
       allow update: if isAdmin();
       
-      // Users should not be able to delete entries
-      allow delete: if false;
+      // Users cannot delete their entries from the app, only admin can
+      allow delete: if request.auth != null && resource.data.userId == request.auth.uid;
     }
-    
+
     // Rules for the questionnaires collection
     match /questionnaires/{questionnaireId} {
-        // Users can create their own questionnaire submissions
-        allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
-        
-        // Users can read their own submissions. The admin can read any submission.
-        allow read: if (request.auth != null && resource.data.userId == request.auth.uid) || isAdmin();
-        
-        // The admin can update any submission (to add feedback and mark as reviewed)
-        allow update: if isAdmin();
-        
-        // Users should not be able to delete submissions
-        allow delete: if false;
+      // Users can create their own questionnaire submissions
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+
+      // Users can read their own submissions. The admin can read any submission.
+      allow read: if (request.auth != null && resource.data.userId == request.auth.uid) || isAdmin();
+      
+      // The admin can update any submission (to add feedback and mark as reviewed)
+      allow update: if isAdmin();
+      
+      // Submissions cannot be deleted
+      allow delete: if false;
     }
   }
 }
