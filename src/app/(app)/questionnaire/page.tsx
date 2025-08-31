@@ -10,8 +10,9 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from '@/components/ui/button';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
-import { Loader2, CheckCircle, AlertTriangle } from 'lucide-react';
+import { Loader2, CheckCircle, AlertTriangle, ArrowLeft, ArrowRight } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { Progress } from '@/components/ui/progress';
 
 const questionnaireData = {
   title: "Depression Screening Questionnaire (Yes/No)",
@@ -50,9 +51,29 @@ export default function QuestionnairePage() {
     const [answers, setAnswers] = useState<Answers>({});
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [result, setResult] = useState<{ level: string; recommendation: string; } | null>(null);
+    const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+
+    const totalQuestions = questionnaireData.questions.length;
+    const progress = ((currentQuestionIndex + 1) / totalQuestions) * 100;
+    const currentQuestion = questionnaireData.questions[currentQuestionIndex];
+    const isLastQuestion = currentQuestionIndex === totalQuestions - 1;
 
     const handleAnswerChange = (questionId: number, value: string) => {
         setAnswers(prev => ({ ...prev, [questionId]: value }));
+    };
+
+    const handleNext = () => {
+        if (answers[currentQuestion.id]) {
+            if (!isLastQuestion) {
+                setCurrentQuestionIndex(prev => prev + 1);
+            }
+        }
+    };
+
+    const handlePrevious = () => {
+        if (currentQuestionIndex > 0) {
+            setCurrentQuestionIndex(prev => prev - 1);
+        }
     };
 
     const calculateScore = () => {
@@ -73,7 +94,7 @@ export default function QuestionnairePage() {
     };
 
     const handleSubmit = async () => {
-        if (Object.keys(answers).length !== questionnaireData.questions.length) {
+        if (Object.keys(answers).length !== totalQuestions) {
             toast({ title: "Please answer all questions.", variant: "destructive" });
             return;
         }
@@ -154,33 +175,46 @@ export default function QuestionnairePage() {
                 <CardHeader>
                     <CardTitle>{questionnaireData.title}</CardTitle>
                     <CardDescription>{questionnaireData.description}</CardDescription>
+                    <div className="pt-4">
+                         <Progress value={progress} className="w-full" />
+                         <p className="text-sm text-muted-foreground text-center mt-2">Question {currentQuestionIndex + 1} of {totalQuestions}</p>
+                    </div>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                    {questionnaireData.questions.map((q, index) => (
-                        <div key={q.id} className="rounded-lg border bg-background p-4 shadow-sm transition-shadow hover:shadow-md flex flex-col items-center">
-                            <p className="font-medium text-foreground text-center">{index + 1}. {q.text}</p>
-                            <RadioGroup
-                                onValueChange={(value) => handleAnswerChange(q.id, value)}
-                                className="mt-4 flex items-center gap-6"
-                                value={answers[q.id] || ''}
-                            >
-                                <div className="flex items-center space-x-2">
-                                    <RadioGroupItem value="Yes" id={`q${q.id}-yes`} />
-                                    <Label htmlFor={`q${q.id}-yes`} className="cursor-pointer">Yes</Label>
-                                </div>
-                                <div className="flex items-center space-x-2">
-                                    <RadioGroupItem value="No" id={`q${q.id}-no`} />
-                                    <Label htmlFor={`q${q.id}-no`} className="cursor-pointer">No</Label>
-                                </div>
-                            </RadioGroup>
-                        </div>
-                    ))}
+                <CardContent className="space-y-4" style={{ minHeight: '180px' }}>
+                    <div key={currentQuestion.id} className="rounded-lg border bg-background p-4 shadow-sm flex flex-col items-center transition-all duration-300 animate-in fade-in">
+                        <p className="font-medium text-foreground text-center text-lg">{currentQuestion.text}</p>
+                        <RadioGroup
+                            onValueChange={(value) => handleAnswerChange(currentQuestion.id, value)}
+                            className="mt-6 flex items-center gap-6"
+                            value={answers[currentQuestion.id] || ''}
+                        >
+                            <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="Yes" id={`q${currentQuestion.id}-yes`} />
+                                <Label htmlFor={`q${currentQuestion.id}-yes`} className="cursor-pointer text-base">Yes</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="No" id={`q${currentQuestion.id}-no`} />
+                                <Label htmlFor={`q${currentQuestion.id}-no`} className="cursor-pointer text-base">No</Label>
+                            </div>
+                        </RadioGroup>
+                    </div>
                 </CardContent>
-                <CardFooter>
-                    <Button onClick={handleSubmit} disabled={isSubmitting} className="w-full">
-                        {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        Submit & See My Result
+                <CardFooter className="flex justify-between">
+                    <Button onClick={handlePrevious} disabled={currentQuestionIndex === 0} variant="outline">
+                        <ArrowLeft className="mr-2 h-4 w-4" />
+                        Previous
                     </Button>
+                    {isLastQuestion ? (
+                         <Button onClick={handleSubmit} disabled={isSubmitting || !answers[currentQuestion.id]} className="w-48">
+                            {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle className="mr-2 h-4 w-4" />}
+                            Submit & See My Result
+                        </Button>
+                    ) : (
+                        <Button onClick={handleNext} disabled={!answers[currentQuestion.id]} className="w-48">
+                            Next
+                             <ArrowRight className="ml-2 h-4 w-4" />
+                        </Button>
+                    )}
                 </CardFooter>
             </Card>
         </div>
