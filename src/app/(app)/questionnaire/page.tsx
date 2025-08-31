@@ -126,17 +126,12 @@ export default function QuestionnairePage() {
     };
 
     if (loading) {
-        return <div className="flex h-screen items-center justify-center"><Loader2 className="h-8 w-8 animate-spin" /></div>;
+        return <div className="flex h-full items-center justify-center"><Loader2 className="h-8 w-8 animate-spin" /></div>;
     }
 
-    if (!user) {
-        router.push('/signin');
-        return null;
-    }
-    
     if (result) {
         return (
-             <div className="flex min-h-screen items-center justify-center bg-muted/20 p-4">
+             <div className="flex h-full items-center justify-center p-4">
                 <Card className="w-full max-w-lg">
                     <CardHeader className="text-center">
                         <CheckCircle className="mx-auto h-12 w-12 text-green-500" />
@@ -170,8 +165,8 @@ export default function QuestionnairePage() {
     }
 
     return (
-        <div className="flex min-h-screen items-center justify-center bg-muted/20 p-4">
-            <Card className="w-full max-w-2xl">
+        <div className="h-full flex flex-col p-2 sm:p-4 md:p-6">
+            <Card className="w-full max-w-4xl mx-auto my-auto flex-1 flex flex-col">
                 <CardHeader>
                     <CardTitle>{questionnaireData.title}</CardTitle>
                     <CardDescription>{questionnaireData.description}</CardDescription>
@@ -180,8 +175,8 @@ export default function QuestionnairePage() {
                          <p className="text-sm text-muted-foreground text-center mt-2">Question {currentQuestionIndex + 1} of {totalQuestions}</p>
                     </div>
                 </CardHeader>
-                <CardContent className="space-y-4 flex justify-center" style={{ minHeight: '180px' }}>
-                    <div key={currentQuestion.id} className="rounded-lg border bg-background p-4 shadow-sm flex flex-col items-center transition-all duration-300 animate-in fade-in">
+                <CardContent className="flex-1 flex items-center justify-center p-2 sm:p-6">
+                    <div key={currentQuestion.id} className="w-full max-w-lg rounded-lg border bg-background p-4 shadow-sm flex flex-col items-center transition-all duration-300 animate-in fade-in">
                         <p className="font-medium text-foreground text-center text-lg">{currentQuestion.text}</p>
                         <RadioGroup
                             onValueChange={(value) => handleAnswerChange(currentQuestion.id, value)}

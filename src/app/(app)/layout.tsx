@@ -61,11 +61,6 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
     );
   }
 
-  // Do not render layout for questionnaire page
-  if (pathname === '/questionnaire') {
-    return <>{children}</>;
-  }
-
   if (!user) {
     return null;
   }
