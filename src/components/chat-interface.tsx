@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
-import { Languages, Loader2, Mic, Send, User, Square, Paperclip, X, Copy, Check } from 'lucide-react';
+import { Languages, Loader2, Mic, Send, User, Square, Paperclip, X, Copy, Check, Download } from 'lucide-react';
 import { chatEmpatheticTone, ChatEmpatheticToneInput } from '@/ai/flows/chat-empathetic-tone';
 import { Logo } from '@/components/icons';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -155,8 +155,18 @@ const MessageBubble = ({ message }: { message: Message }) => {
                 )}
             >
                 {message.imageUrl && (
-                    <div className="relative w-full aspect-video rounded-md overflow-hidden mb-2">
-                        <Image src={message.imageUrl} alt="User upload" layout="fill" objectFit="cover" />
+                    <div className="relative w-full aspect-video rounded-md overflow-hidden mb-2 group/image">
+                        <Image src={message.imageUrl} alt="Image in chat" fill={true} className="object-cover" />
+                         <a
+                            href={message.imageUrl}
+                            download="mitra-ai-generated-image.png"
+                            className="absolute bottom-2 right-2 opacity-0 group-hover/image:opacity-100 transition-opacity"
+                        >
+                            <Button variant="secondary" size="icon" className="h-8 w-8">
+                                <Download className="h-4 w-4" />
+                                <span className="sr-only">Download Image</span>
+                            </Button>
+                        </a>
                     </div>
                 )}
                 <MessageContent text={message.text} />
