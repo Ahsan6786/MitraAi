@@ -46,14 +46,12 @@ export default function ReportsPage() {
             const journalsQuery = query(
                 collection(db, 'journalEntries'),
                 where('userId', '==', user.uid),
-                where('reviewed', '==', true),
-                orderBy('createdAt', 'desc')
+                where('reviewed', '==', true)
             );
             const questionnairesQuery = query(
                 collection(db, 'questionnaires'),
                 where('userId', '==', user.uid),
-                where('reviewed', '==', true),
-                orderBy('createdAt', 'desc')
+                where('reviewed', '==', true)
             );
 
             const unsubJournals = onSnapshot(journalsQuery, (snapshot) => {
