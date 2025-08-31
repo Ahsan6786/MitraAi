@@ -61,6 +61,11 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
     );
   }
 
+  // Do not render layout for questionnaire page
+  if (pathname === '/questionnaire') {
+    return <>{children}</>;
+  }
+
   if (!user) {
     return null;
   }
@@ -126,6 +131,14 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
                     <Link href="/dashboard" onClick={handleLinkClick}>
                       <LayoutDashboard />
                       <span>Dashboard</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                 <SidebarMenuItem>
+                  <SidebarMenuButton asChild isActive={pathname === '/journal'}>
+                    <Link href="/journal" onClick={handleLinkClick}>
+                      <BookHeart />
+                      <span>Journal</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -197,12 +210,9 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
                     asChild
                     isActive={pathname === '/reports'}
                   >
-                    <Link href="/reports" onClick={handleLinkClick} className="flex items-center justify-between w-full">
-                       <div className="flex items-center gap-2">
-                        <FileText />
-                        <span>Doctor's Reports</span>
-                      </div>
-                      <Trophy className="w-4 h-4 text-amber-500" />
+                    <Link href="/reports" onClick={handleLinkClick}>
+                      <FileText />
+                      <span>Doctor's Reports</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
