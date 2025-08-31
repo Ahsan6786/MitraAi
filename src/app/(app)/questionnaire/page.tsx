@@ -180,7 +180,7 @@ export default function QuestionnairePage() {
                          <p className="text-sm text-muted-foreground text-center mt-2">Question {currentQuestionIndex + 1} of {totalQuestions}</p>
                     </div>
                 </CardHeader>
-                <CardContent className="space-y-4" style={{ minHeight: '180px' }}>
+                <CardContent className="space-y-4 flex justify-center" style={{ minHeight: '180px' }}>
                     <div key={currentQuestion.id} className="rounded-lg border bg-background p-4 shadow-sm flex flex-col items-center transition-all duration-300 animate-in fade-in">
                         <p className="font-medium text-foreground text-center text-lg">{currentQuestion.text}</p>
                         <RadioGroup
