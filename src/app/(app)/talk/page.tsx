@@ -125,7 +125,7 @@ export default function TalkPage() {
       setTranscript('');
       transcriptRef.current = '';
     }
-  }, [resumeMusic]); 
+  }, [resumeMusic, handleAiResponse]); 
 
   const startRecording = () => {
     pauseMusic();
@@ -270,10 +270,10 @@ export default function TalkPage() {
         <ScrollArea className="flex-1" ref={scrollAreaRef}>
           <div className="p-2 md:p-4 space-y-6">
             {messages.length === 0 && !isRecording && (
-              <div className="flex flex-col items-center justify-center h-full pt-10 md:pt-20 text-center">
-                 <Phone className="w-16 h-16 md:w-20 md:h-20 text-primary mb-6" />
+              <div className="flex flex-col items-center justify-center h-full pt-10 text-center">
+                 <Phone className="w-16 h-16 text-primary mb-6" />
                  <h2 className="text-xl md:text-2xl font-semibold">Ready to talk?</h2>
-                 <p className="text-muted-foreground mt-2 max-w-xs sm:max-w-sm">Press the microphone button below to start the conversation.</p>
+                 <p className="text-muted-foreground mt-2 max-w-xs">Press the microphone button below to start the conversation.</p>
               </div>
             )}
             {messages.map((message, index) => (

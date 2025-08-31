@@ -246,9 +246,9 @@ export default function LiveMoodPage() {
                 </div>
             </header>
 
-             <main className="flex-1 flex flex-col md:flex-row overflow-hidden">
+             <main className="flex-1 flex flex-col lg:flex-row overflow-hidden">
                 {/* Left Side: Camera View */}
-                <div className="w-full md:w-1/2 p-2 sm:p-4 flex flex-col">
+                <div className="w-full lg:w-1/2 p-2 sm:p-4 flex flex-col">
                     <Card className="flex-1 flex flex-col">
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2">

@@ -143,7 +143,7 @@ function LandingPageContent() {
         </Link>
         <nav className="ml-auto flex items-center gap-2 sm:gap-4">
           <ThemeToggle />
-           <Button variant="ghost" asChild size="sm">
+           <Button variant="ghost" asChild size="sm" className="hidden sm:inline-flex">
             <Link href="#tutorial" prefetch={false}>
               Tutorial
             </Link>

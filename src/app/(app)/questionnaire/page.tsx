@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { db } from '@/lib/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
@@ -15,7 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Progress } from '@/components/ui/progress';
 
 const questionnaireData = {
-  title: "Depression Screening Questionnaire (Yes/No)",
+  title: "Depression Screening Questionnaire",
   description: "This is a simple screening tool (not a diagnosis). Answer Yes or No to each question. Your score will help guide whether self-help or medical consultation is recommended.",
   questions: [
     { id: 1, text: "Are you basically satisfied with your life?", depressive_answer: "No" },
@@ -72,7 +72,7 @@ export default function QuestionnairePage() {
 
     const handlePrevious = () => {
         if (currentQuestionIndex > 0) {
-            setCurrentQuestionIndex(prev => prev - 1);
+            setCurrentQuestionIndex(prev => prev + 1);
         }
     };
 
@@ -125,13 +125,36 @@ export default function QuestionnairePage() {
         }
     };
 
+    useEffect(() => {
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (event.key === 'Enter' && answers[currentQuestion.id]) {
+                if (isLastQuestion) {
+                    handleSubmit();
+                } else {
+                    handleNext();
+                }
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => {
+            window.removeEventListener('keydown', handleKeyDown);
+        };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [answers, currentQuestion, isLastQuestion]);
+
     if (loading) {
+        return <div className="flex h-screen items-center justify-center"><Loader2 className="h-8 w-8 animate-spin" /></div>;
+    }
+    
+    if (!user) {
+        // This can be a loading state or a redirect, but returning null for now
+        // as the auth state change will trigger a redirect from the layout eventually.
         return <div className="flex h-screen items-center justify-center"><Loader2 className="h-8 w-8 animate-spin" /></div>;
     }
 
     if (result) {
         return (
-             <div className="flex h-screen items-center justify-center p-4">
+             <div className="flex h-screen items-center justify-center p-4 bg-background">
                 <Card className="w-full max-w-lg">
                     <CardHeader className="text-center">
                         <CheckCircle className="mx-auto h-12 w-12 text-green-500" />
@@ -165,53 +188,66 @@ export default function QuestionnairePage() {
     }
 
     return (
-        <div className="flex h-screen flex-col items-center justify-center p-2 sm:p-4 md:p-6">
-            <Card className="w-full max-w-4xl mx-auto my-auto flex flex-1 flex-col">
-                <CardHeader>
-                    <CardTitle>{questionnaireData.title}</CardTitle>
-                    <CardDescription>{questionnaireData.description}</CardDescription>
-                    <div className="pt-4">
-                         <Progress value={progress} className="w-full" />
-                         <p className="text-sm text-muted-foreground text-center mt-2">Question {currentQuestionIndex + 1} of {totalQuestions}</p>
-                    </div>
-                </CardHeader>
-                <CardContent className="flex-1 flex items-center justify-center p-2 sm:p-6">
-                    <div key={currentQuestion.id} className="w-full max-w-lg rounded-lg border bg-background p-4 shadow-sm flex flex-col items-center transition-all duration-300 animate-in fade-in">
-                        <p className="font-medium text-foreground text-center text-lg">{currentQuestion.text}</p>
-                        <RadioGroup
-                            onValueChange={(value) => handleAnswerChange(currentQuestion.id, value)}
-                            className="mt-6 flex items-center gap-6"
-                            value={answers[currentQuestion.id] || ''}
-                        >
-                            <div className="flex items-center space-x-2">
-                                <RadioGroupItem value="Yes" id={`q${currentQuestion.id}-yes`} />
-                                <Label htmlFor={`q${currentQuestion.id}-yes`} className="cursor-pointer text-base">Yes</Label>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                                <RadioGroupItem value="No" id={`q${currentQuestion.id}-no`} />
-                                <Label htmlFor={`q${currentQuestion.id}-no`} className="cursor-pointer text-base">No</Label>
-                            </div>
-                        </RadioGroup>
-                    </div>
-                </CardContent>
-                <CardFooter className="flex justify-between">
-                    <Button onClick={handlePrevious} disabled={currentQuestionIndex === 0} variant="outline">
-                        <ArrowLeft className="mr-2 h-4 w-4" />
-                        Previous
+        <div className="flex h-full flex-col bg-background">
+            <header className="border-b p-3 md:p-4 flex items-center justify-between gap-2">
+                 <div className="flex items-center gap-2">
+                    <Button variant="ghost" size="icon" onClick={() => router.back()} className="md:hidden">
+                        <ArrowLeft />
                     </Button>
-                    {isLastQuestion ? (
-                         <Button onClick={handleSubmit} disabled={isSubmitting || !answers[currentQuestion.id]} className="w-48">
-                            {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle className="mr-2 h-4 w-4" />}
-                            Submit & See My Result
-                        </Button>
-                    ) : (
-                        <Button onClick={handleNext} disabled={!answers[currentQuestion.id]} className="w-48">
-                            Next
-                             <ArrowRight className="ml-2 h-4 w-4" />
-                        </Button>
-                    )}
-                </CardFooter>
-            </Card>
+                    <div>
+                      <h1 className="text-lg md:text-xl font-bold">{questionnaireData.title}</h1>
+                      <p className="text-sm text-muted-foreground hidden md:block">
+                          A quick screening to understand your well-being.
+                      </p>
+                    </div>
+                </div>
+                 <Progress value={progress} className="w-1/3 mx-auto hidden md:block" />
+                 <div className="text-sm text-muted-foreground hidden md:block">{currentQuestionIndex + 1} / {totalQuestions}</div>
+            </header>
+            <main className="flex-1 flex items-center justify-center p-2 sm:p-4 md:p-6 overflow-auto">
+                <div className="w-full max-w-2xl space-y-4">
+                    <Card className="w-full">
+                         <CardHeader className="md:hidden">
+                            <Progress value={progress} />
+                            <p className="text-sm text-muted-foreground text-center mt-2">Question {currentQuestionIndex + 1} of {totalQuestions}</p>
+                         </CardHeader>
+                         <CardContent className="flex flex-col items-center justify-center p-6 md:p-10 min-h-[250px] text-center">
+                            <p className="font-medium text-foreground text-xl md:text-2xl">{currentQuestion.text}</p>
+                             <RadioGroup
+                                onValueChange={(value) => handleAnswerChange(currentQuestion.id, value)}
+                                className="mt-8 flex items-center gap-6"
+                                value={answers[currentQuestion.id] || ''}
+                            >
+                                <div className="flex items-center space-x-2">
+                                    <RadioGroupItem value="Yes" id={`q${currentQuestion.id}-yes`} />
+                                    <Label htmlFor={`q${currentQuestion.id}-yes`} className="cursor-pointer text-base">Yes</Label>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                    <RadioGroupItem value="No" id={`q${currentQuestion.id}-no`} />
+                                    <Label htmlFor={`q${currentQuestion.id}-no`} className="cursor-pointer text-base">No</Label>
+                                </div>
+                            </RadioGroup>
+                         </CardContent>
+                         <CardFooter className="flex justify-between border-t pt-4">
+                            <Button onClick={handlePrevious} disabled={currentQuestionIndex === 0} variant="outline">
+                                <ArrowLeft className="mr-2 h-4 w-4" />
+                                Previous
+                            </Button>
+                            {isLastQuestion ? (
+                                <Button onClick={handleSubmit} disabled={isSubmitting || !answers[currentQuestion.id]} size="lg">
+                                    {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle className="mr-2 h-4 w-4" />}
+                                    Submit
+                                </Button>
+                            ) : (
+                                <Button onClick={handleNext} disabled={!answers[currentQuestion.id]} size="lg">
+                                    Next
+                                    <ArrowRight className="ml-2 h-4 w-4" />
+                                </Button>
+                            )}
+                        </CardFooter>
+                    </Card>
+                </div>
+            </main>
         </div>
     );
 }

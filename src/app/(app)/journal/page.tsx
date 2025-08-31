@@ -120,18 +120,14 @@ export default function JournalPage() {
 
   useEffect(() => {
     if (user) {
-      // Simplified query to fetch entries for the user, without ordering.
       const q = query(
         collection(db, 'journalEntries'),
-        where('userId', '==', user.uid)
+        where('userId', '==', user.uid),
+        orderBy('createdAt', 'desc')
       );
 
       const unsubscribe = onSnapshot(q, (snapshot) => {
         const userEntries = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as JournalEntry));
-        
-        // Sort the entries by date here in the code, instead of in the query.
-        userEntries.sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
-        
         setEntries(userEntries);
         setIsLoadingEntries(false);
       }, (error) => {
@@ -190,7 +186,7 @@ export default function JournalPage() {
       </header>
 
       <main className="flex-1 overflow-auto p-2 sm:p-4 md:p-6">
-        <div className="grid gap-8 md:grid-cols-2">
+        <div className="grid gap-8 lg:grid-cols-2">
           {/* Left Column: Entry Form */}
           <div className="space-y-6">
              <Card>

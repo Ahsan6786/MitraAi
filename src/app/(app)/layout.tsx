@@ -87,7 +87,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen">
-        <div>Loading...</div>
+        <div className="text-muted-foreground">Loading application...</div>
       </div>
     );
   }
