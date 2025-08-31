@@ -73,18 +73,18 @@ const SimpleMarkdown = ({ text }: { text: string }) => {
   const elements = lines.map((line, index) => {
     // Unordered list
     if (line.trim().startsWith('* ')) {
-      return <li key={index}>{renderLine(line.trim().substring(2))}</li>;
+      return <li key={`li-${index}`}>{renderLine(line.trim().substring(2))}</li>;
     }
     // Numbered list
     if (line.trim().match(/^\d+\.\s/)) {
-      return <li key={index}>{renderLine(line.trim().replace(/^\d+\.\s/, ''))}</li>;
+      return <li key={`li-${index}`}>{renderLine(line.trim().replace(/^\d+\.\s/, ''))}</li>;
     }
     // Handle empty lines as paragraph breaks
     if (line.trim() === '') {
-        return <br key={index} />;
+        return <br key={`br-${index}`} />;
     }
     // Default to a paragraph for other lines
-    return <p key={index}>{renderLine(line)}</p>;
+    return <p key={`p-${index}`}>{renderLine(line)}</p>;
   });
 
   // Group list items
@@ -99,14 +99,14 @@ const SimpleMarkdown = ({ text }: { text: string }) => {
           currentList.push(el);
       } else {
           if (currentList) {
-              groupedElements.push(<ul key={groupedElements.length} className="list-disc list-inside space-y-1 my-2 pl-2">{currentList}</ul>);
+              groupedElements.push(<ul key={`ul-${groupedElements.length}`} className="list-disc list-inside space-y-1 my-2 pl-2">{currentList}</ul>);
               currentList = null;
           }
           groupedElements.push(el);
       }
   }
   if (currentList) {
-      groupedElements.push(<ul key={groupedElements.length} className="list-disc list-inside space-y-1 my-2 pl-2">{currentList}</ul>);
+      groupedElements.push(<ul key={`ul-${groupedElements.length}`} className="list-disc list-inside space-y-1 my-2 pl-2">{currentList}</ul>);
   }
 
   return <>{groupedElements}</>;
@@ -477,3 +477,5 @@ export default function ChatPage() {
     </div>
   );
 }
+
+    
