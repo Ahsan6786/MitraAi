@@ -130,7 +130,7 @@ export default function JournalPage() {
         const userEntries = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as JournalEntry));
         
         // Sort the entries by date here in the code, instead of in the query.
-        userEntries.sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis());
+        userEntries.sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
         
         setEntries(userEntries);
         setIsLoadingEntries(false);
