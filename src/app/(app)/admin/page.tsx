@@ -75,11 +75,12 @@ function JournalReviews() {
     useEffect(() => {
         const q = query(
             collection(db, 'journalEntries'),
-            where('reviewed', '==', false),
-            orderBy('createdAt', 'desc')
+            where('reviewed', '==', false)
         );
         const unsubscribe = onSnapshot(q, (snapshot) => {
             const entriesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as JournalEntry));
+            // Sort entries manually by date descending
+            entriesData.sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis());
             setEntries(entriesData);
             setIsLoading(false);
         }, (error) => {
@@ -271,3 +272,5 @@ export default function AdminPage() {
         </div>
     );
 }
+
+    
