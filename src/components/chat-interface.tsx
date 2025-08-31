@@ -18,12 +18,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { detectCrisis } from '@/ai/flows/detect-crisis';
 import CrisisAlertModal from '@/components/crisis-alert-modal';
 import type { User as FirebaseUser } from 'firebase/auth';
-
-interface Message {
-  sender: 'user' | 'ai';
-  text: string;
-  imageUrl?: string;
-}
+import { useChatHistory, type Message } from '@/hooks/use-chat-history';
 
 // Check for SpeechRecognition API
 const SpeechRecognition =
@@ -189,7 +184,7 @@ const MessageBubble = ({ message }: { message: Message }) => {
 
 
 export default function ChatInterface() {
-  const [messages, setMessages] = useState<Message[]>([]);
+  const { messages, setMessages } = useChatHistory();
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [language, setLanguage] = useState('English');

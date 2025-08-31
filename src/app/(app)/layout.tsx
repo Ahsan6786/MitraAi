@@ -28,6 +28,7 @@ import { MusicProvider } from '@/hooks/use-music';
 import MusicPlayer from '@/components/music-player';
 import { collection, getDocs, limit, query, where } from 'firebase/firestore';
 import StartQuestionnaireModal from '@/components/start-questionnaire-modal';
+import { ChatHistoryProvider } from '@/hooks/use-chat-history';
 
 const ADMIN_EMAIL = 'ahsan.khan@mitwpu.edu.in';
 
@@ -304,7 +305,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
      <AuthProvider>
         <SidebarProvider>
           <MusicProvider>
-            <AppLayoutContent>{children}</AppLayoutContent>
+            <ChatHistoryProvider>
+              <AppLayoutContent>{children}</AppLayoutContent>
+            </ChatHistoryProvider>
           </MusicProvider>
         </SidebarProvider>
     </AuthProvider>
