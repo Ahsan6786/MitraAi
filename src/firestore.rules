@@ -1,0 +1,69 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // A function to check if the user is the designated admin
+    function isAdmin() {
+      return request.auth.token.email == 'ahsan.khan@mitwpu.edu.in';
+    }
+
+    // Rules for the journalEntries collection
+    match /journalEntries/{entryId} {
+      // Users can create their own journal entries
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+
+      // Users can read their own entries. The admin can read any entry.
+      allow read: if (request.auth != null && resource.data.userId == request.auth.uid) || isAdmin();
+      
+      // The admin can update any entry (to add reports and mark as reviewed)
+      allow update: if isAdmin();
+      
+      // Users can delete their own entries
+      allow delete: if request.auth != null && resource.data.userId == request.auth.uid;
+    }
+
+    // Rules for the questionnaires collection
+    match /questionnaires/{questionnaireId} {
+      // Users can create their own questionnaire submissions
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+
+      // Users can read their own submissions. The admin can read any submission.
+      allow read: if (request.auth != null && resource.data.userId == request.auth.uid) || isAdmin();
+      
+      // The admin can update any submission (to add feedback and mark as reviewed)
+      allow update: if isAdmin();
+      
+      // Submissions cannot be deleted from the app
+      allow delete: if false;
+    }
+    
+    // Rules for the posts collection in the community feed
+    match /posts/{postId} {
+      // Any authenticated user can read all posts
+      allow read: if request.auth != null;
+      
+      // Authenticated users can create posts
+      allow create: if request.auth != null && request.resource.data.authorId == request.auth.uid;
+      
+      // Users can delete their own posts, and the admin can delete any post
+      allow delete: if request.auth != null && (resource.data.authorId == request.auth.uid || isAdmin());
+      
+      // Only the author can update their post (or admin) - not currently used in app but good practice
+      allow update: if request.auth != null && (resource.data.authorId == request.auth.uid || isAdmin());
+    }
+    
+    // Rules for comments subcollection
+    match /posts/{postId}/comments/{commentId} {
+        // Any authenticated user can read comments
+        allow read: if request.auth != null;
+        
+        // Authenticated users can create comments
+        allow create: if request.auth != null && request.resource.data.authorId == request.auth.uid;
+        
+        // Admin can hide/unhide comments
+        allow update: if isAdmin();
+        
+        // Users can delete their own comments
+        allow delete: if request.auth != null && resource.data.authorId == request.auth.uid;
+    }
+  }
+}
