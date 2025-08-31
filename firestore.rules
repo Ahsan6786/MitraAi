@@ -5,7 +5,8 @@ service cloud.firestore {
     
     // Allow users to read, create, and update their own journal entries
     match /journalEntries/{entryId} {
-      allow read, create, delete: if request.auth != null && request.auth.uid == resource.data.userId;
+      allow read, delete: if request.auth != null && request.auth.uid == resource.data.userId;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
       allow update: if request.auth != null && (request.auth.uid == resource.data.userId || request.auth.token.email == 'ahsan.khan@mitwpu.edu.in');
     }
     
