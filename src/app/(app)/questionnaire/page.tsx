@@ -126,12 +126,12 @@ export default function QuestionnairePage() {
     };
 
     if (loading) {
-        return <div className="flex h-full items-center justify-center"><Loader2 className="h-8 w-8 animate-spin" /></div>;
+        return <div className="flex h-screen items-center justify-center"><Loader2 className="h-8 w-8 animate-spin" /></div>;
     }
 
     if (result) {
         return (
-             <div className="flex h-full items-center justify-center p-4">
+             <div className="flex h-screen items-center justify-center p-4">
                 <Card className="w-full max-w-lg">
                     <CardHeader className="text-center">
                         <CheckCircle className="mx-auto h-12 w-12 text-green-500" />
@@ -165,8 +165,8 @@ export default function QuestionnairePage() {
     }
 
     return (
-        <div className="h-full flex flex-col p-2 sm:p-4 md:p-6">
-            <Card className="w-full max-w-4xl mx-auto my-auto flex-1 flex flex-col">
+        <div className="flex h-screen flex-col items-center justify-center p-2 sm:p-4 md:p-6">
+            <Card className="w-full max-w-4xl mx-auto my-auto flex flex-1 flex-col">
                 <CardHeader>
                     <CardTitle>{questionnaireData.title}</CardTitle>
                     <CardDescription>{questionnaireData.description}</CardDescription>

@@ -52,6 +52,12 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
       sidebar.setOpenMobile(false);
     }
   };
+  
+  // Conditionally render layout based on route
+  if (pathname === '/questionnaire') {
+    return <>{children}</>;
+  }
+
 
   if (loading) {
     return (
