@@ -48,7 +48,7 @@ function SignUpForm() {
           displayName: name,
         });
       }
-      router.push('/questionnaire');
+      router.push('/chat');
     } catch (error: any) {
       toast({
         title: "Sign Up Failed",

@@ -20,12 +20,14 @@ import {
 import { Logo } from '@/components/icons';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { AuthProvider, useAuth } from '@/hooks/use-auth';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { auth } from '@/lib/firebase';
+import { auth, db } from '@/lib/firebase';
 import { signOut } from 'firebase/auth';
 import { MusicProvider } from '@/hooks/use-music';
 import MusicPlayer from '@/components/music-player';
+import { collection, getDocs, limit, query, where } from 'firebase/firestore';
+import StartQuestionnaireModal from '@/components/start-questionnaire-modal';
 
 const ADMIN_EMAIL = 'ahsan.khan@mitwpu.edu.in';
 
@@ -35,12 +37,36 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const sidebar = useSidebar();
   const isAdmin = user?.email === ADMIN_EMAIL;
+  const [showQuestionnaireModal, setShowQuestionnaireModal] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) {
       router.push('/signin');
     }
   }, [user, loading, router]);
+
+  useEffect(() => {
+    const checkQuestionnaire = async () => {
+        if (user && !isAdmin && pathname !== '/questionnaire') {
+            // Check if the modal has been dismissed this session
+            const dismissed = sessionStorage.getItem('questionnaireDismissed');
+            if (dismissed) return;
+
+            const q = query(
+                collection(db, 'questionnaires'),
+                where('userId', '==', user.uid),
+                limit(1)
+            );
+            const querySnapshot = await getDocs(q);
+            if (querySnapshot.empty) {
+                setShowQuestionnaireModal(true);
+            }
+        }
+    };
+    if (!loading && user) {
+        checkQuestionnaire();
+    }
+  }, [user, loading, isAdmin, pathname]);
   
   const handleSignOut = async () => {
     await signOut(auth);
@@ -53,7 +79,6 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
     }
   };
   
-  // Conditionally render layout based on route
   if (pathname === '/questionnaire') {
     return <>{children}</>;
   }
@@ -77,6 +102,17 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
 
   return (
     <>
+      <StartQuestionnaireModal
+        isOpen={showQuestionnaireModal}
+        onClose={() => {
+            sessionStorage.setItem('questionnaireDismissed', 'true');
+            setShowQuestionnaireModal(false);
+        }}
+        onConfirm={() => {
+            setShowQuestionnaireModal(false);
+            router.push('/questionnaire');
+        }}
+      />
       <Sidebar>
         <SidebarHeader>
            <div className="flex items-center justify-between">
