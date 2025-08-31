@@ -89,7 +89,7 @@ const SimpleMarkdown = ({ text }: { text: string }) => {
 
   // Group list items
   const groupedElements = [];
-  let currentList = null;
+  let currentList: (JSX.Element | null)[] | null = null;
   for (const el of elements) {
       const isListItem = el.type === 'li';
       if (isListItem) {
@@ -127,6 +127,53 @@ const MessageContent = ({ text }: { text: string }) => {
                 // Don't render empty strings which can result from split
                 return part ? <SimpleMarkdown key={index} text={part} /> : null;
             })}
+        </div>
+    );
+};
+
+// Component for a single message bubble with a copy button
+const MessageBubble = ({ message }: { message: Message }) => {
+    const [isCopied, setIsCopied] = useState(false);
+    const { toast } = useToast();
+
+    const handleCopy = () => {
+        if (!message.text) return;
+        navigator.clipboard.writeText(message.text).then(() => {
+            setIsCopied(true);
+            toast({ title: "Copied to clipboard!" });
+            setTimeout(() => setIsCopied(false), 2000);
+        });
+    };
+
+    return (
+        <div className="group relative">
+            <div
+                className={cn(
+                    'max-w-[80%] rounded-xl px-4 py-3 text-sm md:text-base shadow-sm md:max-w-md lg:max-w-lg',
+                    message.sender === 'user'
+                        ? 'bg-primary text-primary-foreground rounded-br-none'
+                        : 'bg-background text-card-foreground rounded-bl-none border'
+                )}
+            >
+                {message.imageUrl && (
+                    <div className="relative w-full aspect-video rounded-md overflow-hidden mb-2">
+                        <Image src={message.imageUrl} alt="User upload" layout="fill" objectFit="cover" />
+                    </div>
+                )}
+                <MessageContent text={message.text} />
+            </div>
+            <Button
+                variant="ghost"
+                size="icon"
+                className={cn(
+                    "absolute top-1 h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity",
+                    message.sender === 'user' ? "-left-10" : "-right-10",
+                    message.text.includes("```") && "hidden" // Hide if it's a code block to avoid double copy buttons
+                )}
+                onClick={handleCopy}
+            >
+                {isCopied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+            </Button>
         </div>
     );
 };
@@ -377,34 +424,20 @@ export default function ChatPage() {
                 <div
                   key={index}
                   className={cn(
-                    'flex items-start gap-3',
+                    'flex items-center gap-3',
                     message.sender === 'user' ? 'justify-end' : 'justify-start'
                   )}
                 >
                   {message.sender === 'ai' && (
-                    <Avatar className="w-8 h-8 md:w-9 md:h-9 border">
+                    <Avatar className="w-8 h-8 md:w-9 md:h-9 border self-start">
                       <AvatarFallback className="bg-primary text-primary-foreground">
                         <Logo className="w-4 h-4 md:w-5 md:h-5"/>
                       </AvatarFallback>
                     </Avatar>
                   )}
-                  <div
-                    className={cn(
-                      'max-w-[80%] rounded-xl px-4 py-3 text-sm md:text-base shadow-sm md:max-w-md lg:max-w-lg',
-                      message.sender === 'user'
-                        ? 'bg-primary text-primary-foreground rounded-br-none'
-                        : 'bg-background text-card-foreground rounded-bl-none border'
-                    )}
-                  >
-                    {message.imageUrl && (
-                        <div className="relative w-full aspect-video rounded-md overflow-hidden mb-2">
-                            <Image src={message.imageUrl} alt="User upload" layout="fill" objectFit="cover" />
-                        </div>
-                    )}
-                     <MessageContent text={message.text} />
-                  </div>
+                  <MessageBubble message={message} />
                    {message.sender === 'user' && (
-                    <Avatar className="w-8 h-8 md:w-9 md:h-9 border">
+                    <Avatar className="w-8 h-8 md:w-9 md:h-9 border self-start">
                       <AvatarFallback>
                          {user?.email ? user.email[0].toUpperCase() : <User className="w-4 h-4 md:w-5 md:h-5" />}
                       </AvatarFallback>
@@ -477,5 +510,3 @@ export default function ChatPage() {
     </div>
   );
 }
-
-    
