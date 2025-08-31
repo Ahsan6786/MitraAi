@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
-import { Languages, Loader2, Mic, Send, User, Square, Paperclip, X } from 'lucide-react';
+import { Languages, Loader2, Mic, Send, User, Square, Paperclip, X, Copy, Check } from 'lucide-react';
 import { chatEmpatheticTone, ChatEmpatheticToneInput } from '@/ai/flows/chat-empathetic-tone';
 import { Logo } from '@/components/icons';
 import { SidebarTrigger } from '@/components/ui/sidebar';
@@ -29,6 +29,56 @@ interface Message {
 // Check for SpeechRecognition API
 const SpeechRecognition =
   (typeof window !== 'undefined' && (window.SpeechRecognition || window.webkitSpeechRecognition));
+
+// Component to render code blocks with a copy button
+const CodeBlock = ({ code }: { code: string }) => {
+    const [isCopied, setIsCopied] = useState(false);
+    const { toast } = useToast();
+
+    const handleCopy = () => {
+        navigator.clipboard.writeText(code).then(() => {
+            setIsCopied(true);
+            toast({ title: "Copied to clipboard!" });
+            setTimeout(() => setIsCopied(false), 2000);
+        });
+    };
+
+    return (
+        <div className="bg-black/80 rounded-md my-2 relative">
+            <pre className="p-4 text-sm text-white overflow-x-auto">
+                <code>{code}</code>
+            </pre>
+            <Button
+                variant="ghost"
+                size="icon"
+                className="absolute top-2 right-2 h-7 w-7 text-white hover:bg-white/20 hover:text-white"
+                onClick={handleCopy}
+            >
+                {isCopied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+            </Button>
+        </div>
+    );
+};
+
+
+// Component to parse and render message content (text and code)
+const MessageContent = ({ text }: { text: string }) => {
+    const parts = text.split(/(```[\s\S]*?```)/g);
+
+    return (
+        <>
+            {parts.map((part, index) => {
+                const codeMatch = part.match(/^```(\w+)?\n([\s\S]+)```$/);
+                if (codeMatch) {
+                    return <CodeBlock key={index} code={codeMatch[2]} />;
+                }
+                // Don't render empty strings which can result from split
+                return part ? <p key={index}>{part}</p> : null;
+            })}
+        </>
+    );
+};
+
 
 export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -72,8 +122,8 @@ export default function ChatPage() {
     const userMessage: Message = { sender: 'user', text: messageText };
     let imageDataUri: string | undefined;
     
-    const currentMessages = [...messages, userMessage];
-    setMessages(currentMessages);
+    // Use a function to update state to get the latest messages
+    setMessages(prevMessages => [...prevMessages, userMessage]);
 
     if (imageFile) {
         imageDataUri = await fileToDataUri(imageFile);
@@ -298,7 +348,7 @@ export default function ChatPage() {
                             <Image src={message.imageUrl} alt="User upload" layout="fill" objectFit="cover" />
                         </div>
                     )}
-                    {message.text && <p>{message.text}</p>}
+                     <MessageContent text={message.text} />
                   </div>
                    {message.sender === 'user' && (
                     <Avatar className="w-8 h-8 md:w-9 md:h-9 border">
