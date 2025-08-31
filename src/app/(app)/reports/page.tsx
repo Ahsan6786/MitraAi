@@ -122,7 +122,7 @@ export default function ReportsPage() {
                     ) : (
                         <Accordion type="single" collapsible className="w-full space-y-4">
                             {reports.map(report => (
-                                <AccordionItem value={report.id} key={report.id} className="border rounded-lg bg-card">
+                                <AccordionItem value={report.id} key={`${report.type}-${report.id}`} className="border rounded-lg bg-card">
                                     <AccordionTrigger className="p-4 hover:no-underline text-left">
                                         <div className="flex items-center gap-4 w-full">
                                             <CheckCircle2 className="w-5 h-5 text-green-500" />
