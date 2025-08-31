@@ -14,7 +14,6 @@ import { predictLiveMood } from '@/ai/flows/predict-live-mood';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { textToSpeech } from '@/ai/flows/text-to-speech';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const SpeechRecognition =
@@ -45,7 +44,6 @@ export default function LiveMoodPage() {
     const { user } = useAuth();
     const scrollViewportRef = useRef<HTMLDivElement>(null);
     const streamRef = useRef<MediaStream | null>(null);
-    const audioRef = useRef<HTMLAudioElement | null>(null);
 
     // Auto-scroll to bottom of chat
     useEffect(() => {
@@ -132,36 +130,18 @@ export default function LiveMoodPage() {
             const result = await predictLiveMood({ photoDataUri, description: transcript, language });
             const aiMessage: ChatMessage = { sender: 'ai', text: result.response };
             setChatMessages(prev => [...prev, aiMessage]);
-            
-            const handleAudioEnd = () => {
-                setIsProcessing(false);
-                // After AI finishes speaking, wait 0.5s and then listen again.
-                // We call startListening via a ref to avoid circular dependencies.
-                setTimeout(() => {
-                    startListeningRef.current?.();
-                }, 500);
-            };
-
-            if (result.response.trim()) {
-                const ttsResult = await textToSpeech({ text: result.response });
-                if (ttsResult.audioDataUri) {
-                    const audio = new Audio(ttsResult.audioDataUri);
-                    audioRef.current = audio;
-                    audio.onended = handleAudioEnd;
-                    audio.play();
-                } else {
-                    handleAudioEnd(); // If TTS fails, still proceed to listen again.
-                }
-            } else {
-                 handleAudioEnd(); // If AI gives no response, listen again.
-            }
 
         } catch (error) {
             console.error('Error predicting live mood:', error);
             toast({ title: 'AI Analysis Failed', variant: 'destructive' });
             const errorMessage: ChatMessage = { sender: 'ai', text: "Sorry, I couldn't process that right now." };
             setChatMessages(prev => [...prev, errorMessage]);
-            setIsProcessing(false);
+        } finally {
+             setIsProcessing(false);
+             // After AI responds, wait 0.5s and then listen again.
+             setTimeout(() => {
+                startListeningRef.current?.();
+             }, 500);
         }
     }, [language, toast]);
     
@@ -323,3 +303,5 @@ export default function LiveMoodPage() {
         </div>
     );
 }
+
+    
