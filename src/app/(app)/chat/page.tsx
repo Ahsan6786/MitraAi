@@ -60,22 +60,74 @@ const CodeBlock = ({ code }: { code: string }) => {
     );
 };
 
+// Simple Markdown parser component
+const SimpleMarkdown = ({ text }: { text: string }) => {
+  const lines = text.split('\n');
+
+  const renderLine = (line: string) => {
+    // Bold
+    line = line.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    return <span dangerouslySetInnerHTML={{ __html: line }} />;
+  };
+
+  const elements = lines.map((line, index) => {
+    // Unordered list
+    if (line.trim().startsWith('* ')) {
+      return <li key={index}>{renderLine(line.trim().substring(2))}</li>;
+    }
+    // Numbered list
+    if (line.trim().match(/^\d+\.\s/)) {
+      return <li key={index}>{renderLine(line.trim().replace(/^\d+\.\s/, ''))}</li>;
+    }
+    // Handle empty lines as paragraph breaks
+    if (line.trim() === '') {
+        return <br key={index} />;
+    }
+    // Default to a paragraph for other lines
+    return <p key={index}>{renderLine(line)}</p>;
+  });
+
+  // Group list items
+  const groupedElements = [];
+  let currentList = null;
+  for (const el of elements) {
+      const isListItem = el.type === 'li';
+      if (isListItem) {
+          if (!currentList) {
+              currentList = [];
+          }
+          currentList.push(el);
+      } else {
+          if (currentList) {
+              groupedElements.push(<ul key={groupedElements.length} className="list-disc list-inside space-y-1 my-2 pl-2">{currentList}</ul>);
+              currentList = null;
+          }
+          groupedElements.push(el);
+      }
+  }
+  if (currentList) {
+      groupedElements.push(<ul key={groupedElements.length} className="list-disc list-inside space-y-1 my-2 pl-2">{currentList}</ul>);
+  }
+
+  return <>{groupedElements}</>;
+};
+
 
 // Component to parse and render message content (text and code)
 const MessageContent = ({ text }: { text: string }) => {
     const parts = text.split(/(```[\s\S]*?```)/g);
 
     return (
-        <>
+        <div className="prose prose-sm dark:prose-invert max-w-none break-words">
             {parts.map((part, index) => {
                 const codeMatch = part.match(/^```(\w+)?\n([\s\S]+)```$/);
                 if (codeMatch) {
                     return <CodeBlock key={index} code={codeMatch[2]} />;
                 }
                 // Don't render empty strings which can result from split
-                return part ? <p key={index}>{part}</p> : null;
+                return part ? <SimpleMarkdown key={index} text={part} /> : null;
             })}
-        </>
+        </div>
     );
 };
 
@@ -123,7 +175,8 @@ export default function ChatPage() {
     let imageDataUri: string | undefined;
     
     // Use a function to update state to get the latest messages
-    setMessages(prevMessages => [...prevMessages, userMessage]);
+    const currentMessages = [...messages, userMessage];
+    setMessages(currentMessages);
 
     if (imageFile) {
         imageDataUri = await fileToDataUri(imageFile);
