@@ -157,8 +157,8 @@ export default function QuestionnairePage() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                     {questionnaireData.questions.map((q, index) => (
-                        <div key={q.id} className="rounded-lg border bg-background p-4 shadow-sm transition-shadow hover:shadow-md">
-                            <p className="font-medium text-foreground">{index + 1}. {q.text}</p>
+                        <div key={q.id} className="rounded-lg border bg-background p-4 shadow-sm transition-shadow hover:shadow-md flex flex-col items-center">
+                            <p className="font-medium text-foreground text-center">{index + 1}. {q.text}</p>
                             <RadioGroup
                                 onValueChange={(value) => handleAnswerChange(q.id, value)}
                                 className="mt-4 flex items-center gap-6"
