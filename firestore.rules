@@ -1,49 +1,39 @@
-
 rules_version = '2';
-
 service cloud.firestore {
   match /databases/{database}/documents {
-    
-    function isAuthenticated() {
-      return request.auth != null;
-    }
-
+    // A function to check if the user is the designated admin
     function isAdmin() {
       return request.auth.token.email == 'ahsan.khan@mitwpu.edu.in';
     }
 
-    // Journal Entries
+    // Rules for the journalEntries collection
     match /journalEntries/{entryId} {
-      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-      allow read: if (isAuthenticated() && resource.data.userId == request.auth.uid) || isAdmin();
-      allow update: if isAdmin(); // Only admin can update (e.g., add doctorReport)
-      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      // Users can create their own journal entries
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+
+      // Users can read their own entries. The admin can read any entry.
+      allow read: if (request.auth != null && resource.data.userId == request.auth.uid) || isAdmin();
+      
+      // The admin can update any entry (to add reports and mark as reviewed)
+      allow update: if isAdmin();
+      
+      // Users should not be able to delete entries
+      allow delete: if false;
     }
-
-    // Questionnaire Submissions
-    match /questionnaires/{submissionId} {
-      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-      allow read: if (isAuthenticated() && resource.data.userId == request.auth.uid) || isAdmin();
-      allow update: if isAdmin(); // Only admin can update (e.g., add doctorFeedback)
-      allow delete: if false; // Nobody can delete submissions
-    }
-
-    // Community Posts
-    match /posts/{postId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated() && request.resource.data.authorId == request.auth.uid;
-      // Allow delete only if user is author OR admin
-      allow delete: if isAuthenticated() && (resource.data.authorId == request.auth.uid || isAdmin());
-
-      // Comments subcollection
-      match /comments/{commentId} {
-        allow read: if isAuthenticated();
-        allow create: if isAuthenticated() && request.resource.data.authorId == request.auth.uid;
-        // Allow update only by admin (for hiding)
+    
+    // Rules for the questionnaires collection
+    match /questionnaires/{questionnaireId} {
+        // Users can create their own questionnaire submissions
+        allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+        
+        // Users can read their own submissions. The admin can read any submission.
+        allow read: if (request.auth != null && resource.data.userId == request.auth.uid) || isAdmin();
+        
+        // The admin can update any submission (to add feedback and mark as reviewed)
         allow update: if isAdmin();
-        // Allow delete only by comment author
-        allow delete: if isAuthenticated() && resource.data.authorId == request.auth.uid;
-      }
+        
+        // Users should not be able to delete submissions
+        allow delete: if false;
     }
   }
 }
