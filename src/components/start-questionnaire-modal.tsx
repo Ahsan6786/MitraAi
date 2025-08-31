@@ -24,7 +24,7 @@ export default function StartQuestionnaireModal({ isOpen, onClose, onConfirm }: 
             Would you like to take a quick screening test? It can help provide insights into your well-being.
           </DialogDescription>
         </DialogHeader>
-        <DialogFooter className="grid grid-cols-2 gap-2">
+        <DialogFooter className="flex flex-col gap-2">
           <Button onClick={onConfirm} className="w-full">
             Yes, Start Test
           </Button>
