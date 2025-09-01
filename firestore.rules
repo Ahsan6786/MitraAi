@@ -1,9 +1,10 @@
+
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper Functions
+    // Helper functions
     function isSignedIn() {
       return request.auth != null;
     }
@@ -11,71 +12,49 @@ service cloud.firestore {
     function isOwner(userId) {
       return isSignedIn() && request.auth.uid == userId;
     }
-
+    
     function isAdmin() {
       return isSignedIn() && request.auth.token.email == 'ahsan.khan@mitwpu.edu.in';
     }
-    
+
     function isApprovedCounsellor() {
       return isSignedIn() && exists(/databases/$(database)/documents/counsellors/$(request.auth.uid))
              && get(/databases/$(database)/documents/counsellors/$(request.auth.uid)).data.status == 'approved';
     }
-
-    // Counsellors collection rules
-    match /counsellors/{counsellorId} {
-      // Any authenticated user can see the list of approved counsellors for booking
-      allow list: if isSignedIn();
-      // Only an admin can read the full details of any counsellor document (e.g. pending/rejected)
-      allow get: if isAdmin();
-      
-      // A user can create their own counsellor application
-      allow create: if isOwner(counsellorId);
-      // Only an admin can approve/reject a counsellor
-      allow update: if isAdmin();
-    }
-
-    // User-specific data collections
-    match /journalEntries/{entryId} {
-      allow read, write: if isOwner(resource.data.userId) || isAdmin();
-      allow list: if (isSignedIn() && request.query.where.size() > 0 && request.query.where[0][0] == 'userId' && request.query.where[0][2] == request.auth.uid) || isAdmin();
-    }
-
-    match /questionnaires/{submissionId} {
-      allow read, write: if isOwner(resource.data.userId) || isAdmin();
-      allow list: if (isSignedIn() && request.query.where.size() > 0 && request.query.where[0][0] == 'userId' && request.query.where[0][2] == request.auth.uid) || isAdmin();
-    }
     
-    match /bookings/{bookingId} {
-        // A user can create their own booking, and read their own bookings
-        allow create: if isOwner(request.resource.data.student_id);
-        allow read: if isOwner(resource.data.student_id) || isOwner(resource.data.counsellor_id) || isAdmin();
-
-        // A counsellor can update a booking assigned to them
-        allow update: if isApprovedCounsellor() && resource.data.counsellor_id == request.auth.uid || isAdmin();
-        
-        // Users can list their own appointments, counsellors can list theirs
-        allow list: if (isSignedIn() && request.query.where.size() > 0 && (
-                        (request.query.where[0][0] == 'student_id' && request.query.where[0][2] == request.auth.uid) ||
-                        (request.query.where[0][0] == 'counsellor_id' && request.query.where[0][2] == request.auth.uid)
-                      )) || isAdmin();
+    // PUBLIC: Logged-in users can read the list of approved counsellors
+    match /counsellors/{counsellorId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn(); // Counsellors can sign up
+      allow update, delete: if isAdmin(); // Only admin can approve/manage
     }
 
-    // Community posts and comments
+    // USER-OWNED: Users can only access their own documents
+    match /journalEntries/{entryId} {
+      allow read, write: if isOwner(resource.data.userId);
+      allow list: if isSignedIn() && request.query.where.get('userId') == request.auth.uid;
+    }
+
+    match /questionnaires/{questionnaireId} {
+       allow read, write: if isOwner(resource.data.userId);
+       allow list: if isSignedIn() && request.query.where.get('userId') == request.auth.uid;
+    }
+
+    match /bookings/{bookingId} {
+       allow create: if isOwner(request.resource.data.student_id);
+       allow read: if isOwner(resource.data.student_id) || (isApprovedCounsellor() && resource.data.counsellor_id == request.auth.uid);
+       allow update: if isApprovedCounsellor() && resource.data.counsellor_id == request.auth.uid;
+       allow list: if isSignedIn() && (request.query.where.get('student_id') == request.auth.uid || request.query.where.get('counsellor_id') == request.auth.uid);
+    }
+
+    // COMMUNITY: Logged-in users can read/write, but only delete their own posts/comments
     match /posts/{postId} {
-      // Any authenticated user can read and create posts
       allow read, create: if isSignedIn();
-      // Only the author or an admin can delete a post
-      allow delete: if isOwner(resource.data.authorId) || isAdmin();
-      // Only the author can update their comment count (for now, this is simple)
-      allow update: if isOwner(resource.data.authorId) || isAdmin();
-      
+      allow update, delete: if isOwner(resource.data.authorId) || isAdmin();
+
       match /comments/{commentId} {
-        // Any authenticated user can read and create comments
         allow read, create: if isSignedIn();
-        // The comment author, post author, or admin can delete/update comments
-        allow update, delete: if isOwner(resource.data.authorId) 
-                                || isOwner(get(/databases/$(database)/documents/posts/$(postId)).data.authorId) 
-                                || isAdmin();
+        allow update, delete: if isOwner(resource.data.authorId) || isAdmin();
       }
     }
   }
