@@ -1,74 +1,77 @@
-
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // Helper functions
+    
+    // Helper function to check if a user is signed in
     function isSignedIn() {
       return request.auth != null;
     }
-
+    
+    // Helper function to check if the user making the request is the owner of the document
     function isOwner(userId) {
-      return isSignedIn() && request.auth.uid == userId;
+      return request.auth.uid == userId;
     }
 
-    // Admins can read/write anything
-    match /{path=**} {
-      allow read, write: if request.auth != null && request.auth.token.email == 'ahsan.khan@mitwpu.edu.in';
-    }
-
-    // Counsellors collection
+    // Counsellors can be read by any signed-in user for booking purposes
+    // New counsellor applications are created from the client, status is 'pending' by default.
     match /counsellors/{counsellorId} {
-      // Anyone can read approved counsellors for booking
-      allow read: if isSignedIn() && resource.data.status == 'approved';
-      // Only admin can create, update, or delete counsellor documents
-      allow create, update, delete: if request.auth != null && request.auth.token.email == 'ahsan.khan@mitwpu.edu.in';
+      allow read: if isSignedIn();
+      allow create: if isSignedIn(); // Allows new counsellors to sign up
+      // Only an admin (not defined in rules, managed via backend/console) should approve
+      allow update, delete: if false; 
+    }
+
+    // Users can only read/write their own documents
+    match /journalEntries/{entryId} {
+      allow read, update, delete: if isSignedIn() && isOwner(resource.data.userId);
+      allow create: if isSignedIn() && isOwner(request.resource.data.userId);
+    }
+
+    match /questionnaires/{questionnaireId} {
+      allow read, update, delete: if isSignedIn() && isOwner(resource.data.userId);
+      allow create: if isSignedIn() && isOwner(request.resource.data.userId);
     }
     
-    // Allow listing of approved counsellors
-    match /counsellors {
-        allow list: if isSignedIn();
-    }
-
-    // Posts and Comments
-    match /posts/{postId} {
-      allow read: if isSignedIn();
-      allow create: if isOwner(request.resource.data.authorId);
-      allow delete: if isOwner(resource.data.authorId);
-      // Allow any signed-in user to update a post ONLY to increment the commentCount.
-      allow update: if isSignedIn() 
-                    && request.resource.data.diff(resource.data).affectedKeys()
-                       .hasOnly(['commentCount']);
-    }
-
-    match /posts/{postId}/comments/{commentId} {
-      allow read: if isSignedIn();
-      allow create: if isOwner(request.resource.data.authorId);
-      // Allow a user to delete their own comment.
-      allow delete: if isOwner(resource.data.authorId);
-    }
-
-    // User-specific data collections
-    match /journalEntries/{entryId} {
-      allow read, write: if isOwner(resource.data.userId);
-    }
-     match /journalEntries {
-      allow list: if isSignedIn() && request.query.where.get("userId") == request.auth.uid;
-    }
-
-    match /questionnaires/{submissionId} {
-      allow read, write: if isOwner(resource.data.userId);
-    }
-    match /questionnaires {
-       allow list: if isSignedIn() && request.query.where.get("userId") == request.auth.uid;
-    }
-
     match /bookings/{bookingId} {
-      allow read, write: if isOwner(resource.data.student_id);
+      // Students can manage their own bookings
+      allow read: if isSignedIn() && (isOwner(resource.data.student_id) || request.auth.uid == resource.data.counsellor_id);
+      allow create: if isSignedIn() && isOwner(request.resource.data.student_id);
+      
+      // Counsellors can only update bookings assigned to them
+      allow update: if isSignedIn() && request.auth.uid == resource.data.counsellor_id;
+      
+      // No one can delete bookings from the client to preserve history
+      allow delete: if false;
     }
-    match /bookings {
-      allow list: if isSignedIn() && request.query.where.get("student_id") == request.auth.uid;
+
+    // Community Posts and Comments
+    match /posts/{postId} {
+      // Any signed-in user can read posts
+      allow read: if isSignedIn();
+      
+      // Users can create posts for themselves
+      allow create: if isSignedIn() && isOwner(request.resource.data.authorId);
+      
+      // Users can only delete their own posts
+      allow delete: if isSignedIn() && isOwner(resource.data.authorId);
+      
+      // Any signed-in user can update ONLY the commentCount.
+      // They cannot change any other field.
+      allow update: if isSignedIn() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['commentCount']);
+
+      // Comments subcollection
+      match /comments/{commentId} {
+        // Any signed-in user can read comments
+        allow read: if isSignedIn();
+        
+        // Users can create comments for themselves
+        allow create: if isSignedIn() && isOwner(request.resource.data.authorId);
+        
+        // Users can only delete their own comments.
+        // A rule for a moderator/owner to hide comments would be added here if needed.
+        allow update, delete: if isSignedIn() && isOwner(resource.data.authorId);
+      }
     }
   }
 }
