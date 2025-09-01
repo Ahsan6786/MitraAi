@@ -19,7 +19,7 @@ interface MusicContextType {
 const MusicContext = createContext<MusicContextType | undefined>(undefined);
 
 export const MusicProvider = ({ children }: { children: ReactNode }) => {
-  const [currentTrack, setCurrentTrack] = useState<MusicTrack | null>(null);
+  const [currentTrack, setCurrentTrack] = useState<MusicTrack | null>(musicTracks[0] || null);
   const [isPlaying, setIsPlaying] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const wasPlayingBeforePause = useRef(false);
@@ -40,6 +40,12 @@ export const MusicProvider = ({ children }: { children: ReactNode }) => {
     if (typeof window !== 'undefined' && !audioRef.current) {
         audioRef.current = new Audio();
         audioRef.current.loop = false;
+        
+        // Preload the first track
+        if (musicTracks.length > 0) {
+            audioRef.current.src = musicTracks[0].url;
+            setCurrentTrack(musicTracks[0]);
+        }
 
         const handleEnded = () => playNext();
         audioRef.current.addEventListener('ended', handleEnded);
