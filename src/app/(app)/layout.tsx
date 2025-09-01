@@ -24,8 +24,6 @@ import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { auth, db } from '@/lib/firebase';
 import { signOut } from 'firebase/auth';
-import { MusicProvider } from '@/hooks/use-music';
-import MusicPlayer from '@/components/music-player';
 import { collection, getDocs, limit, query, where, doc, getDoc } from 'firebase/firestore';
 import StartQuestionnaireModal from '@/components/start-questionnaire-modal';
 import { ChatHistoryProvider } from '@/hooks/use-chat-history';
@@ -344,7 +342,6 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
             <strong>A Gentle Reminder:</strong> MitraAI is a supportive friend, not a substitute for professional medical advice, diagnosis, or treatment. Its analysis may not be 100% correct. Always seek the advice of a qualified health provider for any medical questions.
           </footer>
         </div>
-        <MusicPlayer />
       </SidebarInset>
     </>
   );
@@ -355,11 +352,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
      <AuthProvider>
         <SidebarProvider>
-          <MusicProvider>
             <ChatHistoryProvider>
               <AppLayoutContent>{children}</AppLayoutContent>
             </ChatHistoryProvider>
-          </MusicProvider>
         </SidebarProvider>
     </AuthProvider>
   );
