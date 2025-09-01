@@ -2,75 +2,75 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    
-    // Helper function to check if a user is signed in
+
+    // Helper functions
     function isSignedIn() {
       return request.auth != null;
     }
+
+    function isOwner(doc) {
+      return request.auth.uid == doc.data.userId || request.auth.uid == doc.data.authorId || request.auth.uid == doc.data.student_id;
+    }
     
-    // Helper function to check if the user making the request is the owner of the document
-    function isOwner(userId) {
-      return request.auth.uid == userId;
+    function isAdmin() {
+      // Ensure auth is not null before accessing token
+      return request.auth != null && request.auth.token.email == 'ahsan.khan@mitwpu.edu.in';
     }
 
-    // Counsellors can be read by any signed-in user for booking purposes
-    // New counsellor applications are created from the client, status is 'pending' by default.
+    // Counsellors collection
     match /counsellors/{counsellorId} {
-      allow read: if isSignedIn();
-      allow create: if isSignedIn(); // Allows new counsellors to sign up
-      // Only an admin (not defined in rules, managed via backend/console) should approve
-      allow update, delete: if false; 
+      // Anyone can read the list of approved counsellors
+      allow list: if isSignedIn();
+      // Only the counsellor themselves or an admin can read a specific counsellor document
+      allow get: if isSignedIn() && (request.auth.uid == counsellorId || isAdmin());
+      // A user can create their own counsellor application
+      allow create: if isSignedIn() && request.auth.uid == counsellorId;
+      // Only an admin can update the status of a counsellor
+      allow update: if isAdmin();
     }
 
-    // Users can only read/write their own documents
+    // Journal Entries collection
     match /journalEntries/{entryId} {
-      allow read, update, delete: if isSignedIn() && isOwner(resource.data.userId);
-      allow create: if isSignedIn() && isOwner(request.resource.data.userId);
+      // Allow read/write only for the owner of the entry or an admin
+      allow read, write: if isSignedIn() && (isOwner(get(path)) || isAdmin());
     }
 
+    // Questionnaires collection
     match /questionnaires/{questionnaireId} {
-      allow read, update, delete: if isSignedIn() && isOwner(resource.data.userId);
-      allow create: if isSignedIn() && isOwner(request.resource.data.userId);
+      // Allow read/write for the owner of the questionnaire or an admin
+      allow read, write: if isSignedIn() && (isOwner(get(path)) || isAdmin());
+    }
+
+    // Bookings collection
+    match /bookings/{bookingId} {
+        function isCounsellor() {
+            // Ensure auth is not null before checking UID
+            return request.auth != null && request.auth.uid == resource.data.counsellor_id;
+        }
+       // Allow read/write for the student owner, the assigned counsellor, or an admin
+       allow read, write: if isSignedIn() && (isOwner(get(path)) || isCounsellor() || isAdmin());
     }
     
-    match /bookings/{bookingId} {
-      // Students can manage their own bookings
-      allow read: if isSignedIn() && (isOwner(resource.data.student_id) || request.auth.uid == resource.data.counsellor_id);
-      allow create: if isSignedIn() && isOwner(request.resource.data.student_id);
-      
-      // Counsellors can only update bookings assigned to them
-      allow update: if isSignedIn() && request.auth.uid == resource.data.counsellor_id;
-      
-      // No one can delete bookings from the client to preserve history
-      allow delete: if false;
-    }
-
-    // Community Posts and Comments
+    // Posts and Comments
     match /posts/{postId} {
-      // Any signed-in user can read posts
-      allow read: if isSignedIn();
+      // Any signed-in user can read posts and create new ones
+      allow read, create: if isSignedIn();
       
-      // Users can create posts for themselves
-      allow create: if isSignedIn() && isOwner(request.resource.data.authorId);
+      // Only the author or an admin can delete a post
+      allow delete: if isSignedIn() && (isOwner(get(path)) || isAdmin());
       
-      // Users can only delete their own posts
-      allow delete: if isSignedIn() && isOwner(resource.data.authorId);
-      
-      // Any signed-in user can update ONLY the commentCount.
-      // They cannot change any other field.
+      // Allow any signed-in user to update only the commentCount field
       allow update: if isSignedIn() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['commentCount']);
 
-      // Comments subcollection
       match /comments/{commentId} {
-        // Any signed-in user can read comments
-        allow read: if isSignedIn();
+        // Any signed-in user can read and create comments
+        allow read, create: if isSignedIn();
         
-        // Users can create comments for themselves
-        allow create: if isSignedIn() && isOwner(request.resource.data.authorId);
-        
-        // Users can only delete their own comments.
-        // A rule for a moderator/owner to hide comments would be added here if needed.
-        allow update, delete: if isSignedIn() && isOwner(resource.data.authorId);
+        // Only the comment author or an admin can delete a comment
+        allow delete: if isSignedIn() && (isOwner(get(path)) || isAdmin());
+
+        // Allow an admin to update the 'hidden' field of a comment
+        allow update: if isAdmin() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['hidden']);
       }
     }
   }
