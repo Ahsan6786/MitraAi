@@ -145,6 +145,12 @@ function AuthForm() {
                 Sign up
               </Link>
             </div>
+             <div className="text-center text-sm text-muted-foreground mt-2">
+              Are you a counsellor?{' '}
+              <Link href="/counsellor-signin" className="underline text-primary">
+                Sign in here
+              </Link>
+            </div>
           </CardFooter>
         </form>
       )}

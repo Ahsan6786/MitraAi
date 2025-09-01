@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { BookHeart, MessageSquare, MicVocal, ShieldCheck, LogOut, FileText, Puzzle, Phone, LayoutDashboard, Info, HeartPulse, Sparkles, Trophy, Newspaper, User, Users, Star, Camera } from 'lucide-react';
+import { BookHeart, MessageSquare, MicVocal, ShieldCheck, LogOut, FileText, Puzzle, Phone, LayoutDashboard, Info, HeartPulse, Sparkles, Trophy, Newspaper, User, Users, Star, Camera, UserCheck } from 'lucide-react';
 import {
   SidebarProvider,
   Sidebar,
@@ -26,7 +26,7 @@ import { auth, db } from '@/lib/firebase';
 import { signOut } from 'firebase/auth';
 import { MusicProvider } from '@/hooks/use-music';
 import MusicPlayer from '@/components/music-player';
-import { collection, getDocs, limit, query, where } from 'firebase/firestore';
+import { collection, getDocs, limit, query, where, doc, getDoc } from 'firebase/firestore';
 import StartQuestionnaireModal from '@/components/start-questionnaire-modal';
 import { ChatHistoryProvider } from '@/hooks/use-chat-history';
 
@@ -37,19 +37,36 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
   const router = useRouter();
   const sidebar = useSidebar();
-  const isAdmin = user?.email === ADMIN_EMAIL;
   const [showQuestionnaireModal, setShowQuestionnaireModal] = useState(false);
+  const [userType, setUserType] = useState<'user' | 'admin' | 'counsellor' | null>(null);
 
   useEffect(() => {
     if (!loading && !user) {
-      router.push('/signin');
+      if (pathname.startsWith('/counsellor')) {
+        router.push('/counsellor-signin');
+      } else {
+        router.push('/signin');
+      }
+    } else if (!loading && user) {
+        const checkUserType = async () => {
+            if (user.email === ADMIN_EMAIL) {
+                setUserType('admin');
+                return;
+            }
+            const counsellorDoc = await getDoc(doc(db, 'counsellors', user.uid));
+            if (counsellorDoc.exists() && counsellorDoc.data().status === 'approved') {
+                setUserType('counsellor');
+                return;
+            }
+            setUserType('user');
+        };
+        checkUserType();
     }
-  }, [user, loading, router]);
+  }, [user, loading, router, pathname]);
 
   useEffect(() => {
     const checkQuestionnaire = async () => {
-        if (user && !isAdmin && pathname !== '/questionnaire') {
-            // Check if the modal has been dismissed this session
+        if (userType === 'user' && pathname !== '/questionnaire') {
             const dismissed = sessionStorage.getItem('questionnaireDismissed');
             if (dismissed) return;
 
@@ -64,14 +81,19 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
             }
         }
     };
-    if (!loading && user) {
+    if (user && userType) {
         checkQuestionnaire();
     }
-  }, [user, loading, isAdmin, pathname]);
+  }, [user, userType, pathname]);
   
   const handleSignOut = async () => {
     await signOut(auth);
-    router.push('/signin');
+    // Redirect to the appropriate sign-in page
+    if (pathname.startsWith('/counsellor')) {
+        router.push('/counsellor-signin');
+    } else {
+        router.push('/signin');
+    }
   };
 
   const handleLinkClick = () => {
@@ -85,16 +107,12 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
   }
 
 
-  if (loading) {
+  if (loading || !user) {
     return (
       <div className="flex items-center justify-center h-screen">
         <div className="text-muted-foreground">Loading application...</div>
       </div>
     );
-  }
-
-  if (!user) {
-    return null;
   }
 
   const userDisplayName = user.displayName || user.email;
@@ -126,7 +144,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
         </SidebarHeader>
         <SidebarContent>
           <SidebarMenu>
-            {isAdmin ? (
+            {userType === 'admin' && (
               <SidebarMenuItem>
                 <SidebarMenuButton asChild isActive={pathname === '/admin'}>
                   <Link href="/admin" onClick={handleLinkClick}>
@@ -135,7 +153,18 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
-            ) : (
+            )}
+            {userType === 'counsellor' && (
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={pathname === '/counsellor'}>
+                  <Link href="/counsellor" onClick={handleLinkClick}>
+                    <UserCheck />
+                    <span>Counsellor Panel</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            )}
+            {userType === 'user' && (
               <>
                 <SidebarMenuItem>
                   <SidebarMenuButton asChild isActive={pathname === '/chat'}>

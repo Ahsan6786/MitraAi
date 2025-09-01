@@ -9,7 +9,7 @@ import { collection, query, where, onSnapshot, Timestamp, doc, updateDoc, orderB
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Mic, PenSquare, ShieldCheck, Sparkles, AlertTriangle, FileQuestion } from 'lucide-react';
+import { Loader2, Mic, PenSquare, ShieldCheck, Sparkles, AlertTriangle, FileQuestion, UserPlus, Mail, Phone, Check, X } from 'lucide-react';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
@@ -43,6 +43,15 @@ interface QuestionnaireSubmission {
     };
     answers: Record<string, string>;
     reviewed: boolean;
+}
+
+interface CounsellorRequest {
+    id: string;
+    name: string;
+    email: string;
+    phone: string;
+    status: 'pending' | 'approved' | 'rejected';
+    createdAt: Timestamp;
 }
 
 const questionnaireQuestions = [
@@ -79,7 +88,6 @@ function JournalReviews() {
         );
         const unsubscribe = onSnapshot(q, (snapshot) => {
             const entriesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as JournalEntry));
-            // Sort entries manually by date descending
             entriesData.sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis());
             setEntries(entriesData);
             setIsLoading(false);
@@ -90,7 +98,6 @@ function JournalReviews() {
         return () => unsubscribe();
     }, []);
     
-    // Handlers for journal entries
     const handleReportChange = (id: string, value: string) => setReports(p => ({ ...p, [id]: value }));
     const handleGenerateReport = async (entry: JournalEntry) => {
         setIsGenerating(p => ({...p, [entry.id]: true}));
@@ -229,6 +236,56 @@ function QuestionnaireReviews() {
     );
 }
 
+function CounsellorRequests() {
+    const [requests, setRequests] = useState<CounsellorRequest[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const { toast } = useToast();
+
+    useEffect(() => {
+        const q = query(collection(db, 'counsellors'), where('status', '==', 'pending'), orderBy('createdAt', 'desc'));
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            setRequests(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as CounsellorRequest)));
+            setIsLoading(false);
+        });
+        return () => unsubscribe();
+    }, []);
+
+    const handleApproval = async (id: string, newStatus: 'approved' | 'rejected') => {
+        try {
+            await updateDoc(doc(db, 'counsellors', id), { status: newStatus });
+            toast({ title: `Counsellor ${newStatus}.` });
+        } catch (error) {
+            toast({ title: 'Update failed.', variant: 'destructive' });
+        }
+    };
+
+    if (isLoading) return <div className="flex justify-center items-center h-full"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
+    if (requests.length === 0) return <Card className="text-center p-6 md:p-10"><CardTitle>No Pending Requests</CardTitle><CardDescription className="mt-2">There are no new counsellor applications to review.</CardDescription></Card>;
+
+    return (
+        <div className="space-y-4">
+            {requests.map(req => (
+                <Card key={req.id}>
+                    <CardHeader>
+                        <div className="flex justify-between items-center">
+                            <CardTitle className="text-lg flex items-center gap-2"><UserPlus className="w-5 h-5"/>{req.name}</CardTitle>
+                            <div className="text-xs text-muted-foreground">{req.createdAt.toDate().toLocaleDateString()}</div>
+                        </div>
+                    </CardHeader>
+                    <CardContent className="space-y-2 text-sm">
+                         <div className="flex items-center gap-2 text-muted-foreground"><Mail className="w-4 h-4" /><span>{req.email}</span></div>
+                         <div className="flex items-center gap-2 text-muted-foreground"><Phone className="w-4 h-4" /><span>{req.phone}</span></div>
+                    </CardContent>
+                    <CardFooter className="flex gap-2">
+                        <Button size="sm" onClick={() => handleApproval(req.id, 'approved')}><Check className="w-4 h-4 mr-2"/>Approve</Button>
+                        <Button size="sm" variant="destructive" onClick={() => handleApproval(req.id, 'rejected')}><X className="w-4 h-4 mr-2"/>Reject</Button>
+                    </CardFooter>
+                </Card>
+            ))}
+        </div>
+    );
+}
+
 export default function AdminPage() {
     const { user, loading } = useAuth();
     const router = useRouter();
@@ -250,17 +307,21 @@ export default function AdminPage() {
                     <SidebarTrigger className="md:hidden" />
                     <div>
                         <h1 className="text-lg md:text-xl font-bold flex items-center gap-2"><ShieldCheck className="w-6 h-6 text-primary"/>Admin Panel</h1>
-                        <p className="text-sm text-muted-foreground">Review user submissions.</p>
+                        <p className="text-sm text-muted-foreground">Review user submissions and requests.</p>
                     </div>
                 </div>
                 <ThemeToggle />
             </header>
             <main className="flex-1 overflow-auto p-2 sm:p-4 md:p-6">
-                <Tabs defaultValue="questionnaires" className="w-full">
-                    <TabsList className="grid w-full grid-cols-2">
+                <Tabs defaultValue="counsellors" className="w-full">
+                    <TabsList className="grid w-full grid-cols-3">
+                        <TabsTrigger value="counsellors">Counsellors</TabsTrigger>
                         <TabsTrigger value="questionnaires">Questionnaires</TabsTrigger>
                         <TabsTrigger value="journals">Journal Entries</TabsTrigger>
                     </TabsList>
+                    <TabsContent value="counsellors" className="mt-4">
+                        <CounsellorRequests />
+                    </TabsContent>
                     <TabsContent value="questionnaires" className="mt-4">
                         <QuestionnaireReviews />
                     </TabsContent>
@@ -272,5 +333,3 @@ export default function AdminPage() {
         </div>
     );
 }
-
-    
