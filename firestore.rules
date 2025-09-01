@@ -1,76 +1,76 @@
+
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper functions for auth roles
+    // Helper functions to check user roles
+    function isOwner(docData) {
+      return request.auth.uid == docData.userId || request.auth.uid == docData.authorId || request.auth.uid == docData.student_id;
+    }
+
     function isAdmin() {
-      return request.auth != null && request.auth.token.email == 'ahsan.khan@mitwpu.edu.in';
+      return request.auth.token.email == 'ahsan.khan@mitwpu.edu.in';
     }
 
     function isApprovedCounsellor() {
-      return request.auth != null && exists(/databases/$(database)/documents/counsellors/$(request.auth.uid)) &&
+      return exists(/databases/$(database)/documents/counsellors/$(request.auth.uid)) &&
              get(/databases/$(database)/documents/counsellors/$(request.auth.uid)).data.status == 'approved';
     }
-    
-    function isOwner(docData) {
-        return request.auth != null && request.auth.uid == docData.userId;
-    }
-    
-    function isStudentOwner(docData) {
-        return request.auth != null && request.auth.uid == docData.student_id;
-    }
 
-    match /counsellors/{counsellorId} {
-      // Anyone can apply (create)
-      allow create;
-      // Only admins or approved counsellors can read a counsellor's doc
-      // Or the user can read their own doc to check their status
-      allow get: if request.auth != null && (isAdmin() || isApprovedCounsellor() || request.auth.uid == counsellorId);
-      // Only admins can update (approve/reject) or delete
-      allow update, delete, list: if request.auth != null && isAdmin();
-      // Any authenticated user can list approved counsellors for booking
-      allow list: if request.auth != null;
-    }
-
+    // JOURNAL ENTRIES
+    // Users can only access their own entries. Admin can read/update for review.
     match /journalEntries/{entryId} {
-      allow read, write: if request.auth != null && (isOwner(resource.data) || isAdmin());
+      allow read, update, delete: if request.auth != null && isOwner(resource.data);
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow list: if request.auth != null && request.query.get('userId') == request.auth.uid;
+      
+      // Admin permissions for review
+      allow get, list, update: if request.auth != null && isAdmin();
     }
 
+    // QUESTIONNAIRES
+    // Users can only access their own. Admin can read/update for review.
     match /questionnaires/{questionnaireId} {
-       allow read, write: if request.auth != null && (isOwner(resource.data) || isAdmin());
+      allow read, update, delete: if request.auth != null && isOwner(resource.data);
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow list: if request.auth != null && request.query.get('userId') == request.auth.uid;
+
+      // Admin permissions for review
+      allow get, list, update: if request.auth != null && isAdmin();
     }
 
+    // COUNSELLORS
+    // Any authenticated user can read the list of approved counsellors.
+    // Admin can manage counsellor documents.
+    match /counsellors/{counsellorId} {
+      allow read: if request.auth != null; // Allows role checks and listing for booking
+      allow create: if request.auth != null; // Allow new applications
+      allow update, delete: if request.auth != null && isAdmin();
+    }
+
+    // BOOKINGS
+    // Users can manage their own bookings. Counsellors can manage theirs.
     match /bookings/{bookingId} {
-        // User can create their own booking
-        allow create: if request.auth != null && isStudentOwner(request.resource.data);
-        // User can read their own booking, counsellor can read their assigned bookings, admin can read any
-        allow read: if request.auth != null && (isStudentOwner(resource.data) || isApprovedCounsellor() || isAdmin());
-        // Counsellor can update their bookings, user can update to cancel, admin can update any
-        allow update: if request.auth != null && (
-            isApprovedCounsellor() ||
-            (isStudentOwner(resource.data) && request.resource.data.appointment_status == 'Cancelled') ||
-            isAdmin()
-        );
-        // User can't delete, only cancel. Admin can delete.
-        allow delete: if request.auth != null && isAdmin();
+      allow read, update: if request.auth != null && (isOwner(resource.data) || (isApprovedCounsellor() && resource.data.counsellor_id == request.auth.uid));
+      allow create: if request.auth != null && request.resource.data.student_id == request.auth.uid;
+      allow list: if request.auth != null && (request.query.get('student_id') == request.auth.uid || (isApprovedCounsellor() && request.query.get('counsellor_id') == request.auth.uid));
     }
-    
+
+    // POSTS
+    // Authenticated users can read/create. Owners or admin can delete.
+    // Any user can update the commentCount.
     match /posts/{postId} {
-      allow read;
-      allow create: if request.auth.uid != null;
-      allow update: if request.auth.uid != null && (
-        request.auth.uid == resource.data.authorId || 
-        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['commentCount'])
-      );
-      allow delete: if request.auth.uid != null && (request.auth.uid == resource.data.authorId || isAdmin());
-    }
-    
-    match /posts/{postId}/comments/{commentId} {
-      allow read;
-      allow create: if request.auth.uid != null;
-      allow update: if request.auth.uid != null && (request.auth.uid == resource.data.authorId || isAdmin());
-      allow delete: if request.auth.uid != null && (request.auth.uid == resource.data.authorId || isAdmin());
+      allow read, create: if request.auth != null;
+      allow update: if request.auth != null && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['commentCount']);
+      allow delete: if request.auth != null && (isOwner(resource.data) || isAdmin());
+
+      // COMMENTS SUBCOLLECTION
+      match /comments/{commentId} {
+        allow read, create: if request.auth != null;
+        allow update: if request.auth != null && isAdmin(); // Admin can hide comments
+        allow delete: if request.auth != null && (isOwner(resource.data) || isAdmin());
+      }
     }
   }
 }
