@@ -33,7 +33,7 @@ interface Booking {
     appointment_status: 'Pending' | 'Confirmed' | 'Rejected';
     student_notes?: string;
     meet_link?: string;
-    createdAt: Timestamp;
+    created_at: Timestamp;
 }
 
 function BookingList() {
@@ -54,7 +54,12 @@ function BookingList() {
         );
         const unsubscribe = onSnapshot(q, (snapshot) => {
             const bookingsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Booking));
-            bookingsData.sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis());
+            bookingsData.sort((a, b) => {
+                if (a.created_at && b.created_at) {
+                    return b.created_at.toMillis() - a.created_at.toMillis();
+                }
+                return 0;
+            });
             setBookings(bookingsData);
             setIsLoading(false);
         });
