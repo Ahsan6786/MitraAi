@@ -3,7 +3,7 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { SidebarTrigger } from '@/components/ui/sidebar';
-import { Users, Heart, BrainCircuit, ShieldCheck, Handshake } from 'lucide-react';
+import { Users, Heart, BrainCircuit, ShieldCheck, Handshake, FileQuestion } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
 
 export default function AboutPage() {
@@ -67,6 +67,22 @@ export default function AboutPage() {
                         </CardContent>
                     </Card>
                 </div>
+                
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                            <FileQuestion className="w-6 h-6 text-primary" /> Clinically Recognized Screening
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="text-muted-foreground space-y-3">
+                       <p>
+                        To provide a credible starting point for self-assessment, MitraAI utilizes the <strong>Geriatric Depression Scale (GDS – Short Form, 15 items)</strong>. This questionnaire was developed in 1982 by Dr. Jerome Yesavage and his colleagues at the Stanford University School of Medicine.
+                       </p>
+                       <p>
+                        The GDS is a widely recognized, peer-reviewed, and medically accepted screening tool used by doctors, psychologists, and researchers worldwide to help measure depression severity. While it is not a diagnostic tool or a substitute for a professional evaluation, it is a clinically validated instrument that can help guide you on your wellness journey.
+                       </p>
+                    </CardContent>
+                </Card>
 
                 <Card>
                     <CardHeader>

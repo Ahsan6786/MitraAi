@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Logo } from '@/components/icons';
-import { Bot, HeartPulse, Mic, FileText, Instagram, Mail, AlertTriangle, ShieldCheck, Handshake, Users, PlayCircle, Newspaper, ArrowUp, MessageSquare } from 'lucide-react';
+import { Bot, HeartPulse, Mic, FileText, Instagram, Mail, AlertTriangle, ShieldCheck, Handshake, Users, PlayCircle, FileQuestion, ArrowUp, MessageSquare } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
@@ -220,6 +220,37 @@ function LandingPageContent() {
               ))}
             </div>
           </div>
+        </section>
+        
+        <section id="screening-tool" className="w-full py-12 md:py-24">
+            <div className="container mx-auto grid items-center gap-6 px-4 md:px-6 lg:grid-cols-2 lg:gap-10">
+                <div className="space-y-4">
+                    <div className="inline-block rounded-lg bg-muted px-3 py-1 text-sm">Medically Accepted Screening</div>
+                    <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">Grounded in Science</h2>
+                    <p className="max-w-[600px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
+                        MitraAI integrates the Geriatric Depression Scale (GDS), a clinically validated and medically accepted screening tool developed at Stanford University School of Medicine. It is used worldwide by doctors and researchers to help measure depression severity.
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                        While not a diagnostic tool, the GDS provides a reliable, peer-reviewed starting point for understanding your mental health.
+                    </p>
+                </div>
+                <div className="flex flex-col gap-4">
+                    <Card>
+                        <CardHeader className="flex-row items-center gap-4">
+                            <FileQuestion className="w-8 h-8 text-primary" />
+                            <div>
+                                <CardTitle>Screen Your Depression/Anxiety</CardTitle>
+                                <CardDescription>Take the first step towards understanding your well-being.</CardDescription>
+                            </div>
+                        </CardHeader>
+                        <CardContent>
+                            <Button asChild className="w-full">
+                                <Link href="/signup">Sign Up to Take the Test</Link>
+                            </Button>
+                        </CardContent>
+                    </Card>
+                </div>
+            </div>
         </section>
 
         <section id="mission" className="w-full py-12 md:py-24 bg-muted/20">
