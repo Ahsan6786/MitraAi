@@ -12,50 +12,63 @@ service cloud.firestore {
     function isOwner(userId) {
       return isSignedIn() && request.auth.uid == userId;
     }
-    
-    function isAdmin() {
-      return isSignedIn() && request.auth.token.email == 'ahsan.khan@mitwpu.edu.in';
+
+    // Admins can read/write anything
+    match /{path=**} {
+      allow read, write: if request.auth != null && request.auth.token.email == 'ahsan.khan@mitwpu.edu.in';
     }
 
-    function isApprovedCounsellor() {
-      return isSignedIn() && exists(/databases/$(database)/documents/counsellors/$(request.auth.uid))
-             && get(/databases/$(database)/documents/counsellors/$(request.auth.uid)).data.status == 'approved';
-    }
-    
-    // PUBLIC: Logged-in users can read the list of approved counsellors
+    // Counsellors collection
     match /counsellors/{counsellorId} {
-      allow read: if isSignedIn();
-      allow create: if isSignedIn(); // Counsellors can sign up
-      allow update, delete: if isAdmin(); // Only admin can approve/manage
+      // Anyone can read approved counsellors for booking
+      allow read: if isSignedIn() && resource.data.status == 'approved';
+      // Only admin can create, update, or delete counsellor documents
+      allow create, update, delete: if request.auth != null && request.auth.token.email == 'ahsan.khan@mitwpu.edu.in';
+    }
+    
+    // Allow listing of approved counsellors
+    match /counsellors {
+        allow list: if isSignedIn();
     }
 
-    // USER-OWNED: Users can only access their own documents
+    // Posts and Comments
+    match /posts/{postId} {
+      allow read: if isSignedIn();
+      allow create: if isOwner(request.resource.data.authorId);
+      allow delete: if isOwner(resource.data.authorId);
+      // Allow any signed-in user to update a post ONLY to increment the commentCount.
+      allow update: if isSignedIn() 
+                    && request.resource.data.diff(resource.data).affectedKeys()
+                       .hasOnly(['commentCount']);
+    }
+
+    match /posts/{postId}/comments/{commentId} {
+      allow read: if isSignedIn();
+      allow create: if isOwner(request.resource.data.authorId);
+      // Allow a user to delete their own comment.
+      allow delete: if isOwner(resource.data.authorId);
+    }
+
+    // User-specific data collections
     match /journalEntries/{entryId} {
       allow read, write: if isOwner(resource.data.userId);
-      allow list: if isSignedIn() && request.query.where.get('userId') == request.auth.uid;
+    }
+     match /journalEntries {
+      allow list: if isSignedIn() && request.query.where.get("userId") == request.auth.uid;
     }
 
-    match /questionnaires/{questionnaireId} {
-       allow read, write: if isOwner(resource.data.userId);
-       allow list: if isSignedIn() && request.query.where.get('userId') == request.auth.uid;
+    match /questionnaires/{submissionId} {
+      allow read, write: if isOwner(resource.data.userId);
+    }
+    match /questionnaires {
+       allow list: if isSignedIn() && request.query.where.get("userId") == request.auth.uid;
     }
 
     match /bookings/{bookingId} {
-       allow create: if isOwner(request.resource.data.student_id);
-       allow read: if isOwner(resource.data.student_id) || (isApprovedCounsellor() && resource.data.counsellor_id == request.auth.uid);
-       allow update: if isApprovedCounsellor() && resource.data.counsellor_id == request.auth.uid;
-       allow list: if isSignedIn() && (request.query.where.get('student_id') == request.auth.uid || request.query.where.get('counsellor_id') == request.auth.uid);
+      allow read, write: if isOwner(resource.data.student_id);
     }
-
-    // COMMUNITY: Logged-in users can read/write, but only delete their own posts/comments
-    match /posts/{postId} {
-      allow read, create: if isSignedIn();
-      allow update, delete: if isOwner(resource.data.authorId) || isAdmin();
-
-      match /comments/{commentId} {
-        allow read, create: if isSignedIn();
-        allow update, delete: if isOwner(resource.data.authorId) || isAdmin();
-      }
+    match /bookings {
+      allow list: if isSignedIn() && request.query.where.get("student_id") == request.auth.uid;
     }
   }
 }
