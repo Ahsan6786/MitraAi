@@ -1,84 +1,76 @@
-
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper functions
-    function isSignedIn() {
-      return request.auth != null;
-    }
-
-    function isOwner(userId) {
-      return isSignedIn() && request.auth.uid == userId;
-    }
-
+    // Helper functions for auth roles
     function isAdmin() {
-      return isSignedIn() && request.auth.token.email == 'ahsan.khan@mitwpu.edu.in';
+      return request.auth != null && request.auth.token.email == 'ahsan.khan@mitwpu.edu.in';
     }
 
     function isApprovedCounsellor() {
-      return isSignedIn() && exists(/databases/$(database)/documents/counsellors/$(request.auth.uid)) &&
+      return request.auth != null && exists(/databases/$(database)/documents/counsellors/$(request.auth.uid)) &&
              get(/databases/$(database)/documents/counsellors/$(request.auth.uid)).data.status == 'approved';
     }
+    
+    function isOwner(docData) {
+        return request.auth != null && request.auth.uid == docData.userId;
+    }
+    
+    function isStudentOwner(docData) {
+        return request.auth != null && request.auth.uid == docData.student_id;
+    }
 
-    // Counsellors Collection
-    // - Anyone can read the list of approved counsellors
-    // - Only admins can manage the counsellor documents
     match /counsellors/{counsellorId} {
-      allow read: if isSignedIn() && resource.data.status == 'approved';
-      allow list: if isSignedIn();
-      allow write: if isAdmin();
+      // Anyone can apply (create)
+      allow create;
+      // Only admins or approved counsellors can read a counsellor's doc
+      // Or the user can read their own doc to check their status
+      allow get: if request.auth != null && (isAdmin() || isApprovedCounsellor() || request.auth.uid == counsellorId);
+      // Only admins can update (approve/reject) or delete
+      allow update, delete, list: if request.auth != null && isAdmin();
+      // Any authenticated user can list approved counsellors for booking
+      allow list: if request.auth != null;
     }
 
-    // Journal Entries Collection
-    // - Users can only manage their own entries
-    // - Admins can read entries
     match /journalEntries/{entryId} {
-      allow read, write: if isOwner(resource.data.userId);
-      allow list: if isSignedIn() && request.query.where.size() == 1 && 'userId' in request.query.where && request.query.where.userId == request.auth.uid;
-      allow read: if isAdmin(); // Admin can read for review purposes
+      allow read, write: if request.auth != null && (isOwner(resource.data) || isAdmin());
     }
 
-    // Questionnaires Collection
-    // - Users can only manage their own questionnaires
-    // - Admins can read questionnaires
     match /questionnaires/{questionnaireId} {
-      allow read, write: if isOwner(resource.data.userId) || isAdmin();
-      allow list: if isSignedIn() && request.query.where.size() == 1 && 'userId' in request.query.where && request.query.where.userId == request.auth.uid;
-      allow read: if isAdmin();
+       allow read, write: if request.auth != null && (isOwner(resource.data) || isAdmin());
     }
 
-    // Bookings Collection
-    // - Users can create their own bookings
-    // - Users can view their own bookings
-    // - Users can cancel their own bookings (update status to 'Cancelled')
-    // - Counsellors can manage bookings assigned to them
     match /bookings/{bookingId} {
-      allow create: if isOwner(request.resource.data.student_id);
-      allow read: if isOwner(resource.data.student_id) || isApprovedCounsellor() && resource.data.counsellor_id == request.auth.uid;
-      allow list: if (isSignedIn() && request.query.where.size() == 1 && 'student_id' in request.query.where && request.query.where.student_id == request.auth.uid) ||
-                     (isApprovedCounsellor() && request.query.where.size() == 1 && 'counsellor_id' in request.query.where && request.query.where.counsellor_id == request.auth.uid);
-      allow update: if (isApprovedCounsellor() && resource.data.counsellor_id == request.auth.uid) || 
-                       (isOwner(resource.data.student_id) && request.resource.data.appointment_status == 'Cancelled');
+        // User can create their own booking
+        allow create: if request.auth != null && isStudentOwner(request.resource.data);
+        // User can read their own booking, counsellor can read their assigned bookings, admin can read any
+        allow read: if request.auth != null && (isStudentOwner(resource.data) || isApprovedCounsellor() || isAdmin());
+        // Counsellor can update their bookings, user can update to cancel, admin can update any
+        allow update: if request.auth != null && (
+            isApprovedCounsellor() ||
+            (isStudentOwner(resource.data) && request.resource.data.appointment_status == 'Cancelled') ||
+            isAdmin()
+        );
+        // User can't delete, only cancel. Admin can delete.
+        allow delete: if request.auth != null && isAdmin();
     }
-
-    // Posts and Comments
-    // - Anyone signed in can read posts and comments
-    // - Users can create posts and comments
-    // - Users can only update the commentCount on a post
-    // - Users can only delete their own posts and comments
-    // - Admins can delete any post or comment
+    
     match /posts/{postId} {
-      allow read, create: if isSignedIn();
-      allow update: if isSignedIn() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['commentCount']);
-      allow delete: if isOwner(resource.data.authorId) || isAdmin();
-      
-      match /comments/{commentId} {
-        allow read, create: if isSignedIn();
-        allow delete: if isOwner(resource.data.authorId) || isAdmin();
-        allow update: if isAdmin(); // Admin can hide comments
-      }
+      allow read;
+      allow create: if request.auth.uid != null;
+      allow update: if request.auth.uid != null && (
+        request.auth.uid == resource.data.authorId || 
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['commentCount'])
+      );
+      allow delete: if request.auth.uid != null && (request.auth.uid == resource.data.authorId || isAdmin());
+    }
+    
+    match /posts/{postId}/comments/{commentId} {
+      allow read;
+      allow create: if request.auth.uid != null;
+      allow update: if request.auth.uid != null && (request.auth.uid == resource.data.authorId || isAdmin());
+      allow delete: if request.auth.uid != null && (request.auth.uid == resource.data.authorId || isAdmin());
     }
   }
 }
