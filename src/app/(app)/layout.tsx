@@ -168,7 +168,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
                   <SidebarMenuButton asChild isActive={pathname === '/chat'}>
                     <Link href="/chat" onClick={handleLinkClick}>
                       <MessageSquare />
-                      <span>Chat</span>
+                      <span>MitraGPT</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

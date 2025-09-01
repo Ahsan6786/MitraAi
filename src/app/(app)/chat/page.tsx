@@ -12,8 +12,8 @@ export default function ChatPage() {
         <div className="flex items-center gap-2">
           <SidebarTrigger className="md:hidden" />
           <div>
-            <h1 className="text-lg md:text-xl font-bold">AI Companion</h1>
-            <p className="text-sm text-muted-foreground">Chat with MitraAI</p>
+            <h1 className="text-lg md:text-xl font-bold">MitraGPT</h1>
+            <p className="text-sm text-muted-foreground">Your Personal AI Companion</p>
           </div>
         </div>
         <ThemeToggle />

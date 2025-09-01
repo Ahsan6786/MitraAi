@@ -114,7 +114,7 @@ function LandingPageContent() {
   const features = [
     {
       icon: <Bot className="w-8 h-8 text-primary" />,
-      title: 'AI Companion Chat',
+      title: 'MitraGPT',
       description: 'Talk about your feelings in a safe space with our empathetic AI, available in multiple languages.',
     },
     {
