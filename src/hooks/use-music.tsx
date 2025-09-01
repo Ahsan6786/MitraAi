@@ -24,22 +24,33 @@ export const MusicProvider = ({ children }: { children: ReactNode }) => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const wasPlayingBeforePause = useRef(false);
 
+  // Memoize playNext to prevent re-creation
+  const playNext = useCallback(() => {
+    if (currentTrack) {
+        const currentIndex = musicTracks.findIndex(t => t.id === currentTrack.id);
+        const nextIndex = (currentIndex + 1) % musicTracks.length;
+        playTrack(musicTracks[nextIndex].id);
+    } else if (musicTracks.length > 0) {
+        playTrack(musicTracks[0].id);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentTrack]);
+
   useEffect(() => {
     if (typeof window !== 'undefined' && !audioRef.current) {
         audioRef.current = new Audio();
-        audioRef.current.loop = false; // We will handle looping via playNext
+        audioRef.current.loop = false;
 
-        audioRef.current.addEventListener('ended', () => {
-            playNext();
-        });
-    }
-    return () => {
-        if (audioRef.current) {
-            audioRef.current.removeEventListener('ended', playNext);
+        const handleEnded = () => playNext();
+        audioRef.current.addEventListener('ended', handleEnded);
+
+        return () => {
+            if (audioRef.current) {
+                audioRef.current.removeEventListener('ended', handleEnded);
+            }
         }
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [playNext]);
 
   const playTrack = useCallback((trackId: number) => {
     const track = musicTracks.find(t => t.id === trackId);
@@ -57,10 +68,10 @@ export const MusicProvider = ({ children }: { children: ReactNode }) => {
         audioRef.current?.pause();
         setIsPlaying(false);
     } else {
-        if (currentTrack === null && musicTracks.length > 0) {
+        if (!currentTrack && musicTracks.length > 0) {
             // If no track is selected, start with the first one
             playTrack(musicTracks[0].id);
-        } else {
+        } else if (audioRef.current?.src) {
              audioRef.current?.play().then(() => {
                 setIsPlaying(true);
             }).catch(error => console.error("Error playing music:", error));
@@ -68,16 +79,6 @@ export const MusicProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [isPlaying, currentTrack, playTrack]);
   
-  const playNext = useCallback(() => {
-    if (currentTrack) {
-        const currentIndex = musicTracks.findIndex(t => t.id === currentTrack.id);
-        const nextIndex = (currentIndex + 1) % musicTracks.length;
-        playTrack(musicTracks[nextIndex].id);
-    } else if (musicTracks.length > 0) {
-        playTrack(musicTracks[0].id);
-    }
-  }, [currentTrack, playTrack]);
-
   const playPrevious = useCallback(() => {
     if (currentTrack) {
         const currentIndex = musicTracks.findIndex(t => t.id === currentTrack.id);
