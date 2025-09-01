@@ -154,7 +154,11 @@ export default function MyAppointmentsPage() {
                                                         <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                                                         <AlertDialogDescription>
                                                             This action cannot be undone. This will cancel your appointment with {booking.counsellor_name}.
-                                                        </Webcam><button className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded" onClick={stopRecording} >Stop</button></> : <button className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded" onClick={startRecording} >Start</button>}
+                                                        </AlertDialogDescription>
+                                                    </AlertDialogHeader>
+                                                    <AlertDialogFooter>
+                                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                        <AlertDialogAction onClick={() => handleCancelBooking(booking.id)}>Continue</AlertDialogAction>
                                                     </AlertDialogFooter>
                                                 </AlertDialogContent>
                                             </AlertDialog>
