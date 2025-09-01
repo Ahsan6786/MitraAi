@@ -2,55 +2,61 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    
-    // Allow users to read, create, and update their own journal entries
-    match /journalEntries/{entryId} {
-      allow read, delete: if request.auth != null && request.auth.uid == resource.data.userId;
-      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
-      allow update: if request.auth != null && (request.auth.uid == resource.data.userId || request.auth.token.email == 'ahsan.khan@mitwpu.edu.in');
-    }
-    
-    // Allow admin to read all journal entries and questionnaires
-    match /journalEntries/{entryId} {
-      allow read: if request.auth != null && request.auth.token.email == 'ahsan.khan@mitwpu.edu.in';
-    }
-    match /questionnaires/{questionnaireId} {
-        allow read: if request.auth != null && request.auth.token.email == 'ahsan.khan@mitwpu.edu.in';
-    }
-    match /questionnaires/{questionnaireId} {
-      allow update: if request.auth != null && request.auth.token.email == 'ahsan.khan@mitwpu.edu.in';
+  
+    // Helper function to check if the user is the designated admin
+    function isAdmin() {
+      return request.auth.token.email == 'ahsan.khan@mitwpu.edu.in';
     }
 
-    // Allow users to create their own questionnaire submissions
-    match /questionnaires/{questionnaireId} {
-      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
-      allow read: if request.auth != null && request.auth.uid == resource.data.userId;
+    // Rules for the 'counsellors' collection
+    match /counsellors/{counsellorId} {
+      // Allow any authenticated user to create their own counsellor application
+      allow create: if request.auth != null 
+                      && request.auth.uid == counsellorId
+                      && request.resource.data.status == 'pending';
+                      
+      // Allow only the admin to update the counsellor's status
+      allow update: if isAdmin() 
+                      && request.resource.data.keys().hasOnly(['status']);
+
+      // Allow approved counsellors to read their own document
+      allow read: if request.auth != null && request.auth.uid == counsellorId;
+
+      // Only admin can list/delete counsellors
+      allow list, delete: if isAdmin();
+    }
+
+    // Rules for 'journalEntries'
+    match /journalEntries/{entryId} {
+      // Users can create, read, update, and delete their own entries
+      allow read, write: if request.auth != null && request.auth.uid == resource.data.userId;
+      // Admin can read all entries for review
+      allow list, get: if isAdmin();
     }
     
-    // Community Posts Rules
+    // Rules for 'questionnaires'
+    match /questionnaires/{questionnaireId} {
+       // Users can create and read their own questionnaire submissions
+      allow create, read: if request.auth != null && request.auth.uid == request.resource.data.userId;
+       // Admin can read all submissions for review
+      allow list, get: if isAdmin();
+    }
+
+    // Rules for Community Posts
     match /posts/{postId} {
-      // Any authenticated user can read all posts.
-      allow read: if request.auth != null;
+      // Any authenticated user can read posts
+      allow read, list: if request.auth != null;
+      // Users can create posts
+      allow create: if request.auth != null;
+      // Users can update/delete their own posts, or admin can delete any post
+      allow update, delete: if request.auth != null && (request.auth.uid == resource.data.authorId || isAdmin());
       
-      // Users can only create posts for themselves.
-      allow create: if request.auth != null && request.auth.uid == request.resource.data.authorId;
-
-      // The post author or an owner can delete their post.
-      allow delete: if request.auth != null && (request.auth.uid == resource.data.authorId || request.auth.token.email == 'ahsanimamkhan06@gmail.com');
-      
-      // Allow a user to update a post ONLY if they are just incrementing the comment count.
-      allow update: if request.auth != null && request.resource.data.commentCount == resource.data.commentCount + 1 && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['commentCount']);
-
-      // Comments subcollection
+      // Rules for Comments subcollection
       match /comments/{commentId} {
-        // Any authenticated user can read comments.
-        allow read: if request.auth != null;
-
-        // Any authenticated user can create a comment.
-        allow create: if request.auth != null && request.auth.uid == request.resource.data.authorId;
-        
-        // The comment author or an owner can delete or hide/unhide their comment.
-        allow delete, update: if request.auth != null && (request.auth.uid == resource.data.authorId || request.auth.token.email == 'ahsanimamkhan06@gmail.com');
+        // Any authenticated user can read and create comments
+        allow read, list, create: if request.auth != null;
+        // Users can update/delete their own comments, or admin can delete any comment
+        allow update, delete: if request.auth != null && (request.auth.uid == resource.data.authorId || isAdmin());
       }
     }
   }
