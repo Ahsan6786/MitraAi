@@ -2,59 +2,114 @@
 'use client';
 
 import { createContext, useContext, useState, ReactNode, useRef, useCallback, useEffect } from 'react';
+import { musicTracks, type MusicTrack } from '@/lib/music-data';
 
 interface MusicContextType {
   isPlaying: boolean;
-  playMusic: () => void;
+  currentTrack: MusicTrack | null;
+  playTrack: (trackId: number) => void;
+  togglePlayPause: () => void;
+  playNext: () => void;
+  playPrevious: () => void;
+  // Exposing these for specific use cases like pausing for voice input
   pauseMusic: () => void;
   resumeMusic: () => void;
 }
 
 const MusicContext = createContext<MusicContextType | undefined>(undefined);
 
-const MUSIC_URL = '/relaxing-music.mp3';
-
 export const MusicProvider = ({ children }: { children: ReactNode }) => {
+  const [currentTrack, setCurrentTrack] = useState<MusicTrack | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const wasPlayingBeforePause = useRef(false);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-        audioRef.current = new Audio(MUSIC_URL);
-        audioRef.current.loop = true;
+    if (typeof window !== 'undefined' && !audioRef.current) {
+        audioRef.current = new Audio();
+        audioRef.current.loop = false; // We will handle looping via playNext
+
+        audioRef.current.addEventListener('ended', () => {
+            playNext();
+        });
     }
+    return () => {
+        if (audioRef.current) {
+            audioRef.current.removeEventListener('ended', playNext);
+        }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const playMusic = useCallback(() => {
-    if (audioRef.current) {
+  const playTrack = useCallback((trackId: number) => {
+    const track = musicTracks.find(t => t.id === trackId);
+    if (track && audioRef.current) {
+        setCurrentTrack(track);
+        audioRef.current.src = track.url;
         audioRef.current.play().then(() => {
             setIsPlaying(true);
         }).catch(error => console.error("Error playing music:", error));
     }
   }, []);
+  
+  const togglePlayPause = useCallback(() => {
+    if (isPlaying) {
+        audioRef.current?.pause();
+        setIsPlaying(false);
+    } else {
+        if (currentTrack === null && musicTracks.length > 0) {
+            // If no track is selected, start with the first one
+            playTrack(musicTracks[0].id);
+        } else {
+             audioRef.current?.play().then(() => {
+                setIsPlaying(true);
+            }).catch(error => console.error("Error playing music:", error));
+        }
+    }
+  }, [isPlaying, currentTrack, playTrack]);
+  
+  const playNext = useCallback(() => {
+    if (currentTrack) {
+        const currentIndex = musicTracks.findIndex(t => t.id === currentTrack.id);
+        const nextIndex = (currentIndex + 1) % musicTracks.length;
+        playTrack(musicTracks[nextIndex].id);
+    } else if (musicTracks.length > 0) {
+        playTrack(musicTracks[0].id);
+    }
+  }, [currentTrack, playTrack]);
+
+  const playPrevious = useCallback(() => {
+    if (currentTrack) {
+        const currentIndex = musicTracks.findIndex(t => t.id === currentTrack.id);
+        const prevIndex = (currentIndex - 1 + musicTracks.length) % musicTracks.length;
+        playTrack(musicTracks[prevIndex].id);
+    } else if (musicTracks.length > 0) {
+        playTrack(musicTracks[musicTracks.length - 1].id);
+    }
+  }, [currentTrack, playTrack]);
+
 
   const pauseMusic = useCallback(() => {
-    if (audioRef.current && audioRef.current.played && !audioRef.current.paused) {
+    if (audioRef.current && isPlaying) {
         wasPlayingBeforePause.current = true;
         audioRef.current.pause();
         setIsPlaying(false);
     } else {
         wasPlayingBeforePause.current = false;
     }
-  }, []);
+  }, [isPlaying]);
   
   const resumeMusic = useCallback(() => {
      if (audioRef.current && wasPlayingBeforePause.current) {
         audioRef.current.play().then(() => {
             setIsPlaying(true);
         }).catch(error => console.error("Error resuming music:", error));
-        wasPlayingBeforePause.current = false; // Reset the flag
     }
+    wasPlayingBeforePause.current = false; // Reset the flag
   }, []);
 
   return (
-    <MusicContext.Provider value={{ isPlaying, playMusic, pauseMusic, resumeMusic }}>
+    <MusicContext.Provider value={{ isPlaying, currentTrack, playTrack, togglePlayPause, playNext, playPrevious, pauseMusic, resumeMusic }}>
       {children}
     </MusicContext.Provider>
   );
