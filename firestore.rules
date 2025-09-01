@@ -1,70 +1,69 @@
-
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-  
-    // Helper function to check if the user is the admin
+
+    // Helper function to check for admin
     function isAdmin() {
       return request.auth.token.email == 'ahsan.khan@mitwpu.edu.in';
     }
 
-    // Counsellors Collection Rules
+    // Counsellors can be created by anyone, but only updated by an admin.
+    // Any authenticated user can read the list of counsellors.
     match /counsellors/{counsellorId} {
-      // READ: Admin can read all. Users can read their own document.
-      allow read: if isAdmin() || request.auth.uid == counsellorId;
-      // LIST: Only admin can list all counsellors.
-      allow list: if isAdmin();
-      // CREATE: Any authenticated user can create a counsellor document for themselves with a 'pending' status.
-      allow create: if request.auth.uid == counsellorId && request.resource.data.status == 'pending';
-      // UPDATE: Only the admin can update a counsellor's status.
-      allow update: if isAdmin() 
-                    && request.resource.data.keys().hasOnly(['status']) 
-                    && (request.resource.data.status == 'approved' || request.resource.data.status == 'rejected');
-    }
-    
-    // Journal Entries Collection Rules
-    match /journalEntries/{entryId} {
-      // Any authenticated user can manage their own journal entries.
-      allow read, write, delete: if request.auth.uid == resource.data.userId;
-      // Admin can read all journal entries for review.
-      allow read, update: if isAdmin();
-    }
-    
-    // Questionnaires Collection Rules
-    match /questionnaires/{submissionId} {
-      // Any authenticated user can manage their own questionnaire submissions.
-      allow read, write, delete: if request.auth.uid == resource.data.userId;
-       // Admin can read all questionnaire submissions for review.
-      allow read, update: if isAdmin();
-    }
-    
-    // Posts Collection Rules
-    match /posts/{postId} {
-      // Any logged-in user can read all posts.
+      allow create: if request.auth != null
+                    && request.auth.uid == counsellorId
+                    && request.resource.data.status == 'pending';
+
+      // Any authenticated user can read a counsellor's profile (needed for sign-in check and booking list)
       allow read: if request.auth != null;
-      // Users can create posts and delete only their own posts.
-      allow create: if request.auth.uid == request.resource.data.authorId;
-      allow update, delete: if request.auth.uid == resource.data.authorId;
-    }
-    
-    // Comments Subcollection Rules
-    match /posts/{postId}/comments/{commentId} {
-        // Any logged-in user can read all comments.
-        allow read: if request.auth != null;
-        // Users can create comments, and can delete only their own comments.
-        allow create: if request.auth.uid == request.resource.data.authorId;
-        allow delete: if request.auth.uid == resource.data.authorId;
+      
+      // Only an admin can update a counsellor's status
+      allow update: if isAdmin()
+                      && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])
+                      && (request.resource.data.status == 'approved' || request.resource.data.status == 'rejected');
+      
+      // Any authenticated user can list the counsellors (to see who is available for booking)
+      allow list: if request.auth != null;
     }
 
-    // Bookings Collection Rules
+    // Users can manage their own journal entries
+    match /journalEntries/{entryId} {
+      allow read, write, delete: if request.auth != null && request.auth.uid == resource.data.userId;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+      // Admin can read all entries for review
+      allow list, read: if isAdmin();
+    }
+
+    // Users can manage their own questionnaire submissions
+    match /questionnaires/{submissionId} {
+       allow read, write, delete: if request.auth != null && request.auth.uid == resource.data.userId;
+       allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+       // Admin can read all submissions for review
+       allow list, read: if isAdmin();
+    }
+    
+    // Community Posts: Users can create/delete their own, but anyone can read.
+    match /posts/{postId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.authorId;
+      allow delete: if request.auth != null && (request.auth.uid == resource.data.authorId || isAdmin());
+      allow update: if request.auth != null && request.auth.uid == resource.data.authorId;
+      
+      // Comments
+      match /comments/{commentId} {
+         allow read: if request.auth != null;
+         allow create: if request.auth != null && request.auth.uid == request.resource.data.authorId;
+         allow update, delete: if request.auth != null && (request.auth.uid == resource.data.authorId || isAdmin());
+      }
+    }
+
+    // Bookings: Users can manage their own, counsellors can manage theirs.
     match /bookings/{bookingId} {
-      // CREATE: User can create a booking for themselves.
-      allow create: if request.auth.uid == request.resource.data.student_id;
-      // READ: User can read their own bookings. Counsellor can read bookings assigned to them.
-      allow read: if request.auth.uid == resource.data.student_id || request.auth.uid == resource.data.counsellor_id;
-      // UPDATE: Counsellor can update the status or add notes to their assigned bookings.
-      allow update: if request.auth.uid == resource.data.counsellor_id;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.student_id;
+      allow read: if request.auth != null && (request.auth.uid == resource.data.student_id || request.auth.uid == resource.data.counsellor_id || isAdmin());
+      allow update: if request.auth != null && (request.auth.uid == resource.data.counsellor_id || isAdmin());
+      allow list: if request.auth != null; // Allow users and counsellors to query for their appointments
     }
   }
 }
