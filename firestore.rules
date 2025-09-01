@@ -1,50 +1,51 @@
+
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // Helper function to check if a user is an admin
-    function isAdmin() {
-      return request.auth.token.email == 'ahsan.khan@mitwpu.edu.in';
-    }
-
-    // Counsellors collection
+    // Counsellors can be created by any user, but only updated/read by the admin.
     match /counsellors/{counsellorId} {
-      // Allow any authenticated user to apply to be a counsellor
-      allow create: if request.auth != null
-                      && request.resource.data.status == 'pending'
-                      && request.auth.uid == counsellorId;
-                      
-      // Only the admin can read the counsellor documents
-      allow read: if isAdmin();
-
-      // Only an admin can update the counsellor's status
-      allow update: if isAdmin()
-                      && request.resource.data.status != resource.data.status
-                      && (request.resource.data.status == 'approved' || request.resource.data.status == 'rejected')
-                      && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']);
+      allow create: if request.auth != null && request.resource.data.status == 'pending' && request.auth.uid == counsellorId;
+      allow read, list: if request.auth.token.email == 'ahsan.khan@mitwpu.edu.in';
+      allow update: if request.auth.token.email == 'ahsan.khan@mitwpu.edu.in'
+                      && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])
+                      && (request.resource.data.status == 'approved' || request.resource.data.status == 'rejected');
     }
-
-    // User-specific data collections
+    
+    // Users can manage their own journal entries
     match /journalEntries/{entryId} {
-      allow read, write, delete: if request.auth != null && request.auth.uid == resource.data.userId;
-      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+        allow read, write, delete: if request.auth.uid == resource.data.userId;
+        allow create: if request.auth.uid == request.resource.data.userId;
     }
 
+    // Users can manage their own questionnaire submissions
     match /questionnaires/{submissionId} {
-      allow read, write, delete: if request.auth != null && request.auth.uid == resource.data.userId;
-      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+        allow read, write, delete: if request.auth.uid == resource.data.userId;
+        allow create: if request.auth.uid == request.resource.data.userId;
     }
 
-    // Community posts
+    // Community Posts rules
     match /posts/{postId} {
-      allow read, create: if request.auth != null;
-      allow update, delete: if request.auth != null && request.auth.uid == resource.data.authorId;
-    }
+      // Anyone logged in can read posts
+      allow read: if request.auth != null;
+      // Users can create posts if they are logged in
+      allow create: if request.auth.uid == request.resource.data.authorId;
+      // Users can delete their own posts, or the admin can delete any post
+      allow delete: if request.auth.uid == resource.data.authorId || request.auth.token.email == 'ahsanimamkhan06@gmail.com';
+      // Users can update their own comment counts (e.g. via transactions)
+      allow update: if request.auth.uid == resource.data.authorId;
 
-    match /posts/{postId}/comments/{commentId} {
-      allow read, create: if request.auth != null;
-      allow update, delete: if request.auth != null && request.auth.uid == resource.data.authorId;
+        // Comments subcollection
+        match /comments/{commentId} {
+            // Anyone logged in can read comments
+            allow read: if request.auth != null;
+            // Anyone logged in can create a comment
+            allow create: if request.auth.uid == request.resource.data.authorId;
+            // Users can update their own comments (e.g. hiding) or admin can
+            allow update: if request.auth.uid == resource.data.authorId || request.auth.token.email == 'ahsanimamkhan06@gmail.com';
+            // Users can delete their own comments or admin can
+            allow delete: if request.auth.uid == resource.data.authorId || request.auth.token.email == 'ahsanimamkhan06@gmail.com';
+        }
     }
   }
 }
