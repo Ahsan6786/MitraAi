@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { BookHeart, MessageSquare, MicVocal, ShieldCheck, LogOut, FileText, Puzzle, Phone, LayoutDashboard, Info, HeartPulse, Sparkles, Trophy, Newspaper, User, Users, Star, Camera, UserCheck, CalendarPlus } from 'lucide-react';
+import { BookHeart, MessageSquare, MicVocal, ShieldCheck, LogOut, FileText, Puzzle, Phone, LayoutDashboard, Info, HeartPulse, Sparkles, Trophy, Newspaper, User, Users, Star, Camera, UserCheck, CalendarPlus, CalendarClock } from 'lucide-react';
 import {
   SidebarProvider,
   Sidebar,
@@ -223,6 +223,17 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
                     <Link href="/booking" onClick={handleLinkClick}>
                       <CalendarPlus />
                       <span>Book Appointment</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={pathname === '/my-appointments'}
+                  >
+                    <Link href="/my-appointments" onClick={handleLinkClick}>
+                      <CalendarClock />
+                      <span>My Appointments</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

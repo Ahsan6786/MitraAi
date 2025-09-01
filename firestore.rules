@@ -1,69 +1,68 @@
+
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper function to check for admin
+    // Helper function to check if the user is an admin
     function isAdmin() {
       return request.auth.token.email == 'ahsan.khan@mitwpu.edu.in';
     }
 
-    // Counsellors can be created by anyone, but only updated by an admin.
-    // Any authenticated user can read the list of counsellors.
+    // Counsellors Collection
     match /counsellors/{counsellorId} {
-      allow create: if request.auth != null
-                    && request.auth.uid == counsellorId
-                    && request.resource.data.status == 'pending';
-
-      // Any authenticated user can read a counsellor's profile (needed for sign-in check and booking list)
-      allow read: if request.auth != null;
+      // Allow creation only if the user is creating their own record with 'pending' status
+      allow create: if request.auth != null && request.auth.uid == counsellorId && request.resource.data.status == 'pending';
       
-      // Only an admin can update a counsellor's status
-      allow update: if isAdmin()
-                      && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])
-                      && (request.resource.data.status == 'approved' || request.resource.data.status == 'rejected');
+      // Allow admin to do anything
+      allow read, list, update, delete: if isAdmin();
       
-      // Any authenticated user can list the counsellors (to see who is available for booking)
-      allow list: if request.auth != null;
+      // Allow authenticated counsellors to read their own profile
+      allow get: if request.auth != null && request.auth.uid == counsellorId;
+      
+      // Allow any authenticated user to read counsellor profiles for booking
+      allow list, get: if request.auth != null;
     }
 
-    // Users can manage their own journal entries
+    // Journal Entries
     match /journalEntries/{entryId} {
-      allow read, write, delete: if request.auth != null && request.auth.uid == resource.data.userId;
-      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
-      // Admin can read all entries for review
-      allow list, read: if isAdmin();
+      allow read, create, delete: if request.auth.uid == request.resource.data.userId;
+      // Admin can read all entries
+      allow read, list, update: if isAdmin();
     }
 
-    // Users can manage their own questionnaire submissions
-    match /questionnaires/{submissionId} {
-       allow read, write, delete: if request.auth != null && request.auth.uid == resource.data.userId;
-       allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
-       // Admin can read all submissions for review
-       allow list, read: if isAdmin();
+    // Questionnaires
+    match /questionnaires/{questionnaireId} {
+      allow read, create: if request.auth.uid == request.resource.data.userId;
+      // Admin can read and update all questionnaires
+      allow read, list, update: if isAdmin();
     }
-    
-    // Community Posts: Users can create/delete their own, but anyone can read.
+
+    // Community Posts and Comments
     match /posts/{postId} {
-      allow read: if request.auth != null;
-      allow create: if request.auth != null && request.auth.uid == request.resource.data.authorId;
-      allow delete: if request.auth != null && (request.auth.uid == resource.data.authorId || isAdmin());
-      allow update: if request.auth != null && request.auth.uid == resource.data.authorId;
-      
-      // Comments
+      allow read, list: if request.auth != null;
+      allow create: if request.auth.uid == request.resource.data.authorId;
+      allow delete: if request.auth.uid == resource.data.authorId || isAdmin();
+      allow update: if request.auth.uid == resource.data.authorId;
+
       match /comments/{commentId} {
-         allow read: if request.auth != null;
-         allow create: if request.auth != null && request.auth.uid == request.resource.data.authorId;
-         allow update, delete: if request.auth != null && (request.auth.uid == resource.data.authorId || isAdmin());
+        allow read, list: if request.auth != null;
+        allow create: if request.auth.uid == request.resource.data.authorId;
+        allow delete: if request.auth.uid == resource.data.authorId || isAdmin();
+        allow update: if isAdmin(); // Only admin can hide/unhide comments
       }
     }
-
-    // Bookings: Users can manage their own, counsellors can manage theirs.
+    
+    // Bookings Collection
     match /bookings/{bookingId} {
+      // Allow users to create bookings for themselves
       allow create: if request.auth != null && request.auth.uid == request.resource.data.student_id;
-      allow read: if request.auth != null && (request.auth.uid == resource.data.student_id || request.auth.uid == resource.data.counsellor_id || isAdmin());
-      allow update: if request.auth != null && (request.auth.uid == resource.data.counsellor_id || isAdmin());
-      allow list: if request.auth != null; // Allow users and counsellors to query for their appointments
+      
+      // Allow users to read their own bookings
+      allow read, list: if request.auth != null && request.auth.uid == resource.data.student_id;
+      
+      // Allow counsellors to read and update bookings assigned to them
+      allow read, list, update: if request.auth != null && request.auth.uid == resource.data.counsellor_id;
     }
   }
 }
