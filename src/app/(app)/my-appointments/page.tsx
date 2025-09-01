@@ -11,6 +11,7 @@ import { ThemeToggle } from '@/components/theme-toggle';
 import { Loader2, CalendarClock, CheckCircle, Clock, XCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import Link from 'next/link';
 
 interface Booking {
     id: string;
@@ -82,7 +83,7 @@ export default function MyAppointmentsPage() {
                             <CalendarClock className="mx-auto w-12 h-12 text-muted-foreground mb-4"/>
                             <CardTitle>No Appointments Yet</CardTitle>
                             <CardDescription className="mt-2">
-                                You haven't booked any appointments. <a href="/booking" className="text-primary underline">Book one now</a>.
+                                You haven't booked any appointments. <Link href="/booking" className="text-primary underline">Book one now</Link>.
                             </CardDescription>
                         </Card>
                     ) : (
@@ -90,7 +91,7 @@ export default function MyAppointmentsPage() {
                             {bookings.map(booking => (
                                 <Card key={booking.id} className={cn(booking.appointment_status === 'Rejected' && 'bg-muted/50')}>
                                     <CardHeader>
-                                        <div className="flex justify-between items-center">
+                                        <div className="flex justify-between items-start">
                                             <div>
                                                 <CardTitle className="text-lg">{booking.counsellor_name}</CardTitle>
                                                 <CardDescription>
@@ -100,7 +101,7 @@ export default function MyAppointmentsPage() {
                                             <StatusInfo status={booking.appointment_status} />
                                         </div>
                                     </CardHeader>
-                                    {booking.meet_link && booking.appointment_status === 'Confirmed' && (
+                                    {booking.meet_link && (
                                         <CardContent>
                                             <p className="text-sm font-semibold">Message/Link from Counsellor:</p>
                                             <p className="text-sm text-muted-foreground p-3 bg-muted rounded-md whitespace-pre-wrap mt-1">{booking.meet_link}</p>
