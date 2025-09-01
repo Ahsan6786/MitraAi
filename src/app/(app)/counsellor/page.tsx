@@ -32,7 +32,7 @@ interface Booking {
     appointment_time: string;
     appointment_status: 'Pending' | 'Confirmed' | 'Rejected';
     student_notes?: string;
-    meet_link?: string;
+    counsellor_notes?: string;
     created_at: Timestamp;
 }
 
@@ -43,7 +43,7 @@ function BookingList() {
     const [isLoading, setIsLoading] = useState(true);
     const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [meetLink, setMeetLink] = useState('');
+    const [counsellorNotes, setCounsellorNotes] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     useEffect(() => {
@@ -68,7 +68,7 @@ function BookingList() {
 
     const handleManageClick = (booking: Booking) => {
         setSelectedBooking(booking);
-        setMeetLink(booking.meet_link || '');
+        setCounsellorNotes(booking.counsellor_notes || '');
         setIsModalOpen(true);
     };
 
@@ -79,7 +79,7 @@ function BookingList() {
             const bookingRef = doc(db, 'bookings', selectedBooking.id);
             await updateDoc(bookingRef, {
                 appointment_status: status,
-                meet_link: meetLink,
+                counsellor_notes: counsellorNotes,
                 updated_at: Timestamp.now(),
             });
             toast({ title: `Booking ${status}` });
@@ -146,7 +146,7 @@ function BookingList() {
                                     <CardContent className="text-sm space-y-2">
                                         <p><strong>Date:</strong> {booking.appointment_date}</p>
                                         <p><strong>Time:</strong> {booking.appointment_time}</p>
-                                        {booking.meet_link && <p><strong>Meet Link:</strong> <a href={booking.meet_link} target="_blank" rel="noopener noreferrer" className="text-primary underline">{booking.meet_link}</a></p>}
+                                        {booking.counsellor_notes && <p><strong>Message/Link:</strong> <a href={booking.counsellor_notes} target="_blank" rel="noopener noreferrer" className="text-primary underline">{booking.counsellor_notes}</a></p>}
                                     </CardContent>
                                 </Card>
                             ))}
@@ -160,7 +160,7 @@ function BookingList() {
                     <DialogHeader>
                         <DialogTitle>Manage Booking Request</DialogTitle>
                         <DialogDescription>
-                            Confirm or reject this appointment and provide a meeting link if necessary.
+                            Confirm or reject this appointment and provide a message or meeting link if necessary.
                         </DialogDescription>
                     </DialogHeader>
                     <div className="py-4 space-y-4">
@@ -170,12 +170,12 @@ function BookingList() {
                             {selectedBooking?.student_notes && <p className="text-sm text-muted-foreground mt-2 italic">Notes: "{selectedBooking.student_notes}"</p>}
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="meet-link">Message / Meet Link</Label>
+                            <Label htmlFor="counsellor-notes">Message / Meet Link</Label>
                             <Textarea
-                                id="meet-link"
+                                id="counsellor-notes"
                                 placeholder="e.g., https://meet.google.com/xyz-abc-def or a confirmation message."
-                                value={meetLink}
-                                onChange={(e) => setMeetLink(e.target.value)}
+                                value={counsellorNotes}
+                                onChange={(e) => setCounsellorNotes(e.target.value)}
                             />
                         </div>
                     </div>

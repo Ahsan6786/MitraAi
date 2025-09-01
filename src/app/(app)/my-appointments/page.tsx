@@ -19,7 +19,7 @@ interface Booking {
     appointment_date: string;
     appointment_time: string;
     appointment_status: 'Pending' | 'Confirmed' | 'Rejected';
-    meet_link?: string;
+    counsellor_notes?: string;
     createdAt: Timestamp;
 }
 
@@ -101,10 +101,10 @@ export default function MyAppointmentsPage() {
                                             <StatusInfo status={booking.appointment_status} />
                                         </div>
                                     </CardHeader>
-                                    {booking.meet_link && (
+                                    {booking.counsellor_notes && (
                                         <CardContent>
                                             <p className="text-sm font-semibold">Message/Link from Counsellor:</p>
-                                            <p className="text-sm text-muted-foreground p-3 bg-muted rounded-md whitespace-pre-wrap mt-1">{booking.meet_link}</p>
+                                            <p className="text-sm text-muted-foreground p-3 bg-muted rounded-md whitespace-pre-wrap mt-1">{booking.counsellor_notes}</p>
                                         </CardContent>
                                     )}
                                 </Card>
