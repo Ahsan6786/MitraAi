@@ -4,21 +4,34 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { db } from '@/lib/firebase';
-import { collection, query, where, onSnapshot, orderBy, Timestamp } from 'firebase/firestore';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { collection, query, where, onSnapshot, orderBy, Timestamp, doc, updateDoc } from 'firebase/firestore';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { ThemeToggle } from '@/components/theme-toggle';
-import { Loader2, CalendarClock, CheckCircle, Clock, XCircle } from 'lucide-react';
+import { Loader2, CalendarClock, CheckCircle, Clock, XCircle, Ban } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
+import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 
 interface Booking {
     id: string;
     counsellor_name: string;
     appointment_date: string;
     appointment_time: string;
-    appointment_status: 'Pending' | 'Confirmed' | 'Rejected';
+    appointment_status: 'Pending' | 'Confirmed' | 'Rejected' | 'Cancelled';
     counsellor_notes?: string;
     createdAt: Timestamp;
 }
@@ -29,6 +42,8 @@ const StatusInfo = ({ status }: { status: Booking['appointment_status'] }) => {
             return <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"><CheckCircle className="w-3 h-3 mr-1"/>Confirmed</Badge>;
         case 'Rejected':
             return <Badge variant="destructive"><XCircle className="w-3 h-3 mr-1"/>Rejected</Badge>;
+        case 'Cancelled':
+            return <Badge variant="outline" className="bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200"><Ban className="w-3 h-3 mr-1"/>Cancelled</Badge>;
         case 'Pending':
         default:
             return <Badge variant="outline"><Clock className="w-3 h-3 mr-1"/>Pending</Badge>;
@@ -37,8 +52,10 @@ const StatusInfo = ({ status }: { status: Booking['appointment_status'] }) => {
 
 export default function MyAppointmentsPage() {
     const { user } = useAuth();
+    const { toast } = useToast();
     const [bookings, setBookings] = useState<Booking[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [isCancelling, setIsCancelling] = useState<string | null>(null);
 
     useEffect(() => {
         if (!user) return;
@@ -57,6 +74,22 @@ export default function MyAppointmentsPage() {
 
         return () => unsubscribe();
     }, [user]);
+
+    const handleCancelBooking = async (bookingId: string) => {
+        setIsCancelling(bookingId);
+        try {
+            const bookingRef = doc(db, 'bookings', bookingId);
+            await updateDoc(bookingRef, {
+                appointment_status: 'Cancelled'
+            });
+            toast({ title: "Appointment Cancelled", description: "Your booking has been successfully cancelled." });
+        } catch (error) {
+            console.error("Error cancelling booking: ", error);
+            toast({ title: "Error", description: "Could not cancel the appointment.", variant: "destructive" });
+        } finally {
+            setIsCancelling(null);
+        }
+    };
 
     return (
         <div className="h-full flex flex-col">
@@ -89,7 +122,7 @@ export default function MyAppointmentsPage() {
                     ) : (
                         <div className="space-y-4">
                             {bookings.map(booking => (
-                                <Card key={booking.id} className={cn(booking.appointment_status === 'Rejected' && 'bg-muted/50')}>
+                                <Card key={booking.id} className={cn((booking.appointment_status === 'Rejected' || booking.appointment_status === 'Cancelled') && 'bg-muted/50')}>
                                     <CardHeader>
                                         <div className="flex justify-between items-start">
                                             <div>
@@ -103,9 +136,33 @@ export default function MyAppointmentsPage() {
                                     </CardHeader>
                                     {booking.counsellor_notes && (
                                         <CardContent>
-                                            <p className="text-sm font-semibold">Message/Link from Counsellor:</p>
+                                            <p className="text-sm font-semibold">Message from Counsellor:</p>
                                             <p className="text-sm text-muted-foreground p-3 bg-muted rounded-md whitespace-pre-wrap mt-1">{booking.counsellor_notes}</p>
                                         </CardContent>
+                                    )}
+                                    {(booking.appointment_status === 'Pending' || booking.appointment_status === 'Confirmed') && (
+                                        <CardFooter>
+                                            <AlertDialog>
+                                                <AlertDialogTrigger asChild>
+                                                    <Button variant="destructive" size="sm" disabled={isCancelling === booking.id}>
+                                                        {isCancelling === booking.id && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                                        Cancel Appointment
+                                                    </Button>
+                                                </AlertDialogTrigger>
+                                                <AlertDialogContent>
+                                                    <AlertDialogHeader>
+                                                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                                        <AlertDialogDescription>
+                                                            This action cannot be undone. This will cancel your appointment with {booking.counsellor_name}.
+                                                        </AlertDialogDescription>
+                                                    </AlertDialogHeader>
+                                                    <AlertDialogFooter>
+                                                        <AlertDialogCancel>Back</AlertDialogCancel>
+                                                        <AlertDialogAction onClick={() => handleCancelBooking(booking.id)}>Confirm Cancellation</AlertDialogAction>
+                                                    </AlertDialogFooter>
+                                                </AlertDialogContent>
+                                            </AlertDialog>
+                                        </CardFooter>
                                     )}
                                 </Card>
                             ))}

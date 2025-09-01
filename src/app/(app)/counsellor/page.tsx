@@ -30,7 +30,7 @@ interface Booking {
     student_email: string;
     appointment_date: string;
     appointment_time: string;
-    appointment_status: 'Pending' | 'Confirmed' | 'Rejected';
+    appointment_status: 'Pending' | 'Confirmed' | 'Rejected' | 'Cancelled';
     student_notes?: string;
     counsellor_notes?: string;
     created_at: Timestamp;
@@ -77,9 +77,14 @@ function BookingList() {
         setIsSubmitting(true);
         try {
             const bookingRef = doc(db, 'bookings', selectedBooking.id);
+            let notesToSend = counsellorNotes;
+            if (status === 'Confirmed' && !notesToSend.trim()) {
+                notesToSend = "Your appointment is confirmed. A meeting link will be sent to your email shortly.";
+            }
+
             await updateDoc(bookingRef, {
                 appointment_status: status,
-                counsellor_notes: counsellorNotes,
+                counsellor_notes: notesToSend,
                 updated_at: Timestamp.now(),
             });
             toast({ title: `Booking ${status}` });
@@ -96,14 +101,14 @@ function BookingList() {
     if (isLoading) return <div className="flex justify-center items-center py-10"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
 
     const pendingBookings = bookings.filter(b => b.appointment_status === 'Pending');
-    const confirmedBookings = bookings.filter(b => b.appointment_status === 'Confirmed');
+    const pastBookings = bookings.filter(b => b.appointment_status !== 'Pending');
 
     return (
         <>
             <Tabs defaultValue="pending">
                 <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="pending">Pending</TabsTrigger>
-                    <TabsTrigger value="confirmed">Confirmed</TabsTrigger>
+                    <TabsTrigger value="pending">Pending Requests</TabsTrigger>
+                    <TabsTrigger value="history">History</TabsTrigger>
                 </TabsList>
                 <TabsContent value="pending" className="mt-4">
                     {pendingBookings.length === 0 ? (
@@ -129,24 +134,24 @@ function BookingList() {
                         </div>
                     )}
                 </TabsContent>
-                <TabsContent value="confirmed" className="mt-4">
-                     {confirmedBookings.length === 0 ? (
-                        <p className="text-muted-foreground text-center py-6">No confirmed appointments.</p>
+                <TabsContent value="history" className="mt-4">
+                     {pastBookings.length === 0 ? (
+                        <p className="text-muted-foreground text-center py-6">No confirmed, rejected, or cancelled appointments.</p>
                     ) : (
                          <div className="space-y-4">
-                            {confirmedBookings.map(booking => (
+                            {pastBookings.map(booking => (
                                 <Card key={booking.id}>
                                     <CardHeader>
                                         <div className="flex justify-between items-center">
                                             <CardTitle className="text-base">Appointment</CardTitle>
-                                            <Badge variant="secondary">Confirmed</Badge>
+                                            <Badge variant={booking.appointment_status === 'Confirmed' ? 'secondary' : (booking.appointment_status === 'Cancelled' ? 'outline' : 'destructive')}>{booking.appointment_status}</Badge>
                                         </div>
                                         <CardDescription>{booking.student_email}</CardDescription>
                                     </CardHeader>
                                     <CardContent className="text-sm space-y-2">
                                         <p><strong>Date:</strong> {booking.appointment_date}</p>
                                         <p><strong>Time:</strong> {booking.appointment_time}</p>
-                                        {booking.counsellor_notes && <p><strong>Message/Link:</strong> <a href={booking.counsellor_notes} target="_blank" rel="noopener noreferrer" className="text-primary underline">{booking.counsellor_notes}</a></p>}
+                                        {booking.counsellor_notes && <p><strong>Message/Link:</strong> <span className="text-primary">{booking.counsellor_notes}</span></p>}
                                     </CardContent>
                                 </Card>
                             ))}
