@@ -5,18 +5,30 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 import { db } from '@/lib/firebase';
-import { collection, query, where, onSnapshot, Timestamp, doc, updateDoc, orderBy } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, Timestamp, doc, updateDoc, orderBy, deleteDoc, getDocs } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Mic, PenSquare, ShieldCheck, Sparkles, AlertTriangle, FileQuestion, UserPlus, Mail, Phone, Check, X } from 'lucide-react';
+import { Loader2, Mic, PenSquare, ShieldCheck, Sparkles, AlertTriangle, FileQuestion, UserPlus, Mail, Phone, Check, X, Trash2 } from 'lucide-react';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { generateDoctorReport } from '@/ai/flows/generate-doctor-report';
 import { ThemeToggle } from '@/components/theme-toggle';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
+
 
 const ADMIN_EMAIL = 'ahsan.khan@mitwpu.edu.in';
 
@@ -45,7 +57,7 @@ interface QuestionnaireSubmission {
     reviewed: boolean;
 }
 
-interface CounsellorRequest {
+interface Counsellor {
     id: string;
     name: string;
     email: string;
@@ -237,14 +249,14 @@ function QuestionnaireReviews() {
 }
 
 function CounsellorRequests() {
-    const [requests, setRequests] = useState<CounsellorRequest[]>([]);
+    const [requests, setRequests] = useState<Counsellor[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const { toast } = useToast();
 
     useEffect(() => {
         const q = query(collection(db, 'counsellors'), where('status', '==', 'pending'), orderBy('createdAt', 'desc'));
         const unsubscribe = onSnapshot(q, (snapshot) => {
-            setRequests(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as CounsellorRequest)));
+            setRequests(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Counsellor)));
             setIsLoading(false);
         });
         return () => unsubscribe();
@@ -286,6 +298,75 @@ function CounsellorRequests() {
     );
 }
 
+function ManageCounsellors() {
+    const [counsellors, setCounsellors] = useState<Counsellor[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const { toast } = useToast();
+
+    useEffect(() => {
+        const q = query(collection(db, 'counsellors'), where('status', '==', 'approved'), orderBy('createdAt', 'desc'));
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            setCounsellors(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Counsellor)));
+            setIsLoading(false);
+        });
+        return () => unsubscribe();
+    }, []);
+
+    const handleDelete = async (id: string) => {
+        try {
+            await deleteDoc(doc(db, 'counsellors', id));
+            toast({ title: 'Counsellor Removed' });
+        } catch (error) {
+            console.error('Error deleting counsellor:', error);
+            toast({ title: 'Deletion failed.', variant: 'destructive' });
+        }
+    };
+
+    if (isLoading) return <div className="flex justify-center items-center h-full"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
+    if (counsellors.length === 0) return <Card className="text-center p-6 md:p-10"><CardTitle>No Approved Counsellors</CardTitle><CardDescription className="mt-2">There are no approved counsellors to display.</CardDescription></Card>;
+
+    return (
+        <div className="space-y-4">
+            {counsellors.map(c => (
+                <Card key={c.id}>
+                    <CardHeader>
+                         <div className="flex justify-between items-start">
+                             <div>
+                                <CardTitle className="text-lg flex items-center gap-2"><UserPlus className="w-5 h-5"/>{c.name}</CardTitle>
+                                <CardDescription className="text-xs text-muted-foreground pt-1">{c.createdAt.toDate().toLocaleDateString()}</CardDescription>
+                            </div>
+                            <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <Button variant="destructive" size="icon">
+                                        <Trash2 className="w-4 h-4" />
+                                    </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        This will permanently delete the counsellor and all their data. This action cannot be undone.
+                                    </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => handleDelete(c.id)}>Delete</AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
+                        </div>
+                    </CardHeader>
+                    <CardContent className="space-y-2 text-sm">
+                         <div className="flex items-center gap-2 text-muted-foreground"><Mail className="w-4 h-4" /><span>{c.email}</span></div>
+                         <div className="flex items-center gap-2 text-muted-foreground"><Phone className="w-4 h-4" /><span>{c.phone}</span></div>
+                    </CardContent>
+                </Card>
+            ))}
+        </div>
+    );
+}
+
+
 export default function AdminPage() {
     const { user, loading } = useAuth();
     const router = useRouter();
@@ -313,14 +394,18 @@ export default function AdminPage() {
                 <ThemeToggle />
             </header>
             <main className="flex-1 overflow-auto p-2 sm:p-4 md:p-6">
-                <Tabs defaultValue="counsellors" className="w-full">
-                    <TabsList className="grid w-full grid-cols-3">
-                        <TabsTrigger value="counsellors">Counsellors</TabsTrigger>
+                <Tabs defaultValue="counsellor-requests" className="w-full">
+                    <TabsList className="grid w-full grid-cols-4">
+                        <TabsTrigger value="counsellor-requests">Counsellor Requests</TabsTrigger>
+                        <TabsTrigger value="manage-counsellors">Manage Counsellors</TabsTrigger>
                         <TabsTrigger value="questionnaires">Questionnaires</TabsTrigger>
                         <TabsTrigger value="journals">Journal Entries</TabsTrigger>
                     </TabsList>
-                    <TabsContent value="counsellors" className="mt-4">
+                    <TabsContent value="counsellor-requests" className="mt-4">
                         <CounsellorRequests />
+                    </TabsContent>
+                     <TabsContent value="manage-counsellors" className="mt-4">
+                        <ManageCounsellors />
                     </TabsContent>
                     <TabsContent value="questionnaires" className="mt-4">
                         <QuestionnaireReviews />
