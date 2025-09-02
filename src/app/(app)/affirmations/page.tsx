@@ -91,7 +91,7 @@ export default function AffirmationsPage() {
                 </div>
                 <ThemeToggle />
             </header>
-            <main className="flex-1 overflow-auto p-4 sm:px-6 lg:px-8 flex items-center justify-center">
+            <main className="flex-1 overflow-auto p-4 sm:px-6 lg:px-8 flex items-center justify-center pb-24">
                  {isLoading ? (
                     <Loader2 className="w-10 h-10 animate-spin text-primary" />
                 ) : (
