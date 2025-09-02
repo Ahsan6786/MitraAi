@@ -177,14 +177,14 @@ export default function ExercisesPage() {
                 <p className="mt-2 text-lg text-muted-foreground">Find calm and focus with our guided exercises.</p>
             </div>
              <Tabs defaultValue="box-breathing" className="w-full">
-                <TabsList className="flex justify-center -mb-px bg-transparent p-0">
-                    <TabsTrigger value="box-breathing" className="whitespace-nowrap border-b-2 data-[state=active]:border-primary data-[state=inactive]:border-transparent px-1 py-4 text-base font-semibold data-[state=inactive]:text-muted-foreground data-[state=active]:text-primary data-[state=inactive]:hover:border-border data-[state=inactive]:hover:text-foreground rounded-none shadow-none bg-transparent">
+                <TabsList className="flex justify-center -mb-px bg-transparent p-0 gap-8">
+                    <TabsTrigger value="box-breathing" className="whitespace-nowrap border-b-2 data-[state=active]:border-primary data-[state=inactive]:border-transparent px-4 py-4 text-base font-semibold data-[state=inactive]:text-muted-foreground data-[state=active]:text-primary data-[state=inactive]:hover:border-border data-[state=inactive]:hover:text-foreground rounded-none shadow-none bg-transparent">
                          Box Breathing 
                     </TabsTrigger>
-                    <TabsTrigger value="meditation" className="whitespace-nowrap border-b-2 data-[state=active]:border-primary data-[state=inactive]:border-transparent px-1 py-4 text-base font-medium data-[state=inactive]:text-muted-foreground data-[state=active]:text-primary data-[state=inactive]:hover:border-border data-[state=inactive]:hover:text-foreground rounded-none shadow-none bg-transparent">
+                    <TabsTrigger value="meditation" className="whitespace-nowrap border-b-2 data-[state=active]:border-primary data-[state=inactive]:border-transparent px-4 py-4 text-base font-medium data-[state=inactive]:text-muted-foreground data-[state=active]:text-primary data-[state=inactive]:hover:border-border data-[state=inactive]:hover:text-foreground rounded-none shadow-none bg-transparent">
                         Guided Meditation
                     </TabsTrigger>
-                     <TabsTrigger value="listening" className="whitespace-nowrap border-b-2 data-[state=active]:border-primary data-[state=inactive]:border-transparent px-1 py-4 text-base font-medium data-[state=inactive]:text-muted-foreground data-[state=active]:text-primary data-[state=inactive]:hover:border-border data-[state=inactive]:hover:text-foreground rounded-none shadow-none bg-transparent">
+                     <TabsTrigger value="listening" className="whitespace-nowrap border-b-2 data-[state=active]:border-primary data-[state=inactive]:border-transparent px-4 py-4 text-base font-medium data-[state=inactive]:text-muted-foreground data-[state=active]:text-primary data-[state=inactive]:hover:border-border data-[state=inactive]:hover:text-foreground rounded-none shadow-none bg-transparent">
                        Mindful Listening
                     </TabsTrigger>
                 </TabsList>
@@ -213,4 +213,3 @@ export default function ExercisesPage() {
     </>
   );
 }
-
