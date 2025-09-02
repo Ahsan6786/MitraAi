@@ -174,8 +174,8 @@ export default function BookingPage() {
                 const querySnapshot = await getDocs(q);
                 const counsellorsData = querySnapshot.docs.map(doc => {
                     const data = doc.data();
-                    // Add a placeholder avatar if none exists
-                    const avatarUrl = data.avatarUrl || `https://i.pravatar.cc/150?u=${doc.id}`;
+                    // Use a consistent, friendly male cartoon avatar for all counsellors
+                    const avatarUrl = 'https://img.freepik.com/free-psd/3d-illustration-person-with-sunglasses_23-2149436188.jpg';
                     return { id: doc.id, ...data, avatarUrl } as Counsellor
                 });
                 setCounsellors(counsellorsData);

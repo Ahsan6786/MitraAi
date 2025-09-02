@@ -35,11 +35,14 @@ const AppointmentCard = ({ booking, onCancel }: { booking: Booking, onCancel: (i
         // router.push('/booking');
     }
 
+    // Fallback avatar if one isn't provided in the booking document
+    const avatarUrl = booking.counsellor_avatar || 'https://img.freepik.com/free-psd/3d-illustration-person-with-sunglasses_23-2149436188.jpg';
+
     return (
         <div className="bg-card rounded-lg border p-6 flex flex-col md:flex-row items-start md:items-center gap-6">
             <div className="flex items-center gap-4 flex-1">
                 <Avatar className="w-16 h-16">
-                    <AvatarImage src={booking.counsellor_avatar} alt={booking.counsellor_name} />
+                    <AvatarImage src={avatarUrl} alt={booking.counsellor_name} />
                     <AvatarFallback>{booking.counsellor_name.charAt(0)}</AvatarFallback>
                 </Avatar>
                 <div>
