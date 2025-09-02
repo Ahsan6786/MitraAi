@@ -7,7 +7,7 @@ import { db } from '@/lib/firebase';
 import { collection, query, where, orderBy, limit, onSnapshot, Timestamp } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, Sparkles, RefreshCw } from 'lucide-react';
+import { Loader2, Sparkles, RefreshCw, Heart, Share2 } from 'lucide-react';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { generateAffirmation } from '@/ai/flows/generate-affirmation';
@@ -91,36 +91,53 @@ export default function AffirmationsPage() {
                 </div>
                 <ThemeToggle />
             </header>
-            <main className="flex-1 overflow-auto p-2 sm:p-4 md:p-6 flex flex-col items-center justify-center">
+            <main className="flex-1 overflow-auto p-4 sm:px-6 lg:px-8 flex items-center justify-center">
                  {isLoading ? (
                     <Loader2 className="w-10 h-10 animate-spin text-primary" />
                 ) : (
-                    <Card className="w-full max-w-lg text-center shadow-lg">
-                        <CardHeader>
-                            <CardTitle className="flex items-center justify-center gap-2">
-                                <Sparkles className="w-6 h-6 text-primary" />
-                                Today's Focus
-                            </CardTitle>
-                             <CardDescription>
-                                {lastEntry ? `Based on your recent feeling of "${lastEntry.mood}"` : "Here is a thought to start your day"}
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent className="py-8">
-                            {isGenerating ? (
-                                <Loader2 className="w-8 h-8 mx-auto animate-spin text-primary" />
-                            ) : (
-                                <p className="text-2xl md:text-3xl font-semibold italic text-foreground">
-                                    "{affirmation}"
-                                </p>
-                            )}
-                        </CardContent>
-                        <CardContent>
-                             <Button onClick={handleGenerateAffirmation} disabled={isGenerating}>
-                                <RefreshCw className="mr-2 h-4 w-4" />
-                                Generate New
-                            </Button>
-                        </CardContent>
-                    </Card>
+                    <div className="mx-auto w-full max-w-5xl">
+                        <div className="text-center">
+                            <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl">Your Daily Affirmation</h1>
+                            <p className="mt-4 text-lg text-muted-foreground">
+                                {lastEntry ? (
+                                    <>
+                                        Based on your current mood: <span className="font-semibold text-primary capitalize">{lastEntry.mood}</span>
+                                    </>
+                                ) : "Here is a thought to start your day"}
+                            </p>
+                        </div>
+                        <div className="relative mt-12">
+                            <div className="absolute inset-0 -z-10 overflow-hidden">
+                                <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 size-[600px] rounded-full bg-primary/10 blur-3xl"></div>
+                            </div>
+                            <div className="mx-auto max-w-2xl rounded-2xl bg-card/60 p-8 shadow-lg backdrop-blur-md">
+                                <div className="relative flex flex-col items-center justify-center text-center">
+                                    <Sparkles className="h-10 w-10 text-primary" />
+                                     {isGenerating ? (
+                                        <Loader2 className="w-8 h-8 mx-auto animate-spin text-primary my-8" />
+                                    ) : (
+                                        <p className="mt-6 text-2xl font-medium text-foreground md:text-3xl">
+                                            "{affirmation}"
+                                        </p>
+                                    )}
+                                    <div className="mt-8 flex items-center justify-center gap-4">
+                                        <Button variant="outline" className="rounded-full bg-background/70">
+                                            <Heart className="mr-2 h-4 w-4"/> Favorite
+                                        </Button>
+                                        <Button variant="outline" className="rounded-full bg-background/70">
+                                            <Share2 className="mr-2 h-4 w-4"/> Share
+                                        </Button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="mt-8 flex justify-center">
+                                 <Button onClick={handleGenerateAffirmation} disabled={isGenerating} size="lg" className="rounded-full shadow-lg">
+                                    <RefreshCw className="mr-2 h-4 w-4" />
+                                    New Affirmation
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
                 )}
             </main>
         </div>
