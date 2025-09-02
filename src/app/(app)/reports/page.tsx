@@ -46,19 +46,32 @@ const ReportCard = ({ report }: { report: Report }) => {
         }
 
         const canvas = await html2canvas(reportElement, {
-            scale: 2,
-            backgroundColor: '#1A1E24', // Match card background
+            scale: 2, // Higher scale for better quality
             useCORS: true,
         });
         const imgData = canvas.toDataURL('image/png');
 
-        const pdf = new jsPDF({
-            orientation: 'p',
-            unit: 'px',
-            format: [canvas.width, canvas.height]
-        });
+        const pdf = new jsPDF('p', 'mm', 'a4'); // Standard A4 page
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = pdf.internal.pageSize.getHeight();
         
-        pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
+        const canvasWidth = canvas.width;
+        const canvasHeight = canvas.height;
+        const canvasAspectRatio = canvasWidth / canvasHeight;
+        
+        let finalPdfWidth = pdfWidth;
+        let finalPdfHeight = pdfWidth / canvasAspectRatio;
+
+        // If the calculated height is greater than the page height, scale down
+        if (finalPdfHeight > pdfHeight) {
+            finalPdfHeight = pdfHeight;
+            finalPdfWidth = pdfHeight * canvasAspectRatio;
+        }
+
+        const x = (pdfWidth - finalPdfWidth) / 2;
+        const y = (pdfHeight - finalPdfHeight) / 2;
+
+        pdf.addImage(imgData, 'PNG', x, y, finalPdfWidth, finalPdfHeight);
         pdf.save(`MitraAI_Report_${report.createdAt.toDate().toLocaleDateString()}.pdf`);
         setIsDownloading(false);
     };
