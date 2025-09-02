@@ -25,7 +25,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Loader2, MessageSquare, Send, Trash2, Eye, EyeOff } from 'lucide-react';
+import { Loader2, MessageSquare, Send, Trash2, User, ThumbsUp, Plus, Search, MoreHorizontal } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { formatDistanceToNow } from 'date-fns';
 import { Separator } from '@/components/ui/separator';
@@ -50,6 +50,7 @@ interface Post {
   content: string;
   createdAt: Timestamp;
   commentCount: number;
+  likeCount: number;
 }
 
 interface Comment {
@@ -58,7 +59,6 @@ interface Comment {
   authorName: string;
   content: string;
   createdAt: Timestamp;
-  hidden?: boolean;
 }
 
 const OWNER_EMAIL = 'ahsanimamkhan06@gmail.com';
@@ -78,7 +78,6 @@ function PostCard({ post }: { post: Post }) {
     if (!canDelete) return; 
     setIsDeleting(true);
     try {
-      // First, delete all comments in the subcollection
       const commentsQuery = query(collection(db, `posts/${post.id}/comments`));
       const commentsSnapshot = await getDocs(commentsQuery);
       if (!commentsSnapshot.empty) {
@@ -89,7 +88,6 @@ function PostCard({ post }: { post: Post }) {
         await batch.commit();
       }
       
-      // Then, delete the post itself
       await deleteDoc(doc(db, 'posts', post.id));
 
       toast({ title: "Post Deleted", description: "The post and all its comments have been removed." });
@@ -103,48 +101,59 @@ function PostCard({ post }: { post: Post }) {
 
 
   return (
-    <Card>
+    <Card className="border border-slate-200">
       <CardHeader>
-        <div className="flex items-center gap-3">
-          <Avatar>
-            <AvatarFallback>{authorInitial}</AvatarFallback>
-          </Avatar>
-          <div className="flex-1">
-            <CardTitle className="text-base font-semibold">{post.authorName}</CardTitle>
-            <CardDescription className="text-xs">
-              {post.createdAt ? formatDistanceToNow(post.createdAt.toDate(), { addSuffix: true }) : 'Just now'}
-            </CardDescription>
-          </div>
-          {canDelete && (
-            <AlertDialog>
-                <AlertDialogTrigger asChild>
-                    <Button variant="ghost" size="icon" disabled={isDeleting}>
-                        {isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-                    </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                        This action cannot be undone. This will permanently delete this post and all of its comments.
-                    </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleDeletePost}>Continue</AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
-          )}
+        <div className="flex items-start justify-between">
+            <div className="flex items-center gap-4">
+                <Avatar className="size-10 rounded-full bg-slate-200 flex items-center justify-center">
+                    <AvatarFallback className="bg-slate-200">
+                        <User className="text-slate-500" />
+                    </AvatarFallback>
+                </Avatar>
+                <div>
+                    <h3 className="text-slate-800 text-base font-bold">{post.authorName}</h3>
+                    <p className="text-slate-500 text-sm">
+                        Posted {post.createdAt ? formatDistanceToNow(post.createdAt.toDate(), { addSuffix: true }) : 'just now'}
+                    </p>
+                </div>
+            </div>
+            {canDelete && (
+                <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                        <Button variant="ghost" size="icon" disabled={isDeleting} className="text-slate-500 hover:text-slate-700">
+                            {isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <MoreHorizontal className="w-5 h-5" />}
+                        </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This action cannot be undone. This will permanently delete this post and all of its comments.
+                        </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDeletePost}>Continue</AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
+            )}
         </div>
       </CardHeader>
       <CardContent>
-        <p className="whitespace-pre-wrap text-sm sm:text-base">{post.content}</p>
+        <p className="text-slate-600 text-base leading-relaxed whitespace-pre-wrap">{post.content}</p>
       </CardContent>
-      <CardFooter className="flex justify-between items-center gap-2">
-         <Button variant="ghost" size="sm" onClick={() => setShowComments(!showComments)}>
-            <MessageSquare className="w-4 h-4 mr-2" /> {post.commentCount || 0} Comments
-          </Button>
+      <CardFooter className="flex justify-between items-center text-slate-500">
+         <div className="flex items-center gap-4">
+            <button className="flex items-center gap-1.5 hover:text-blue-600">
+                <ThumbsUp className="w-4 h-4" />
+                <span className="text-sm font-medium">{post.likeCount || 0}</span>
+            </button>
+            <button className="flex items-center gap-1.5 hover:text-blue-600" onClick={() => setShowComments(!showComments)}>
+                <MessageSquare className="w-4 h-4" />
+                <span className="text-sm font-medium">{post.commentCount || 0}</span>
+            </button>
+         </div>
       </CardFooter>
       {showComments && <CommentSection postId={post.id} />}
     </Card>
@@ -158,36 +167,17 @@ function CommentSection({ postId }: { postId: string }) {
     const [isLoading, setIsLoading] = useState(true);
     const [newComment, setNewComment] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const isOwner = user?.email === OWNER_EMAIL;
 
     useEffect(() => {
         const q = query(collection(db, `posts/${postId}/comments`), orderBy('createdAt', 'asc'));
         const unsubscribe = onSnapshot(q, (snapshot) => {
             let commentsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Comment));
-            // Filter hidden comments for non-owners
-            if (!isOwner) {
-                commentsData = commentsData.filter(comment => !comment.hidden);
-            }
             setComments(commentsData);
             setIsLoading(false);
         });
         return () => unsubscribe();
-    }, [postId, isOwner]);
+    }, [postId]);
 
-    const handleToggleHideComment = async (comment: Comment) => {
-        if (!isOwner) return;
-        try {
-            const commentRef = doc(db, `posts/${postId}/comments`, comment.id);
-            await updateDoc(commentRef, {
-                hidden: !comment.hidden,
-            });
-            toast({ title: `Comment ${comment.hidden ? 'unhidden' : 'hidden'}.` });
-        } catch (error) {
-            console.error('Error hiding comment:', error);
-            toast({ title: 'Error', description: 'Could not update comment visibility.', variant: 'destructive' });
-        }
-    };
-    
     const handleDeleteComment = async (commentId: string) => {
         try {
             const postRef = doc(db, 'posts', postId);
@@ -215,7 +205,6 @@ function CommentSection({ postId }: { postId: string }) {
                 authorName: user.displayName || user.email,
                 content: newComment,
                 createdAt: serverTimestamp(),
-                hidden: false,
             });
 
             await updateDoc(postRef, { commentCount: increment(1) });
@@ -230,34 +219,30 @@ function CommentSection({ postId }: { postId: string }) {
     };
 
     return (
-        <div className="px-4 sm:px-6 pb-6 pt-2">
+        <div className="px-6 pb-6 pt-2">
             <Separator className="mb-4" />
             <div className="space-y-4">
                 {isLoading && <Loader2 className="w-5 h-5 animate-spin mx-auto" />}
                 {!isLoading && comments.length === 0 && <p className="text-sm text-muted-foreground text-center">No comments yet. Be the first to comment!</p>}
                 {comments.map(comment => {
                     const isCommentAuthor = user?.uid === comment.authorId;
+                    const isOwner = user?.email === OWNER_EMAIL;
                     return (
-                        <div key={comment.id} className={cn("flex items-start gap-3 transition-opacity", comment.hidden && 'opacity-50')}>
+                        <div key={comment.id} className="flex items-start gap-3">
                             <Avatar className="w-8 h-8">
                                <AvatarFallback>{comment.authorName ? comment.authorName[0].toUpperCase() : 'A'}</AvatarFallback>
                             </Avatar>
-                            <div className="flex-1 bg-muted p-3 rounded-lg">
+                            <div className="flex-1 bg-slate-100 p-3 rounded-lg">
                                <div className="flex justify-between items-center">
-                                    <p className="text-sm font-semibold">{comment.authorName}</p>
+                                    <p className="text-sm font-semibold text-slate-800">{comment.authorName}</p>
                                     <div className="flex items-center gap-1">
-                                        <p className="text-xs text-muted-foreground mr-1">
+                                        <p className="text-xs text-slate-500 mr-1">
                                             {comment.createdAt ? formatDistanceToNow(comment.createdAt.toDate(), { addSuffix: true }) : ''}
                                         </p>
-                                        {isOwner && (
-                                            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleToggleHideComment(comment)}>
-                                                {comment.hidden ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-                                            </Button>
-                                        )}
                                         {(isCommentAuthor || isOwner) && (
                                              <AlertDialog>
                                                 <AlertDialogTrigger asChild>
-                                                    <Button variant="ghost" size="icon" className="h-6 w-6">
+                                                    <Button variant="ghost" size="icon" className="h-6 w-6 text-slate-500 hover:text-slate-700">
                                                         <Trash2 className="w-4 h-4" />
                                                     </Button>
                                                 </AlertDialogTrigger>
@@ -277,7 +262,7 @@ function CommentSection({ postId }: { postId: string }) {
                                         )}
                                     </div>
                                </div>
-                                <p className="text-sm mt-1">{comment.hidden && !isOwner ? <i>Comment hidden by moderator</i> : comment.content}</p>
+                                <p className="text-sm mt-1 text-slate-700">{comment.content}</p>
                             </div>
                         </div>
                     );
@@ -333,6 +318,7 @@ export default function CommunityPage() {
         content: newPostContent,
         createdAt: serverTimestamp(),
         commentCount: 0,
+        likeCount: 0,
       });
       setNewPostContent('');
     } catch (error) {
@@ -344,8 +330,8 @@ export default function CommunityPage() {
   };
 
   return (
-    <div className="h-full flex flex-col">
-      <header className="border-b p-3 md:p-4 flex items-center justify-between gap-2">
+    <div className="h-full flex flex-col bg-[#f7f9fc]">
+      <header className="border-b bg-background p-3 md:p-4 flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <SidebarTrigger className="md:hidden" />
           <div>
@@ -358,7 +344,22 @@ export default function CommunityPage() {
         </div>
       </header>
       <main className="flex-1 overflow-auto p-2 sm:p-4 md:p-6">
-        <div className="max-w-2xl mx-auto space-y-6">
+        <div className="max-w-3xl mx-auto space-y-6">
+            <div className="p-4">
+                <h1 className="text-slate-800 text-4xl font-bold leading-tight tracking-tight">Community Forum</h1>
+                <p className="text-slate-500 text-lg font-normal leading-normal mt-2">A safe space to share and connect with others.</p>
+            </div>
+
+            <div className="flex flex-col md:flex-row items-center justify-between gap-4 p-4">
+                <div className="relative w-full md:w-auto flex-1">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
+                    <Input className="pl-10" placeholder="Search for posts..." type="text"/>
+                </div>
+                <Button className="w-full md:w-auto">
+                    <Plus className="mr-2 h-4 w-4" />Create Post
+                </Button>
+            </div>
+            
             <Card>
                 <form onSubmit={handleCreatePost}>
                 <CardHeader>
@@ -400,3 +401,4 @@ export default function CommunityPage() {
     </div>
   );
 }
+
