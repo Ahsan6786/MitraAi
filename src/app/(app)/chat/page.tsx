@@ -2,7 +2,7 @@
 'use client';
 
 import { SidebarTrigger } from '@/components/ui/sidebar';
-import { ThemeToggle } from '@/components/ui/theme-toggle';
+import { ThemeToggle } from '@/components/theme-toggle';
 import ChatInterface from '@/components/chat-interface';
 
 export default function ChatPage() {
@@ -12,7 +12,7 @@ export default function ChatPage() {
         <div className="flex items-center gap-2">
           <SidebarTrigger className="md:hidden" />
           <div>
-            <h1 className="text-lg md:text-xl font-bold">MitraAI</h1>
+            <h1 className="text-lg md:text-xl font-bold">MitraGPT</h1>
             <p className="text-sm text-muted-foreground">Your Personal AI Companion</p>
           </div>
         </div>
