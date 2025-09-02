@@ -407,10 +407,10 @@ function TicTacToeGame() {
 
 
 const games = [
-    { id: 'guess-the-number', name: 'Guess the Number', component: <GuessTheNumberGame />, description: "I'm thinking of a number between 1 and 100. Can you guess it?", image: "https://picsum.photos/600/400", imageHint: "numbers abstract" },
-    { id: 'memory-match', name: 'Memory Match', component: <MemoryMatchGame />, description: "Test your memory with this classic game. Match pairs of cards to clear the board and improve focus.", image: "https://picsum.photos/600/400", imageHint: "abstract pattern" },
-    { id: 'word-unscramble', name: 'Word Unscramble', component: <WordUnscrambleGame />, description: "Unscramble letters to form words. A fun way to boost your vocabulary and cognitive skills.", image: "https://picsum.photos/600/400", imageHint: "letters words" },
-    { id: 'tic-tac-toe', name: 'Tic-Tac-Toe', component: <TicTacToeGame />, description: "A simple yet engaging game to challenge your strategic thinking. Play against the AI.", image: "https://picsum.photos/600/400", imageHint: "game strategy" },
+    { id: 'guess-the-number', name: 'Guess the Number', component: <GuessTheNumberGame />, description: "I'm thinking of a number between 1 and 100. Can you guess it?" },
+    { id: 'memory-match', name: 'Memory Match', component: <MemoryMatchGame />, description: "Test your memory with this classic game. Match pairs of cards to clear the board and improve focus." },
+    { id: 'word-unscramble', name: 'Word Unscramble', component: <WordUnscrambleGame />, description: "Unscramble letters to form words. A fun way to boost your vocabulary and cognitive skills." },
+    { id: 'tic-tac-toe', name: 'Tic-Tac-Toe', component: <TicTacToeGame />, description: "A simple yet engaging game to challenge your strategic thinking. Play against the AI." },
 ];
 
 // --- Main Page Component ---
@@ -454,31 +454,17 @@ export default function GamesPage() {
                             </nav>
                         </div>
                         
-                        <div className="mt-10 space-y-16">
+                        <div className="mt-10 space-y-8">
                            {games.map(game => (
                                 <Card key={game.id} className="bg-card/80 backdrop-blur-sm">
                                     <CardContent className="p-8">
-                                        <div className="grid grid-cols-1 gap-8 lg:grid-cols-3 lg:items-center">
-                                            <div className="lg:col-span-1">
-                                                <div className="aspect-square relative w-full max-w-xs mx-auto overflow-hidden rounded-lg bg-muted">
-                                                    <Image 
-                                                        alt={`${game.name} Game`} 
-                                                        className="h-full w-full object-cover" 
-                                                        src={game.image}
-                                                        width={400}
-                                                        height={400}
-                                                        data-ai-hint={game.imageHint}
-                                                    />
-                                                </div>
-                                            </div>
-                                            <div className="flex flex-col justify-center lg:col-span-2">
-                                                <h3 className="text-2xl font-bold tracking-tight">{game.name}</h3>
-                                                <p className="mt-2 text-muted-foreground">{game.description}</p>
-                                                <div className="mt-6">
-                                                    <Button onClick={() => setActiveGame(game.id)}>
-                                                        Play Now
-                                                    </Button>
-                                                </div>
+                                        <div className="flex flex-col justify-center">
+                                            <h3 className="text-2xl font-bold tracking-tight">{game.name}</h3>
+                                            <p className="mt-2 text-muted-foreground">{game.description}</p>
+                                            <div className="mt-6">
+                                                <Button onClick={() => setActiveGame(game.id)}>
+                                                    Play Now
+                                                </Button>
                                             </div>
                                         </div>
                                     </CardContent>
