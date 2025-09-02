@@ -18,7 +18,7 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar';
 import { Logo } from '@/components/icons';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { AuthProvider, useAuth } from '@/hooks/use-auth';
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
@@ -64,7 +64,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const checkQuestionnaire = async () => {
-        if (userType === 'user' && pathname !== '/questionnaire') {
+        if (userType === 'user' && !pathname.startsWith('/questionnaire') && !pathname.startsWith('/screening-tools')) {
             const dismissed = sessionStorage.getItem('questionnaireDismissed');
             if (dismissed) return;
 
@@ -100,7 +100,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
     }
   };
   
-  if (pathname === '/questionnaire') {
+  if (pathname.startsWith('/questionnaire') || pathname.startsWith('/screening-tools')) {
     return <>{children}</>;
   }
 
@@ -127,7 +127,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
         }}
         onConfirm={() => {
             setShowQuestionnaireModal(false);
-            router.push('/questionnaire');
+            router.push('/screening-tools');
         }}
       />
       <Sidebar>
@@ -195,6 +195,17 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
                     <Link href="/journal" onClick={handleLinkClick}>
                       <BookHeart />
                       <span>Journal</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={pathname === '/screening-tools'}
+                  >
+                    <Link href="/screening-tools" onClick={handleLinkClick}>
+                      <FileText />
+                      <span>Screening Tools</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -313,6 +324,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
           <div className="flex flex-col gap-2 p-2">
              <div className="flex items-center gap-3 p-2">
                 <Avatar>
+                  <AvatarImage src={user.photoURL ?? undefined} />
                   <AvatarFallback>{userAvatarFallback.toUpperCase()}</AvatarFallback>
                 </Avatar>
                 <div className="flex flex-col overflow-hidden">

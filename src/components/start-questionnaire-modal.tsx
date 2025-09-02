@@ -18,18 +18,18 @@ export default function StartQuestionnaireModal({ isOpen, onClose, onConfirm }: 
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileQuestion className="w-6 h-6 text-primary" />
-            Depression Screening Test
+            Wellness Screening
           </DialogTitle>
           <DialogDescription className="pt-4 text-base text-foreground">
-            Would you like to take a quick screening test? It can help provide insights into your well-being.
+            It looks like you haven't taken a screening test yet. Would you like to take a quick, confidential test to gain insights into your well-being?
           </DialogDescription>
         </DialogHeader>
-        <DialogFooter className="flex flex-col gap-2">
-          <Button onClick={onConfirm} className="w-full">
-            Yes, Start Test
-          </Button>
+        <DialogFooter className="flex flex-col gap-2 sm:flex-row">
           <Button variant="outline" onClick={onClose} className="w-full">
-            I Have Already Given The Test
+            Maybe Later
+          </Button>
+          <Button onClick={onConfirm} className="w-full">
+            Yes, Start a Test
           </Button>
         </DialogFooter>
       </DialogContent>

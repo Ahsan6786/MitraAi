@@ -1,11 +1,11 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { db } from '@/lib/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -13,57 +13,50 @@ import { Label } from '@/components/ui/label';
 import { Loader2, CheckCircle, AlertTriangle, ArrowLeft, ArrowRight } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Progress } from '@/components/ui/progress';
+import { screeningToolsData, ScreeningToolId } from '@/lib/screening-tools';
 
-const questionnaireData = {
-  title: "Depression Screening Questionnaire",
-  description: "This is a simple screening tool (not a diagnosis). Answer Yes or No to each question. Your score will help guide whether self-help or medical consultation is recommended.",
-  questions: [
-    { id: 1, text: "Are you basically satisfied with your life?", depressive_answer: "No" },
-    { id: 2, text: "Have you dropped many of your activities and interests?", depressive_answer: "Yes" },
-    { id: 3, text: "Do you feel that your life is empty?", depressive_answer: "Yes" },
-    { id: 4, text: "Do you often get bored?", depressive_answer: "Yes" },
-    { id: 5, text: "Are you in good spirits most of the time?", depressive_answer: "No" },
-    { id: 6, text: "Are you afraid that something bad is going to happen to you?", depressive_answer: "Yes" },
-    { id: 7, text: "Do you feel happy most of the time?", depressive_answer: "No" },
-    { id: 8, text: "Do you often feel helpless?", depressive_answer: "Yes" },
-    { id: 9, text: "Do you prefer to stay at home, rather than going out and doing new things?", depressive_answer: "Yes" },
-    { id: 10, text: "Do you feel you have more problems with memory than most?", depressive_answer: "Yes" },
-    { id: 11, text: "Do you think it is wonderful to be alive now?", depressive_answer: "No" },
-    { id: 12, text: "Do you feel pretty worthless the way you are now?", depressive_answer: "Yes" },
-    { id: 13, text: "Do you feel full of energy?", depressive_answer: "No" },
-    { id: 14, text: "Do you feel that your situation is hopeless?", depressive_answer: "Yes" },
-    { id: 15, text: "Do you think that most people are better off than you are?", depressive_answer: "Yes" }
-  ],
-  scoring: {
-    "0-4": { level: "Normal", recommendation: "No immediate concern. Maintain a healthy lifestyle." },
-    "5-8": { level: "Mild Depression", recommendation: "Try self-help: daily exercise, meditation, journaling, hobbies, and social interaction." },
-    "9-11": { level: "Moderate Depression", recommendation: "Consult a doctor or therapist. Self-help can support but professional advice is needed." },
-    "12-15": { level: "Severe Depression", recommendation: "Seek professional help immediately (psychiatrist/psychologist)." }
-  },
-};
+type Answers = { [key: number]: number };
 
-type Answers = { [key: number]: string };
-
-export default function QuestionnairePage() {
+function QuestionnaireContent() {
     const { user, loading } = useAuth();
     const router = useRouter();
+    const searchParams = useSearchParams();
     const { toast } = useToast();
+    
+    const [testId, setTestId] = useState<ScreeningToolId | null>(null);
+    const [questionnaireData, setQuestionnaireData] = useState<typeof screeningToolsData[ScreeningToolId] | null>(null);
     const [answers, setAnswers] = useState<Answers>({});
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [result, setResult] = useState<{ level: string; recommendation: string; } | null>(null);
+    const [result, setResult] = useState<{ severity: string; recommendation: string; } | null>(null);
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
 
-    const totalQuestions = questionnaireData.questions.length;
+    useEffect(() => {
+        const id = searchParams.get('test') as ScreeningToolId;
+        if (id && id in screeningToolsData) {
+            setTestId(id);
+            setQuestionnaireData(screeningToolsData[id]);
+        } else {
+            // Redirect if the test is invalid or not found
+            router.replace('/screening-tools');
+        }
+    }, [searchParams, router]);
+
+    if (!questionnaireData || !testId) {
+        return <div className="flex h-screen items-center justify-center"><Loader2 className="h-8 w-8 animate-spin" /></div>;
+    }
+
+    const { questions, scoring_options, interpretation } = questionnaireData;
+    const totalQuestions = questions.length;
     const progress = ((currentQuestionIndex + 1) / totalQuestions) * 100;
-    const currentQuestion = questionnaireData.questions[currentQuestionIndex];
+    const currentQuestion = questions[currentQuestionIndex];
     const isLastQuestion = currentQuestionIndex === totalQuestions - 1;
 
-    const handleAnswerChange = (questionId: number, value: string) => {
+    const handleAnswerChange = (questionId: number, value: number) => {
         setAnswers(prev => ({ ...prev, [questionId]: value }));
     };
 
     const handleNext = () => {
-        if (answers[currentQuestion.id]) {
+        if (answers[currentQuestion.id] !== undefined) {
             if (!isLastQuestion) {
                 setCurrentQuestionIndex(prev => prev + 1);
             }
@@ -72,25 +65,20 @@ export default function QuestionnairePage() {
 
     const handlePrevious = () => {
         if (currentQuestionIndex > 0) {
-            setCurrentQuestionIndex(prev => prev + 1);
+            setCurrentQuestionIndex(prev => prev - 1);
         }
     };
 
     const calculateScore = () => {
-        let score = 0;
-        questionnaireData.questions.forEach(q => {
-            if (answers[q.id] === q.depressive_answer) {
-                score++;
-            }
-        });
-        return score;
+        return Object.values(answers).reduce((sum, value) => sum + value, 0);
     };
 
     const getResultFromScore = (score: number) => {
-        if (score <= 4) return questionnaireData.scoring["0-4"];
-        if (score <= 8) return questionnaireData.scoring["5-8"];
-        if (score <= 11) return questionnaireData.scoring["9-11"];
-        return questionnaireData.scoring["12-15"];
+        const resultTier = interpretation.find(tier => {
+            const [min, max] = tier.range.split('-').map(Number);
+            return score >= min && score <= max;
+        });
+        return resultTier ? { severity: resultTier.severity, recommendation: resultTier.recommendation || "Follow up with a professional for guidance." } : { severity: "Result could not be determined", recommendation: "Please consult a professional."};
     };
 
     const handleSubmit = async () => {
@@ -109,6 +97,8 @@ export default function QuestionnairePage() {
             await addDoc(collection(db, 'questionnaires'), {
                 userId: user.uid,
                 userEmail: user.email,
+                testId: testId,
+                testName: questionnaireData.name,
                 answers,
                 score,
                 result: resultData,
@@ -127,7 +117,7 @@ export default function QuestionnairePage() {
 
     useEffect(() => {
         const handleKeyDown = (event: KeyboardEvent) => {
-            if (event.key === 'Enter' && answers[currentQuestion.id]) {
+            if (event.key === 'Enter' && answers[currentQuestion.id] !== undefined) {
                 if (isLastQuestion) {
                     handleSubmit();
                 } else {
@@ -136,19 +126,11 @@ export default function QuestionnairePage() {
             }
         };
         window.addEventListener('keydown', handleKeyDown);
-        return () => {
-            window.removeEventListener('keydown', handleKeyDown);
-        };
+        return () => window.removeEventListener('keydown', handleKeyDown);
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [answers, currentQuestion, isLastQuestion]);
 
     if (loading) {
-        return <div className="flex h-screen items-center justify-center"><Loader2 className="h-8 w-8 animate-spin" /></div>;
-    }
-    
-    if (!user) {
-        // This can be a loading state or a redirect, but returning null for now
-        // as the auth state change will trigger a redirect from the layout eventually.
         return <div className="flex h-screen items-center justify-center"><Loader2 className="h-8 w-8 animate-spin" /></div>;
     }
 
@@ -158,13 +140,13 @@ export default function QuestionnairePage() {
                 <Card className="w-full max-w-lg">
                     <CardHeader className="text-center">
                         <CheckCircle className="mx-auto h-12 w-12 text-green-500" />
-                        <CardTitle className="mt-4">Thank You for Completing the Questionnaire</CardTitle>
+                        <CardTitle className="mt-4">Thank You for Completing the {questionnaireData.name}</CardTitle>
                         <CardDescription>Here is your initial assessment. A detailed report will be available in the Doctor's Reports section after review.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
                          <div className="rounded-md border bg-background p-4 text-center">
                             <p className="text-sm font-medium text-muted-foreground">Your Result Level</p>
-                            <p className="text-2xl font-bold text-primary">{result.level}</p>
+                            <p className="text-2xl font-bold text-primary">{result.severity}</p>
                          </div>
                          <div className="rounded-md border bg-background p-4">
                             <p className="text-sm font-medium text-muted-foreground">Recommendation</p>
@@ -177,8 +159,11 @@ export default function QuestionnairePage() {
                             </p>
                          </div>
                     </CardContent>
-                    <CardFooter>
-                        <Button className="w-full" onClick={() => router.push('/chat')}>
+                    <CardFooter className="flex-col gap-2">
+                        <Button className="w-full" onClick={() => router.push('/screening-tools')}>
+                            Take Another Test
+                        </Button>
+                        <Button className="w-full" variant="outline" onClick={() => router.push('/chat')}>
                             Continue to App
                         </Button>
                     </CardFooter>
@@ -191,14 +176,11 @@ export default function QuestionnairePage() {
         <div className="flex h-full flex-col bg-background">
             <header className="border-b p-3 md:p-4 flex items-center justify-between gap-2">
                  <div className="flex items-center gap-2">
-                    <Button variant="ghost" size="icon" onClick={() => router.back()} className="md:hidden">
+                    <Button variant="ghost" size="icon" onClick={() => router.back()}>
                         <ArrowLeft />
                     </Button>
                     <div>
-                      <h1 className="text-lg md:text-xl font-bold">{questionnaireData.title}</h1>
-                      <p className="text-sm text-muted-foreground hidden md:block">
-                          A quick screening to understand your well-being.
-                      </p>
+                      <h1 className="text-lg md:text-xl font-bold">{questionnaireData.full_name}</h1>
                     </div>
                 </div>
                  <Progress value={progress} className="w-1/3 mx-auto hidden md:block" />
@@ -214,18 +196,18 @@ export default function QuestionnairePage() {
                          <CardContent className="flex flex-col items-center justify-center p-6 md:p-10 min-h-[250px] text-center">
                             <p className="font-medium text-foreground text-xl md:text-2xl">{currentQuestion.text}</p>
                              <RadioGroup
-                                onValueChange={(value) => handleAnswerChange(currentQuestion.id, value)}
-                                className="mt-8 flex items-center gap-6"
-                                value={answers[currentQuestion.id] || ''}
+                                onValueChange={(value) => handleAnswerChange(currentQuestion.id, parseInt(value))}
+                                className="mt-8 flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6"
+                                value={answers[currentQuestion.id]?.toString() || ''}
                             >
-                                <div className="flex items-center space-x-2">
-                                    <RadioGroupItem value="Yes" id={`q${currentQuestion.id}-yes`} />
-                                    <Label htmlFor={`q${currentQuestion.id}-yes`} className="cursor-pointer text-base">Yes</Label>
-                                </div>
-                                <div className="flex items-center space-x-2">
-                                    <RadioGroupItem value="No" id={`q${currentQuestion.id}-no`} />
-                                    <Label htmlFor={`q${currentQuestion.id}-no`} className="cursor-pointer text-base">No</Label>
-                                </div>
+                                {scoring_options.map(option => (
+                                    <div key={option.value} className="flex items-center space-x-2">
+                                        <RadioGroupItem value={option.value.toString()} id={`q${currentQuestion.id}-opt${option.value}`} />
+                                        <Label htmlFor={`q${currentQuestion.id}-opt${option.value}`} className="cursor-pointer text-base">
+                                            {option.label}
+                                        </Label>
+                                    </div>
+                                ))}
                             </RadioGroup>
                          </CardContent>
                          <CardFooter className="flex justify-between border-t pt-4">
@@ -234,12 +216,12 @@ export default function QuestionnairePage() {
                                 Previous
                             </Button>
                             {isLastQuestion ? (
-                                <Button onClick={handleSubmit} disabled={isSubmitting || !answers[currentQuestion.id]} size="lg">
+                                <Button onClick={handleSubmit} disabled={isSubmitting || answers[currentQuestion.id] === undefined} size="lg">
                                     {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle className="mr-2 h-4 w-4" />}
                                     Submit
                                 </Button>
                             ) : (
-                                <Button onClick={handleNext} disabled={!answers[currentQuestion.id]} size="lg">
+                                <Button onClick={handleNext} disabled={answers[currentQuestion.id] === undefined} size="lg">
                                     Next
                                     <ArrowRight className="ml-2 h-4 w-4" />
                                 </Button>
@@ -249,5 +231,13 @@ export default function QuestionnairePage() {
                 </div>
             </main>
         </div>
+    );
+}
+
+export default function QuestionnairePage() {
+    return (
+        <Suspense fallback={<div className="flex h-screen items-center justify-center"><Loader2 className="h-8 w-8 animate-spin" /></div>}>
+            <QuestionnaireContent />
+        </Suspense>
     );
 }
