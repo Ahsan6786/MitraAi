@@ -95,7 +95,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
   };
 
   const handleLinkClick = () => {
-    if (sidebar?.isMobile) {
+    if (sidebar?.openMobile) {
       sidebar.setOpenMobile(false);
     }
   };
@@ -137,7 +137,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
               <Logo className="size-8 text-primary" />
               <span className="text-lg font-semibold font-headline">MitraAI</span>
             </div>
-            <SidebarTrigger className="md:hidden" />
+            <SidebarTrigger />
           </div>
         </SidebarHeader>
         <SidebarContent>
@@ -321,7 +321,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
                 </div>
               </div>
               <Button variant="ghost" size="sm" asChild className="w-full justify-start">
-                  <Link href="/profile">
+                  <Link href="/profile" onClick={handleLinkClick}>
                     <User className="mr-2 h-4 w-4" />
                     Profile
                   </Link>
