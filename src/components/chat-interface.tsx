@@ -126,59 +126,37 @@ const MessageContent = ({ text }: { text: string }) => {
 };
 
 // Component for a single message bubble with a copy button
-const MessageBubble = ({ message }: { message: Message }) => {
-    const [isCopied, setIsCopied] = useState(false);
-    const { toast } = useToast();
-
-    const handleCopy = () => {
-        if (!message.text) return;
-        navigator.clipboard.writeText(message.text).then(() => {
-            setIsCopied(true);
-            toast({ title: "Copied to clipboard!" });
-            setTimeout(() => setIsCopied(false), 2000);
-        });
-    };
+const MessageBubble = ({ message, senderName }: { message: Message; senderName: string }) => {
 
     return (
-        <div className="group relative">
-            <div
-                className={cn(
-                    'max-w-[80%] rounded-xl px-4 py-3 text-sm md:text-base shadow-sm md:max-w-md lg:max-w-lg',
-                    message.sender === 'user'
-                        ? 'bg-primary text-primary-foreground rounded-br-none'
-                        : 'bg-background text-card-foreground rounded-bl-none border'
-                )}
-            >
-                {message.imageUrl && (
-                    <div className="relative w-full aspect-video rounded-md overflow-hidden mb-2 group/image">
-                        <Image src={message.imageUrl} alt="Image in chat" fill={true} className="object-cover" />
-                         <a
-                            href={message.imageUrl}
-                            download="mitra-ai-generated-image.png"
-                            className="absolute bottom-2 right-2 opacity-0 group-hover/image:opacity-100 transition-opacity"
-                        >
-                            <Button variant="secondary" size="icon" className="h-8 w-8">
-                                <Download className="h-4 w-4" />
-                                <span className="sr-only">Download Image</span>
-                            </Button>
-                        </a>
-                    </div>
-                )}
-                <MessageContent text={message.text} />
-            </div>
-            <Button
-                variant="ghost"
-                size="icon"
-                className={cn(
-                    "absolute top-1 h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity",
-                    message.sender === 'user' ? "-left-10" : "-right-10",
-                    message.text.includes("```") && "hidden" // Hide if it's a code block to avoid double copy buttons
-                )}
-                onClick={handleCopy}
-            >
-                {isCopied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-            </Button>
+      <div className="flex flex-col gap-1 items-start w-full">
+        <span className="text-muted-foreground text-sm font-medium">{senderName}</span>
+        <div
+            className={cn(
+                'text-base font-normal leading-normal rounded-lg px-4 py-3 max-w-md',
+                message.sender === 'user'
+                    ? 'bg-primary text-primary-foreground rounded-tr-none'
+                    : 'bg-muted text-foreground rounded-tl-none'
+            )}
+        >
+            {message.imageUrl && (
+                <div className="relative w-full aspect-video rounded-md overflow-hidden mb-2 group/image">
+                    <Image src={message.imageUrl} alt="Image in chat" fill={true} className="object-cover" />
+                     <a
+                        href={message.imageUrl}
+                        download="mitra-ai-generated-image.png"
+                        className="absolute bottom-2 right-2 opacity-0 group-hover/image:opacity-100 transition-opacity"
+                    >
+                        <Button variant="secondary" size="icon" className="h-8 w-8">
+                            <Download className="h-4 h-4" />
+                            <span className="sr-only">Download Image</span>
+                        </Button>
+                    </a>
+                </div>
+            )}
+            <MessageContent text={message.text} />
         </div>
+      </div>
     );
 };
 
@@ -360,84 +338,49 @@ export default function ChatInterface() {
   };
 
   return (
-    <div className="w-full h-full flex flex-col rounded-none md:rounded-xl border bg-card shadow-lg z-10">
+    <div className="w-full h-full flex flex-col z-10 bg-card rounded-xl">
       <CrisisAlertModal
         isOpen={showCrisisModal}
         onClose={() => setShowCrisisModal(false)}
       />
-      <header className="border-b p-3 md:p-4 flex items-center justify-between gap-2 shrink-0">
-        <div className="flex items-center gap-2">
-          {/* Header content can be passed as props if needed */}
-        </div>
-        <div className="flex items-center gap-2">
-          <Languages className="w-5 h-5 text-muted-foreground hidden sm:block"/>
-            <Select value={language} onValueChange={setLanguage}>
-                <SelectTrigger className="w-auto sm:w-[120px]">
-                    <SelectValue placeholder="Language" />
-                </SelectTrigger>
-                <SelectContent>
-                    <SelectItem value="English">English</SelectItem>
-                    <SelectItem value="Hinglish">Hinglish</SelectItem>
-                    <SelectItem value="Hindi">Hindi</SelectItem>
-                    <SelectItem value="Sanskrit">Sanskrit</SelectItem>
-                    <SelectItem value="Urdu">Urdu</SelectItem>
-                    <SelectItem value="Arabic">Arabic</SelectItem>
-                    <SelectItem value="Assamese">Assamese</SelectItem>
-                    <SelectItem value="Bodo">Bodo</SelectItem>
-                    <SelectItem value="Bengali">Bengali</SelectItem>
-                    <SelectItem value="Konkani">Konkani</SelectItem>
-                    <SelectItem value="Marathi">Marathi</SelectItem>
-                    <SelectItem value="Gujarati">Gujarati</SelectItem>
-                    <SelectItem value="Kannada">Kannada</SelectItem>
-                    <SelectItem value="Malayalam">Malayalam</SelectItem>
-                    <SelectItem value="Meitei">Meitei (Manipuri)</SelectItem>
-                    <SelectItem value="Mizo">Mizo</SelectItem>
-                    <SelectItem value="Odia">Odia</SelectItem>
-                    <SelectItem value="Punjabi">Punjabi</SelectItem>
-                    <SelectItem value="Nepali">Nepali</SelectItem>
-                    <SelectItem value="Sikkimese">Sikkimese</SelectItem>
-                    <SelectItem value="Lepcha">Lepcha</SelectItem>
-                    <SelectItem value="Limbu">Limbu</SelectItem>
-                    <SelectItem value="Tamil">Tamil</SelectItem>
-                    <SelectItem value="Telugu">Telugu</SelectItem>
-                    <SelectItem value="Kokborok">Kokborok</SelectItem>
-                    <SelectItem value="Bhojpuri">Bhojpuri</SelectItem>
-                    <SelectItem value="French">French</SelectItem>
-                    <SelectItem value="German">German</SelectItem>
-                </SelectContent>
-            </Select>
-        </div>
-      </header>
       <main className="flex-1 overflow-hidden">
         <ScrollArea className="h-full" ref={scrollAreaRef}>
           <div className="p-4 md:p-6 space-y-6">
             {messages.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-full pt-10 md:pt-20 text-center">
-                <Logo className="w-16 h-16 md:w-20 md:h-20 text-primary mb-6" />
-                <h2 className="text-xl md:text-2xl font-semibold">Hello! How are you feeling?</h2>
-                <p className="text-muted-foreground mt-2 max-w-xs sm:max-w-sm">I'm here to listen. Share anything on your mind, and we can talk through it together.</p>
+               <div className="flex items-start gap-3">
+                  <Avatar className="w-10 h-10 border shrink-0">
+                    <AvatarFallback className="bg-primary text-primary-foreground">
+                      <Logo className="w-5 h-5"/>
+                    </AvatarFallback>
+                  </Avatar>
+                  <MessageBubble message={{sender: 'ai', text: "Hello there! How are you feeling today? I'm here to listen and support you in any way I can. Feel free to share your thoughts and feelings with me."}} senderName="AI Companion" />
               </div>
             ) : (
               messages.map((message, index) => (
                 <div
                   key={index}
                   className={cn(
-                    'flex items-center gap-3',
+                    'flex items-start gap-3',
                     message.sender === 'user' ? 'justify-end' : 'justify-start'
                   )}
                 >
                   {message.sender === 'ai' && (
-                    <Avatar className="w-8 h-8 md:w-9 md:h-9 border self-start">
+                    <Avatar className="w-10 h-10 border shrink-0">
                       <AvatarFallback className="bg-primary text-primary-foreground">
-                        <Logo className="w-4 h-4 md:w-5 md:h-5"/>
+                        <Logo className="w-5 h-5"/>
                       </AvatarFallback>
                     </Avatar>
                   )}
-                  <MessageBubble message={message} />
+                   <div className={cn('flex flex-col gap-1', message.sender === 'user' ? 'items-end' : 'items-start')}>
+                     <MessageBubble 
+                        message={message} 
+                        senderName={message.sender === 'user' ? (user?.displayName || 'You') : 'AI Companion'}
+                     />
+                   </div>
                   {message.sender === 'user' && (
-                    <Avatar className="w-8 h-8 md:w-9 md:h-9 border self-start">
+                    <Avatar className="w-10 h-10 border shrink-0">
                       <AvatarFallback>
-                        {user?.email ? user.email[0].toUpperCase() : <User className="w-4 h-4 md:w-5 md:h-5" />}
+                        {user?.email ? user.email[0].toUpperCase() : <User className="w-5 h-5" />}
                       </AvatarFallback>
                     </Avatar>
                   )}
@@ -446,13 +389,16 @@ export default function ChatInterface() {
             )}
             {isLoading && (
               <div className="flex items-start gap-3 justify-start">
-                  <Avatar className="w-8 h-8 md:w-9 md:h-9 border">
+                  <Avatar className="w-10 h-10 border shrink-0">
                       <AvatarFallback className="bg-primary text-primary-foreground">
-                        <Logo className="w-4 h-4 md:w-5 md:h-5"/>
+                        <Logo className="w-5 h-5"/>
                       </AvatarFallback>
                     </Avatar>
-                    <div className="bg-background text-card-foreground rounded-xl px-4 py-3 shadow-sm rounded-bl-none border flex items-center text-sm md:text-base">
-                      <Loader2 className="w-5 h-5 animate-spin mr-2"/> Thinking...
+                    <div className="flex flex-col gap-1 items-start">
+                        <span className="text-muted-foreground text-sm font-medium">AI Companion</span>
+                        <div className="bg-muted text-foreground rounded-lg rounded-tl-none px-4 py-3 flex items-center text-base">
+                          <Loader2 className="w-5 h-5 animate-spin mr-2"/> Thinking...
+                        </div>
                     </div>
               </div>
             )}
@@ -466,7 +412,7 @@ export default function ChatInterface() {
           </div>
         </ScrollArea>
       </main>
-      <footer className="border-t p-2 md:p-4 shrink-0">
+      <footer className="px-4 py-3">
         {imagePreview && (
             <div className="relative w-24 h-24 mb-2 rounded-md overflow-hidden border">
                 <Image src={imagePreview} alt="Image preview" layout="fill" objectFit="cover" />
@@ -475,34 +421,31 @@ export default function ChatInterface() {
                 </Button>
             </div>
         )}
-        <form onSubmit={handleFormSubmit} className="flex items-center gap-2">
-          <input
-            type="file"
-            accept="image/*"
-            ref={fileInputRef}
-            onChange={handleImageChange}
-            className="hidden"
-          />
-          <Button type="button" variant="ghost" size="icon" onClick={() => fileInputRef.current?.click()} disabled={isLoading || isRecording}>
-            <Paperclip className="w-5 h-5" />
-            <span className="sr-only">Attach Image</span>
-          </Button>
+        <form onSubmit={handleFormSubmit} className="relative">
           <Input
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="Type your message..."
-            className="flex-1"
+            className="h-12 pr-24"
             disabled={isLoading || isRecording}
             autoComplete="off"
           />
-          <Button type="button" variant={isRecording ? 'destructive' : 'ghost'} size="icon" onClick={handleVoiceButtonClick} disabled={isLoading}>
-            {isRecording ? <Square className="w-5 h-5" /> : <Mic className="w-5 h-f" />}
-            <span className="sr-only">{isRecording ? 'Stop Recording' : 'Use Voice'}</span>
-          </Button>
-          <Button type="submit" size="icon" disabled={isLoading || isRecording || (!input.trim() && !imageFile)}>
-            {isLoading ? <Loader2 className="w-5 h-5 animate-spin"/> : <Send className="w-5 h-5" />}
-            <span className="sr-only">Send Message</span>
-          </Button>
+          <div className="absolute inset-y-0 right-0 flex items-center pr-2">
+              <input
+                type="file"
+                accept="image/*"
+                ref={fileInputRef}
+                onChange={handleImageChange}
+                className="hidden"
+              />
+              <Button type="button" variant="ghost" size="icon" onClick={() => fileInputRef.current?.click()} disabled={isLoading || isRecording}>
+                <Paperclip className="w-5 h-5" />
+                <span className="sr-only">Attach Image</span>
+              </Button>
+              <Button type="submit" className="ml-2 h-8 px-4" disabled={isLoading || isRecording || (!input.trim() && !imageFile)}>
+                Send
+              </Button>
+          </div>
         </form>
       </footer>
     </div>
