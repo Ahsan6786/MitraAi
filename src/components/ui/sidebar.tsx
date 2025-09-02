@@ -40,7 +40,7 @@ type SidebarContext = {
 const SidebarContext = React.createContext<SidebarContext | null>(null)
 
 function useSidebar() {
-  const context = React.createContext(SidebarContext)
+  const context = React.useContext(SidebarContext)
   if (!context) {
     throw new Error("useSidebar must be used within a SidebarProvider.")
   }
@@ -92,7 +92,7 @@ const SidebarProvider = React.forwardRef<
 
     // Helper to toggle the sidebar.
     const toggleSidebar = React.useCallback(() => {
-      setOpenMobile((open) => !open)
+        setOpenMobile((open) => !open)
     }, [setOpenMobile])
 
     // Adds a keyboard shortcut to toggle the sidebar.
