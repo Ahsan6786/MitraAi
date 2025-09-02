@@ -2,8 +2,9 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import Image from 'next/image';
 import { useAuth } from '@/hooks/use-auth';
-import { db } from '@/lib/firebase';
+import { db, storage } from '@/lib/firebase';
 import {
   collection,
   query,
@@ -19,13 +20,14 @@ import {
   updateDoc,
   increment,
 } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Loader2, MessageSquare, Send, Trash2, User, ThumbsUp, Plus, Search, MoreHorizontal } from 'lucide-react';
+import { Loader2, MessageSquare, Send, Trash2, User, ThumbsUp, Plus, Search, Image as ImageIcon, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { formatDistanceToNow } from 'date-fns';
 import { Separator } from '@/components/ui/separator';
@@ -51,6 +53,7 @@ interface Post {
   createdAt: Timestamp;
   commentCount: number;
   likeCount: number;
+  imageUrl?: string;
 }
 
 interface Comment {
@@ -78,6 +81,12 @@ function PostCard({ post }: { post: Post }) {
     if (!canDelete) return; 
     setIsDeleting(true);
     try {
+      // Delete associated image from storage if it exists
+      if (post.imageUrl) {
+        const imageRef = ref(storage, post.imageUrl);
+        await deleteObject(imageRef);
+      }
+      
       const commentsQuery = query(collection(db, `posts/${post.id}/comments`));
       const commentsSnapshot = await getDocs(commentsQuery);
       if (!commentsSnapshot.empty) {
@@ -90,7 +99,7 @@ function PostCard({ post }: { post: Post }) {
       
       await deleteDoc(doc(db, 'posts', post.id));
 
-      toast({ title: "Post Deleted", description: "The post and all its comments have been removed." });
+      toast({ title: "Post Deleted", description: "The post and all its contents have been removed." });
     } catch (error) {
       console.error("Error deleting post:", error);
       toast({ title: "Error", description: "Could not delete the post.", variant: "destructive" });
@@ -101,7 +110,7 @@ function PostCard({ post }: { post: Post }) {
 
 
   return (
-    <Card className="border">
+    <Card className="border bg-card">
       <CardHeader>
         <div className="flex items-start justify-between">
             <div className="flex items-center gap-4">
@@ -141,6 +150,11 @@ function PostCard({ post }: { post: Post }) {
         </div>
       </CardHeader>
       <CardContent>
+        {post.imageUrl && (
+            <div className="relative w-full aspect-video rounded-md overflow-hidden mb-4 border">
+                <Image src={post.imageUrl} alt="Community post image" layout="fill" objectFit="cover" />
+            </div>
+        )}
         <p className="text-secondary-foreground text-base leading-relaxed whitespace-pre-wrap">{post.content}</p>
       </CardContent>
       <CardFooter className="flex justify-between items-center text-muted-foreground">
@@ -289,8 +303,11 @@ export default function CommunityPage() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [newPostContent, setNewPostContent] = useState('');
+  const [postImage, setPostImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCreatingPost, setIsCreatingPost] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const q = query(collection(db, 'posts'), orderBy('createdAt', 'desc'));
@@ -307,21 +324,52 @@ export default function CommunityPage() {
     return () => unsubscribe();
   }, [toast]);
 
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setPostImage(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removeImage = () => {
+    setPostImage(null);
+    setImagePreview(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
   const handleCreatePost = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newPostContent.trim() || !user) return;
+    if ((!newPostContent.trim() && !postImage) || !user) return;
     setIsSubmitting(true);
 
     try {
+      let imageUrl: string | undefined;
+
+      if (postImage) {
+        const imageRef = ref(storage, `community/${user.uid}/${Date.now()}_${postImage.name}`);
+        const snapshot = await uploadBytes(imageRef, postImage);
+        imageUrl = await getDownloadURL(snapshot.ref);
+      }
+
       await addDoc(collection(db, 'posts'), {
         authorId: user.uid,
         authorName: user.displayName || user.email,
         content: newPostContent,
+        imageUrl: imageUrl || null,
         createdAt: serverTimestamp(),
         commentCount: 0,
         likeCount: 0,
       });
+      
       setNewPostContent('');
+      removeImage();
       setIsCreatingPost(false);
     } catch (error) {
       console.error('Error creating post:', error);
@@ -369,22 +417,45 @@ export default function CommunityPage() {
                       <CardTitle className="text-lg">Share with the Community</CardTitle>
                   </CardHeader>
                   <CardContent>
-                      <Textarea
-                      placeholder="What's on your mind?"
-                      rows={4}
-                      value={newPostContent}
-                      onChange={(e) => setNewPostContent(e.target.value)}
-                      disabled={isSubmitting}
-                      />
+                      <div className="space-y-4">
+                        <Textarea
+                            placeholder="What's on your mind?"
+                            rows={4}
+                            value={newPostContent}
+                            onChange={(e) => setNewPostContent(e.target.value)}
+                            disabled={isSubmitting}
+                        />
+                        {imagePreview && (
+                            <div className="relative w-32 h-32 rounded-md overflow-hidden border">
+                                <Image src={imagePreview} alt="Image preview" layout="fill" objectFit="cover" />
+                                <Button variant="destructive" size="icon" className="absolute top-1 right-1 h-6 w-6" onClick={removeImage}>
+                                    <X className="w-4 h-4" />
+                                </Button>
+                            </div>
+                        )}
+                      </div>
                   </CardContent>
-                  <CardFooter className="flex justify-end gap-2">
-                      <Button variant="ghost" onClick={() => setIsCreatingPost(false)} disabled={isSubmitting}>
-                          Cancel
+                  <CardFooter className="flex justify-between items-center">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        ref={fileInputRef}
+                        onChange={handleImageChange}
+                        className="hidden"
+                      />
+                       <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()} disabled={isSubmitting}>
+                        <ImageIcon className="mr-2 h-4 w-4" />
+                        Add Image
                       </Button>
-                      <Button type="submit" disabled={isSubmitting || !newPostContent.trim()}>
-                          {isSubmitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                          Post
-                      </Button>
+                      <div className="flex gap-2">
+                        <Button variant="ghost" onClick={() => setIsCreatingPost(false)} disabled={isSubmitting}>
+                            Cancel
+                        </Button>
+                        <Button type="submit" disabled={isSubmitting || (!newPostContent.trim() && !postImage)}>
+                            {isSubmitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                            Post
+                        </Button>
+                      </div>
                   </CardFooter>
                   </form>
               </Card>
