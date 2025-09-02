@@ -47,7 +47,8 @@ const ReportCard = ({ report }: { report: Report }) => {
 
         const canvas = await html2canvas(reportElement, {
             scale: 2,
-            backgroundColor: '#1A1E24' // Match card background
+            backgroundColor: '#1A1E24', // Match card background
+            useCORS: true,
         });
         const imgData = canvas.toDataURL('image/png');
 
@@ -68,38 +69,43 @@ const ReportCard = ({ report }: { report: Report }) => {
 
     return (
         <Card className="bg-[#1A1E24] text-white border-gray-700">
-             {/* This hidden div is used for PDF generation */}
-            <div id={`report-${report.id}`} className="p-8 hidden">
-                <div className="flex items-center gap-3 mb-8">
-                   <Logo className="w-10 h-10 text-primary"/>
-                   <h1 className="text-2xl font-bold">MitraAI Wellness Report</h1>
-                </div>
-                <h2 className="text-xl font-bold">{title}</h2>
-                <p className="text-sm text-gray-400">Generated on: {new Date().toLocaleDateString()}</p>
-                <div className="mt-6 space-y-6">
-                    {report.type === 'journal' ? (
-                        <>
-                            <div>
-                                <h3 className="text-lg font-semibold">Your Entry (Mood: {report.mood})</h3>
-                                <p className="mt-2 text-gray-300 italic">"{report.content}"</p>
-                            </div>
-                            <div>
-                                <h3 className="text-lg font-semibold">Doctor's Feedback</h3>
-                                <p className="mt-2 text-gray-300 whitespace-pre-wrap">{report.doctorReport}</p>
-                            </div>
-                        </>
-                    ) : (
-                         <>
-                            <div>
-                                <h3 className="text-lg font-semibold">Initial Assessment (Score: {report.score})</h3>
-                                {report.result && <p className="mt-2 text-gray-300"><strong>{report.result.level}:</strong> {report.result.recommendation}</p>}
-                            </div>
-                             <div>
-                                <h3 className="text-lg font-semibold">Doctor's Feedback</h3>
-                                <p className="mt-2 text-gray-300 whitespace-pre-wrap">{report.doctorFeedback}</p>
-                            </div>
-                        </>
-                    )}
+             {/* This off-screen div is used for PDF generation */}
+            <div 
+              id={`report-${report.id}`} 
+              style={{ position: 'absolute', left: '-9999px', top: 'auto', width: '800px', background: '#1A1E24', color: 'white' }}
+            >
+                <div className="p-8">
+                    <div className="flex items-center gap-3 mb-8">
+                       <Logo className="w-10 h-10 text-primary"/>
+                       <h1 className="text-2xl font-bold">MitraAI Wellness Report</h1>
+                    </div>
+                    <h2 className="text-xl font-bold">{title}</h2>
+                    <p className="text-sm text-gray-400">Generated on: {new Date().toLocaleDateString()}</p>
+                    <div className="mt-6 space-y-6">
+                        {report.type === 'journal' ? (
+                            <>
+                                <div>
+                                    <h3 className="text-lg font-semibold">Your Entry (Mood: {report.mood})</h3>
+                                    <p className="mt-2 text-gray-300 italic">"{report.content}"</p>
+                                </div>
+                                <div>
+                                    <h3 className="text-lg font-semibold">Doctor's Feedback</h3>
+                                    <p className="mt-2 text-gray-300 whitespace-pre-wrap">{report.doctorReport}</p>
+                                </div>
+                            </>
+                        ) : (
+                             <>
+                                <div>
+                                    <h3 className="text-lg font-semibold">Initial Assessment (Score: {report.score})</h3>
+                                    {report.result && <p className="mt-2 text-gray-300"><strong>{report.result.level}:</strong> {report.result.recommendation}</p>}
+                                </div>
+                                 <div>
+                                    <h3 className="text-lg font-semibold">Doctor's Feedback</h3>
+                                    <p className="mt-2 text-gray-300 whitespace-pre-wrap">{report.doctorFeedback}</p>
+                                </div>
+                            </>
+                        )}
+                    </div>
                 </div>
             </div>
 
