@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { BookHeart, MessageSquare, MicVocal, ShieldCheck, LogOut, FileText, Puzzle, Phone, LayoutDashboard, Info, HeartPulse, Sparkles, Trophy, Newspaper, User, Users, Star, Camera, UserCheck, CalendarPlus, CalendarClock } from 'lucide-react';
+import { BookHeart, MessageSquare, MicVocal, ShieldCheck, LogOut, FileText, Puzzle, Phone, LayoutDashboard, Info, HeartPulse, Sparkles, Trophy, Newspaper, User, Users, Star, Camera, UserCheck, CalendarPlus, CalendarClock, Menu } from 'lucide-react';
 import {
   SidebarProvider,
   Sidebar,
@@ -333,13 +333,22 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
         </SidebarFooter>
       </Sidebar>
       <SidebarInset>
-        <div className="flex flex-col h-full">
-          <div className="flex-1 relative">
-            <div className="absolute top-3 left-3 z-10">
-                <SidebarTrigger />
-            </div>
+        <div className="flex flex-col h-full relative">
+          <div className="flex-1">
             {children}
           </div>
+           {sidebar && (
+             <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50">
+                <Button 
+                  onClick={() => sidebar.setOpenMobile(true)}
+                  className="rounded-full shadow-lg"
+                  size="lg"
+                >
+                  <Menu className="mr-2 h-5 w-5"/>
+                  Explore Features
+                </Button>
+             </div>
+           )}
           <footer className="p-4 border-t text-center text-xs text-muted-foreground bg-background">
             <strong>A Gentle Reminder:</strong> MitraAI is a supportive friend, not a substitute for professional medical advice, diagnosis, or treatment. Its analysis may not be 100% correct. Always seek the advice of a qualified health provider for any medical questions.
           </footer>
