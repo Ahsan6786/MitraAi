@@ -195,34 +195,184 @@ Shikara Festival: Celebrated on Dal Lake, showcasing decorated Shikaras (boats),
 Jammu & Kashmir’s culture is a blend of Persian elegance, Indian traditions, and Himalayan spirit. From the aromatic Wazwan feast to the delicate Pashmina shawls, from Sufi melodies to the vibrant Rouf and Dumhal dances, and from snow-covered Tulip gardens to monastic festivals of Ladakh, this region stands as a cultural jewel of India, embodying diversity, resilience, and artistry.
         `
     },
-    { id: 'andhra-pradesh', name: 'Andhra Pradesh', youtubeUrl: 'https://www.youtube.com/embed/R7T4R_w2_xc', description: 'history' },
-    { id: 'arunachal-pradesh', name: 'Arunachal Pradesh', youtubeUrl: 'https://www.youtube.com/embed/EKY3ZMQiDg4', description: 'history' },
-    { id: 'assam', name: 'Assam', youtubeUrl: 'https://www.youtube.com/embed/BcbpC3rT90s', description: 'history' },
-    { id: 'bihar', name: 'Bihar', youtubeUrl: 'https://www.youtube.com/embed/ia_3_iMkh38', description: 'history' },
-    { id: 'chhattisgarh', name: 'Chhattisgarh', youtubeUrl: 'https://www.youtube.com/embed/HpLD9h-9-Es', description: 'history' },
-    { id: 'goa', name: 'Goa', youtubeUrl: 'https://www.youtube.com/embed/cBbS8Pi0obo', description: 'history' },
-    { id: 'gujarat', name: 'Gujarat', youtubeUrl: 'https://www.youtube.com/embed/k3OolA45orE', description: 'history' },
-    { id: 'haryana', name: 'Haryana', youtubeUrl: 'https://www.youtube.com/embed/m_OCSTTl_yA', description: 'history' },
-    { id: 'himachal-pradesh', name: 'Himachal Pradesh', youtubeUrl: 'https://www.youtube.com/embed/0CgYVNztVng', description: 'history' },
+    { id: 'andhra-pradesh', name: 'Andhra Pradesh', youtubeUrl: 'https://www.youtube.com/embed/R7T4R_w2_xc', description: `Ancient: Satavahanas, Ikshvakus, Pallavas. Amaravati & Nagarjunakonda were Buddhist centers.
+
+Medieval: Eastern Chalukyas, Kakatiyas (Warangal), Vijayanagara Empire. Flourishing Telugu literature.
+
+Colonial: Part of Madras Presidency under British. Coastal ports vital for trade.
+
+Modern: First linguistic state (1953). Telangana separated in 2014. Known for Tirupati, Amaravati, IT hubs.` },
+    { id: 'arunachal-pradesh', name: 'Arunachal Pradesh', youtubeUrl: 'https://www.youtube.com/embed/EKY3ZMQiDg4', description: `Ancient: Tribal kingdoms with links to Tibet and Assam.
+
+Medieval: Tawang monastery (17th century). Influenced by Ahom rulers of Assam.
+
+Colonial: Brought under British as NEFA (1914). McMahon Line drawn.
+
+Modern: Union Territory (1972), statehood (1987). Border disputes with China continue.` },
+    { id: 'assam', name: 'Assam', youtubeUrl: 'https://www.youtube.com/embed/BcbpC3rT90s', description: `Ancient: Pragjyotisha kingdom, Kamarupa empire.
+
+Medieval: Ahom dynasty (1228–1826), resisted Mughals successfully.
+
+Colonial: Annexed after Treaty of Yandabo (1826). Tea plantations and oil industry developed.
+
+Modern: Known for Assam Tea, Kaziranga, Bihu dance. Played role in Quit India Movement.` },
+    { id: 'bihar', name: 'Bihar', youtubeUrl: 'https://www.youtube.com/embed/ia_3_iMkh38', description: `Ancient: Magadha, Mauryas (Ashoka), Guptas. Nalanda & Vikramshila universities. Birthplace of Buddhism & Jainism.
+
+Medieval: Ruled by Delhi Sultanate, Mughals.
+
+Colonial: Indigo Revolt (1859), Champaran Satyagraha (1917).
+
+Modern: Jharkhand carved out (2000). Known for Bodh Gaya, rich political history.` },
+    { id: 'chhattisgarh', name: 'Chhattisgarh', youtubeUrl: 'https://www.youtube.com/embed/HpLD9h-9-Es', description: `Ancient: Dakshina Kosala kingdom, associated with Ramayana.
+
+Medieval: Kalachuris, Gonds ruled.
+
+Colonial: Came under British Central Provinces.
+
+Modern: Carved from MP (2000). Rich in minerals, tribal culture, forests.` },
+    { id: 'goa', name: 'Goa', youtubeUrl: 'https://www.youtube.com/embed/cBbS8Pi0obo', description: `Ancient: Satavahanas, Kadambas.
+
+Medieval: Bahmani Sultanate, Vijayanagara Empire.
+
+Colonial: Portuguese captured (1510), ruled for 450 years. Spread Christianity, built churches.
+
+Modern: Liberated by India (1961). Now top tourist hub.` },
+    { id: 'gujarat', name: 'Gujarat', youtubeUrl: 'https://www.youtube.com/embed/k3OolA45orE', description: `Ancient: Harappan site (Lothal). Mauryas, Guptas, Vallabhi university.
+
+Medieval: Solankis, Vaghelas, Delhi Sultanate, Mughals.
+
+Colonial: Important ports (Surat). Birthplace of Gandhi, Dandi March.
+
+Modern: Industrial hub, Somnath temple, Gir lions.` },
+    { id: 'haryana', name: 'Haryana', youtubeUrl: 'https://www.youtube.com/embed/m_OCSTTl_yA', description: `Ancient: Kurukshetra (Mahabharata battlefield).
+
+Medieval: Tomaras, Delhi Sultanate, Mughals.
+
+Colonial: Center of 1857 revolt (Ambala, Rohtak).
+
+Modern: Formed 1966 (from Punjab). Now an industrial and agricultural hub.` },
+    { id: 'himachal-pradesh', name: 'Himachal Pradesh', youtubeUrl: 'https://www.youtube.com/embed/0CgYVNztVng', description: `Ancient: Hill states like Trigarta (mentioned in Mahabharata).
+
+Medieval: Rajput principalities, Mughal influence.
+
+Colonial: Shimla became summer capital of British India.
+
+Modern: Statehood in 1971. Known as “Land of Gods” (Devbhumi).` },
     { id: 'jharkhand', name: 'Jharkhand', youtubeUrl: 'https://www.youtube.com/embed/xHXM7m9Xd8M', description: 'history' },
-    { id: 'karnataka', name: 'Karnataka', youtubeUrl: 'https://www.youtube.com/embed/bV8spKwpfCU', description: 'history' },
-    { id: 'kerala', name: 'Kerala', youtubeUrl: 'https://www.youtube.com/embed/ti39UJYgc5s', description: 'history' },
-    { id: 'madhya-pradesh', name: 'Madhya Pradesh', youtubeUrl: 'https://www.youtube.com/embed/n-DbqB4iNrU', description: 'history' },
-    { id: 'maharashtra', name: 'Maharashtra', youtubeUrl: 'https://www.youtube.com/embed/YTxt0b5sWDI', description: 'history' },
-    { id: 'manipur', name: 'Manipur', youtubeUrl: 'https://www.youtube.com/embed/jeaOoYKpMRI', description: 'history' },
-    { id: 'meghalaya', name: 'Meghalaya', youtubeUrl: 'https://www.youtube.com/embed/CsBmy8oJiLM', description: 'history' },
-    { id: 'mizoram', name: 'Mizoram', youtubeUrl: 'https://www.youtube.com/embed/OmbHgq01x9Y', description: 'history' },
-    { id: 'nagaland', name: 'Nagaland', youtubeUrl: 'https://www.youtube.com/embed/winzzRq7Yg4', description: 'history' },
-    { id: 'odisha', name: 'Odisha', youtubeUrl: 'https://www.youtube.com/embed/hCLWRom8JkM', description: 'history' },
-    { id: 'punjab', name: 'Punjab', youtubeUrl: 'https://www.youtube.com/embed/3EK596Cix2g', description: 'history' },
-    { id: 'rajasthan', name: 'Rajasthan', youtubeUrl: 'https://www.youtube.com/embed/tjOKN0r58Es', description: 'history' },
-    { id: 'sikkim', name: 'Sikkim', youtubeUrl: 'https://www.youtube.com/embed/rvmEz9RiDZ8', description: 'history' },
-    { id: 'tamil-nadu', name: 'Tamil Nadu', youtubeUrl: 'https://www.youtube.com/embed/6RWTmulkXXg', description: 'history' },
-    { id: 'telangana', name: 'Telangana', youtubeUrl: 'https://www.youtube.com/embed/x5kZkFybTEA', description: 'history' },
-    { id: 'tripura', name: 'Tripura', youtubeUrl: 'https://www.youtube.com/embed/pnyh2xhG6UI', description: 'history' },
-    { id: 'uttar-pradesh', name: 'Uttar Pradesh', youtubeUrl: 'https://www.youtube.com/embed/UXzYKrpKWso', description: 'history' },
-    { id: 'uttarakhand', name: 'Uttarakhand', youtubeUrl: 'https://www.youtube.com/embed/oZI-se7oIsA', description: 'history' },
-    { id: 'west-bengal', name: 'West Bengal', youtubeUrl: 'https://www.youtube.com/embed/tYY4WnfEEkY', description: 'history' }
+    { id: 'karnataka', name: 'Karnataka', youtubeUrl: 'https://www.youtube.com/embed/bV8spKwpfCU', description: `Ancient: Mauryas, Satavahanas, Kadambas. Chalukya & Hoysala temples.
+
+Medieval: Vijayanagara Empire (Hampi), Wodeyars of Mysore.
+
+Colonial: Mysore Kingdom fought against British (Tipu Sultan).
+
+Modern: State formed 1956. IT capital (Bengaluru). Rich Carnatic music & culture.` },
+    { id: 'kerala', name: 'Kerala', youtubeUrl: 'https://www.youtube.com/embed/ti39UJYgc5s', description: `Ancient: Sangam Age. Famous for spice trade with Romans.
+
+Medieval: Chera dynasty, later Zamorins of Calicut.
+
+Colonial: Portuguese (Vasco da Gama, 1498), Dutch, British. Tipu Sultan influence.
+
+Modern: State formed 1956. High literacy, Ayurveda, houseboats, and art forms like Kathakali.` },
+    { id: 'madhya-pradesh', name: 'Madhya Pradesh', youtubeUrl: 'https://www.youtube.com/embed/n-DbqB4iNrU', description: `Ancient: Malwa, Avanti, Mauryas, Guptas. Buddhist site Sanchi.
+
+Medieval: Rajput kingdoms, then Delhi Sultanate, Mughals.
+
+Colonial: British Central Provinces.
+
+Modern: Called “Heart of India.” Khajuraho, Bhimbetka caves.` },
+    { id: 'maharashtra', name: 'Maharashtra', youtubeUrl: 'https://www.youtube.com/embed/YTxt0b5sWDI', description: `Ancient: Satavahanas, Mauryas. Buddhist caves (Ajanta, Ellora).
+
+Medieval: Yadavas, Bahmanis. Rise of Shivaji & Maratha Empire (17th century).
+
+Colonial: Marathas resisted British until 1818. Later Bombay Presidency.
+
+Modern: Formed 1960. Financial hub (Mumbai), Bollywood, industries.` },
+    { id: 'manipur', name: 'Manipur', youtubeUrl: 'https://www.youtube.com/embed/jeaOoYKpMRI', description: `Ancient: Known as Kangleipak kingdom. Mentioned in epic Mahabharata.
+
+Medieval: Hinduism spread in 18th century.
+
+Colonial: Came under British after 1891 Anglo-Manipur war.
+
+Modern: Statehood in 1972. Rich culture, Manipuri dance, sports legacy.` },
+    { id: 'meghalaya', name: 'Meghalaya', youtubeUrl: 'https://www.youtube.com/embed/CsBmy8oJiLM', description: `Ancient/Medieval: Khasi, Garo, Jaintia tribes.
+
+Colonial: Under Assam during British rule. Resistance by tribal leaders like U Tirot Sing.
+
+Modern: Became state in 1972. Known as “Abode of Clouds,” living root bridges.` },
+    { id: 'mizoram', name: 'Mizoram', youtubeUrl: 'https://www.youtube.com/embed/OmbHgq01x9Y', description: `Ancient/Medieval: Tribal migrations from Myanmar.
+
+Colonial: Came under British in 1890s.
+
+Modern: Union territory (1972), statehood (1987) after Mizo Peace Accord. Known for festivals, bamboo culture.` },
+    { id: 'nagaland', name: 'Nagaland', youtubeUrl: 'https://www.youtube.com/embed/winzzRq7Yg4', description: `Ancient/Medieval: Naga tribes, warrior traditions.
+
+Colonial: Annexed by British in 1881.
+
+Modern: Statehood in 1963. Insurgency issues but strong tribal culture. Famous for Hornbill Festival.` },
+    { id: 'odisha', name: 'Odisha', youtubeUrl: 'https://www.youtube.com/embed/hCLWRom8JkM', description: `Ancient: Kalinga kingdom. Ashoka’s Kalinga war (261 BCE) changed Indian history.
+
+Medieval: Eastern Ganga dynasty built Konark temple.
+
+Colonial: British merged Odisha with Bengal Presidency.
+
+Modern: State formed 1936 (first linguistic). Jagannath temple, tribal culture, natural disasters resilience.` },
+    { id: 'punjab', name: 'Punjab', youtubeUrl: 'https://www.youtube.com/embed/3EK596Cix2g', description: `Ancient: Indus Valley civilization (Harappa). Vedic period.
+
+Medieval: Invasions (Ghazni, Ghori). Rise of Sikhism (Guru Nanak, 15th century). Sikh Empire under Maharaja Ranjit Singh.
+
+Colonial: Annexed (1849). Major role in freedom struggle (Jallianwala Bagh, Ghadar movement).
+
+Modern: Divided in 1947. Green Revolution hub.` },
+    { id: 'rajasthan', name: 'Rajasthan', youtubeUrl: 'https://www.youtube.com/embed/tjOKN0r58Es', description: `Ancient: Matsya kingdom, Mauryas.
+
+Medieval: Rajput dynasties (Mewar, Marwar). Battles with Mughals (Haldighati).
+
+Colonial: Rajput princely states under British Raj.
+
+Modern: State formed 1949. Known for forts, palaces, desert culture.` },
+    { id: 'sikkim', name: 'Sikkim', youtubeUrl: 'https://www.youtube.com/embed/rvmEz9RiDZ8', description: `Ancient/Medieval: Ruled by Lepcha, Bhutia tribes. Kingdom of Namgyal dynasty.
+
+Colonial: British protectorate (1861).
+
+Modern: Joined India in 1975 via referendum. Known for monasteries, Kanchenjunga.` },
+    { id: 'tamil-nadu', name: 'Tamil Nadu', youtubeUrl: 'https://www.youtube.com/embed/6RWTmulkXXg', description: `Ancient: Sangam literature. Cholas, Cheras, Pandyas. Great temple builders.
+
+Medieval: Chola empire’s naval power (Sri Lanka, SE Asia). Vijayanagara empire.
+
+Colonial: Madras Presidency under British.
+
+Modern: Statehood in 1956. Known for Dravidian culture, cinema, IT.` },
+    { id: 'telangana', name: 'Telangana', youtubeUrl: 'https://www.youtube.com/embed/x5kZkFybTEA', description: `Ancient/Medieval: Ruled by Satavahanas, Kakatiyas. Later Qutb Shahi dynasty (Golconda).
+
+Colonial: Hyderabad under Nizams (not directly under British).
+
+Modern: Joined India (1948). Separated from Andhra Pradesh (2014). Known for Charminar, IT hub Hyderabad.` },
+    { id: 'tripura', name: 'Tripura', youtubeUrl: 'https://www.youtube.com/embed/pnyh2xhG6UI', description: `Ancient/Medieval: Kingdom of Tripuri dynasty.
+
+Colonial: British princely state.
+
+Modern: Merged with India in 1949, statehood in 1972. Known for tribal culture, temples.` },
+    { id: 'uttar-pradesh', name: 'Uttar Pradesh', youtubeUrl: 'https://www.youtube.com/embed/UXzYKrpKWso', description: `Ancient: Vedic culture, epics (Ayodhya, Mathura, Kashi). Mauryas, Guptas.
+
+Medieval: Delhi Sultanate, Mughal Empire (Agra, Fatehpur Sikri).
+
+Colonial: 1857 revolt began here (Meerut, Kanpur).
+
+Modern: India’s most populous state. Political powerhouse.` },
+    { id: 'uttarakhand', name: 'Uttarakhand', youtubeUrl: 'https://www.youtube.com/embed/oZI-se7oIsA', description: `Ancient: Associated with Himalayas, Kedarnath, Badrinath.
+
+Medieval: Garhwal and Kumaon kingdoms.
+
+Colonial: British developed hill stations like Mussoorie.
+
+Modern: Carved from UP (2000). Known as “Devbhumi.”` },
+    { id: 'west-bengal', name: 'West Bengal', youtubeUrl: 'https://www.youtube.com/embed/tYY4WnfEEkY', description: `Ancient: Mauryas, Guptas, Pala Empire (spread Buddhism to SE Asia).
+
+Medieval: Sena dynasty, later Delhi Sultanate.
+
+Colonial: British capital (Calcutta) till 1911. Bengal Renaissance, Partition of Bengal (1905), freedom movements.
+
+Modern: Partition in 1947 created East Pakistan (now Bangladesh). State known for literature (Tagore), Durga Puja.` }
 ];
 
 export const allIndianStates = [
