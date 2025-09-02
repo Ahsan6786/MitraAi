@@ -1,16 +1,13 @@
+
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { CheckCircle, Lightbulb, Gamepad2, Hand, Scissors, Gem, RotateCcw, User, Bot, Brain, Puzzle, Smile, ArrowLeft } from 'lucide-react';
+import { CheckCircle, Lightbulb, Gamepad2, RotateCcw, ArrowLeft } from 'lucide-react';
 import { SidebarTrigger } from '@/components/ui/sidebar';
-import { cn } from '@/lib/utils';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Label } from '@/components/ui/label';
 import { ThemeToggle } from '@/components/theme-toggle';
 
 // --- Game Components ---
@@ -161,12 +158,10 @@ export default function GamesPage() {
                                     <CardContent className="p-8">
                                         <div className="grid grid-cols-1 gap-8 lg:grid-cols-2 lg:items-center">
                                             <div className="aspect-video w-full overflow-hidden rounded-lg bg-muted">
-                                                <Image 
+                                                <img 
                                                     alt={`${game.name} Game`} 
                                                     className="h-full w-full object-cover" 
                                                     src={game.image}
-                                                    width={600}
-                                                    height={400}
                                                     data-ai-hint={game.imageHint}
                                                 />
                                             </div>
