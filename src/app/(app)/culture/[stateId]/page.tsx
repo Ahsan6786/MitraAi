@@ -2,10 +2,13 @@
 'use client';
 
 import { useParams, notFound } from 'next/navigation';
+import Link from 'next/link';
+import { ArrowLeft } from 'lucide-react';
 import { SidebarTrigger } from '@/components/ui/sidebar';
-import { ThemeToggle } from '@/components/theme-toggle';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { statesData } from '@/lib/states-data';
+import { Button } from '@/components/ui/button';
 
 export default function StateCulturePage() {
     const params = useParams();
@@ -21,6 +24,12 @@ export default function StateCulturePage() {
             <header className="border-b p-3 md:p-4 flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
                     <SidebarTrigger className="md:hidden" />
+                    <Button variant="ghost" size="icon" asChild>
+                        <Link href="/culture">
+                            <ArrowLeft className="w-5 h-5" />
+                            <span className="sr-only">Back to Culture page</span>
+                        </Link>
+                    </Button>
                     <div>
                         <h1 className="text-lg md:text-xl font-bold">{state.name}</h1>
                         <p className="text-sm text-muted-foreground">Discover the Culture</p>
