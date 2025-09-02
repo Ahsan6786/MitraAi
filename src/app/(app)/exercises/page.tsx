@@ -1,56 +1,57 @@
+
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
 import { SidebarTrigger } from '@/components/ui/sidebar';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Play, Pause, RotateCcw } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { cn } from '@/lib/utils';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
 
 const stages = [
-  { name: 'Breathe In', duration: 4 },
-  { name: 'Hold', duration: 4 },
-  { name: 'Breathe Out', duration: 4 },
-  { name: 'Hold', duration: 4 },
+  { name: 'Breathe In', duration: 4, animation: 'animate-breathe-in' },
+  { name: 'Hold', duration: 4, animation: 'animate-hold' },
+  { name: 'Breathe Out', duration: 4, animation: 'animate-breathe-out' },
+  { name: 'Hold', duration: 4, animation: 'animate-hold' },
 ];
 
 function BoxBreathingVisualizer({ stageIndex, countdown, isActive }: { stageIndex: number, countdown: number, isActive: boolean }) {
-  const currentStageName = stages[stageIndex].name;
-  
-  // Opacity logic for labels
-  const getLabelOpacity = (name: string) => (isActive && currentStageName === name) ? 'opacity-100' : 'opacity-50';
+  const currentStage = stages[stageIndex];
 
   return (
-    <div className="flex h-80 w-full items-center justify-center rounded-lg bg-background/50">
+    <div className="flex h-96 items-center justify-center rounded-lg bg-background/50">
         <div className="relative flex h-64 w-64 items-center justify-center">
             {/* Dashed circle */}
             <div className="absolute h-full w-full rounded-full border-2 border-dashed border-muted-foreground/50"></div>
             
             {/* Animated dot */}
             <div 
+              key={stageIndex} // Re-trigger animation on stage change
               className={cn(
-                "h-16 w-16 rounded-full bg-primary transition-transform duration-2000 ease-in-out",
-                isActive && "animate-breathe"
+                "h-16 w-16 rounded-full bg-primary",
+                isActive && currentStage.animation
               )}
             ></div>
             
             {/* Labels */}
-            <div className={cn("absolute top-0 flex flex-col items-center transition-opacity", getLabelOpacity('Breathe In'))}>
-                <span className="text-sm font-medium text-muted-foreground">Breathe In</span>
-                <span className="text-2xl font-bold">{currentStageName === 'Breathe In' ? countdown : '4'}s</span>
+            <div className="absolute top-0 flex flex-col items-center">
+                <span className={cn("text-sm font-medium transition-colors", currentStage.name === 'Breathe In' ? 'text-foreground' : 'text-muted-foreground')}>Breathe In</span>
+                <span className={cn("text-2xl font-bold transition-colors", currentStage.name === 'Breathe In' ? 'text-foreground' : 'text-muted-foreground')}>{currentStage.name === 'Breathe In' ? countdown : '4'}s</span>
             </div>
-            <div className={cn("absolute right-0 flex flex-col items-center transition-opacity -rotate-90", getLabelOpacity('Hold'))}>
-                <span className="text-sm font-medium text-muted-foreground">Hold</span>
-                <span className="text-2xl font-bold">{stages[(stageIndex + 3) % 4].name === 'Hold' && currentStageName === 'Hold' ? countdown : '4'}s</span>
+            <div className="absolute right-0 flex flex-col items-center -rotate-90">
+                <span className={cn("text-sm font-medium transition-colors", currentStage.name === 'Hold' && stageIndex === 1 ? 'text-foreground' : 'text-muted-foreground')}>Hold</span>
+                <span className={cn("text-2xl font-bold transition-colors", currentStage.name === 'Hold' && stageIndex === 1 ? 'text-foreground' : 'text-muted-foreground')}>{currentStage.name === 'Hold' && stageIndex === 1 ? countdown : '4'}s</span>
             </div>
-            <div className={cn("absolute bottom-0 flex flex-col items-center transition-opacity", getLabelOpacity('Breathe Out'))}>
-                <span className="text-sm font-medium text-muted-foreground">Breathe Out</span>
-                <span className="text-2xl font-bold">{currentStageName === 'Breathe Out' ? countdown : '4'}s</span>
+            <div className="absolute bottom-0 flex flex-col items-center">
+                 <span className={cn("text-sm font-medium transition-colors", currentStage.name === 'Breathe Out' ? 'text-foreground' : 'text-muted-foreground')}>Breathe Out</span>
+                <span className={cn("text-2xl font-bold transition-colors", currentStage.name === 'Breathe Out' ? 'text-foreground' : 'text-muted-foreground')}>{currentStage.name === 'Breathe Out' ? countdown : '4'}s</span>
             </div>
-             <div className={cn("absolute left-0 flex flex-col items-center transition-opacity rotate-90", getLabelOpacity('Hold'))}>
-                <span className="text-sm font-medium text-muted-foreground">Hold</span>
-                <span className="text-2xl font-bold">{stages[(stageIndex + 1) % 4].name === 'Hold' && currentStageName === 'Hold' ? countdown : '4'}s</span>
+             <div className="absolute left-0 flex flex-col items-center rotate-90">
+                <span className={cn("text-sm font-medium transition-colors", currentStage.name === 'Hold' && stageIndex === 3 ? 'text-foreground' : 'text-muted-foreground')}>Hold</span>
+                <span className={cn("text-2xl font-bold transition-colors", currentStage.name === 'Hold' && stageIndex === 3 ? 'text-foreground' : 'text-muted-foreground')}>{currentStage.name === 'Hold' && stageIndex === 3 ? countdown : '4'}s</span>
             </div>
         </div>
     </div>
@@ -76,7 +77,9 @@ function BoxBreathingExercise() {
               setCountdown(stages[nextIndex].duration);
               return nextIndex;
             });
-            return 0; 
+            // This return is for setCountdown, which will be updated in the next render cycle.
+            // The value here doesn't matter as much as the state updates above.
+            return stages[(stageIndex + 1) % stages.length].duration; 
           }
         });
       }, 1000);
@@ -86,7 +89,7 @@ function BoxBreathingExercise() {
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
-  }, [isActive]);
+  }, [isActive, stageIndex]);
 
   const handleStartPause = () => setIsActive(!isActive);
   const handleReset = () => {
@@ -133,12 +136,25 @@ export default function ExercisesPage() {
   return (
     <>
     <style jsx global>{`
-        @keyframes breathe {
-            0%, 100% { transform: scale(0.8); }
-            50% { transform: scale(1.2); }
+        @keyframes breathe-in {
+            0% { transform: scale(0.8); }
+            100% { transform: scale(1.2); }
         }
-        .animate-breathe {
-            animation: breathe 8s infinite ease-in-out;
+        @keyframes hold {
+            0%, 100% { transform: scale(1.2); }
+        }
+        @keyframes breathe-out {
+            0% { transform: scale(1.2); }
+            100% { transform: scale(0.8); }
+        }
+        .animate-breathe-in {
+            animation: breathe-in 4s ease-in-out forwards;
+        }
+        .animate-hold {
+             animation: hold 4s ease-in-out forwards;
+        }
+        .animate-breathe-out {
+            animation: breathe-out 4s ease-in-out forwards;
         }
     `}</style>
     <div className="h-full flex flex-col bg-muted/30">
@@ -160,19 +176,41 @@ export default function ExercisesPage() {
                 <h1 className="text-4xl font-bold tracking-tight">Stress Reduction Tools</h1>
                 <p className="mt-2 text-lg text-muted-foreground">Find calm and focus with our guided exercises.</p>
             </div>
-            <div className="border-b border-border/50">
-                <nav className="-mb-px flex justify-center space-x-8">
-                    <a className="whitespace-nowrap border-b-2 border-primary px-1 py-4 text-base font-semibold text-primary" href="#"> Box Breathing </a>
-                    <a className="whitespace-nowrap border-b-2 border-transparent px-1 py-4 text-base font-medium text-muted-foreground hover:border-border hover:text-foreground" href="#"> Guided Meditation </a>
-                    <a className="whitespace-nowrap border-b-2 border-transparent px-1 py-4 text-base font-medium text-muted-foreground hover:border-border hover:text-foreground" href="#"> Mindful Listening </a>
-                </nav>
-            </div>
-            <div className="mt-10">
-                <BoxBreathingExercise />
-            </div>
+             <Tabs defaultValue="box-breathing" className="w-full">
+                <TabsList className="flex justify-center -mb-px bg-transparent p-0">
+                    <TabsTrigger value="box-breathing" className="whitespace-nowrap border-b-2 data-[state=active]:border-primary data-[state=inactive]:border-transparent px-1 py-4 text-base font-semibold data-[state=inactive]:text-muted-foreground data-[state=active]:text-primary data-[state=inactive]:hover:border-border data-[state=inactive]:hover:text-foreground rounded-none shadow-none bg-transparent">
+                         Box Breathing 
+                    </TabsTrigger>
+                    <TabsTrigger value="meditation" className="whitespace-nowrap border-b-2 data-[state=active]:border-primary data-[state=inactive]:border-transparent px-1 py-4 text-base font-medium data-[state=inactive]:text-muted-foreground data-[state=active]:text-primary data-[state=inactive]:hover:border-border data-[state=inactive]:hover:text-foreground rounded-none shadow-none bg-transparent">
+                        Guided Meditation
+                    </TabsTrigger>
+                     <TabsTrigger value="listening" className="whitespace-nowrap border-b-2 data-[state=active]:border-primary data-[state=inactive]:border-transparent px-1 py-4 text-base font-medium data-[state=inactive]:text-muted-foreground data-[state=active]:text-primary data-[state=inactive]:hover:border-border data-[state=inactive]:hover:text-foreground rounded-none shadow-none bg-transparent">
+                       Mindful Listening
+                    </TabsTrigger>
+                </TabsList>
+                <div className="border-b border-border/50"></div>
+                <div className="mt-10">
+                    <TabsContent value="box-breathing">
+                        <BoxBreathingExercise />
+                    </TabsContent>
+                    <TabsContent value="meditation">
+                        <Card className="text-center p-10">
+                            <h3 className="text-2xl font-bold">Guided Meditation</h3>
+                            <p className="text-muted-foreground mt-2">Coming soon! A guided meditation to help you relax and focus.</p>
+                        </Card>
+                    </TabsContent>
+                    <TabsContent value="listening">
+                        <Card className="text-center p-10">
+                            <h3 className="text-2xl font-bold">Mindful Listening</h3>
+                            <p className="text-muted-foreground mt-2">Coming soon! An exercise to help you focus on the present moment through sound.</p>
+                        </Card>
+                    </TabsContent>
+                </div>
+            </Tabs>
         </div>
       </main>
     </div>
     </>
   );
 }
+
