@@ -154,7 +154,7 @@ function MemoryMatchGame() {
 
     useEffect(() => {
         if (flippedIndices.length === 2) {
-            setMoves(moves + 1);
+            setMoves(prevMoves => prevMoves + 1);
             const [firstIndex, secondIndex] = flippedIndices;
             if (cards[firstIndex].icon === cards[secondIndex].icon) {
                 const newCards = [...cards];
@@ -175,7 +175,7 @@ function MemoryMatchGame() {
                 }, 1000);
             }
         }
-    }, [flippedIndices, cards, moves]);
+    }, [flippedIndices, cards]);
 
     return (
         <Card className="w-full max-w-lg mx-auto">
