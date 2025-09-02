@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { BookHeart, MessageSquare, MicVocal, ShieldCheck, LogOut, FileText, Puzzle, Phone, LayoutDashboard, Info, HeartPulse, Sparkles, Trophy, Newspaper, User, Users, Star, Camera, UserCheck, CalendarPlus, CalendarClock, Menu } from 'lucide-react';
+import { BookHeart, MessageSquare, MicVocal, ShieldCheck, LogOut, FileText, Puzzle, Phone, LayoutDashboard, Info, HeartPulse, Sparkles, Trophy, Newspaper, User, Users, Star, Camera, UserCheck, CalendarPlus, CalendarClock, Menu, LandPlot } from 'lucide-react';
 import {
   SidebarProvider,
   Sidebar,
@@ -253,6 +253,17 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
                         <span>Community</span>
                       </div>
                       <Star className="w-4 h-4 text-amber-500" />
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={pathname.startsWith('/culture')}
+                  >
+                    <Link href="/culture" onClick={handleLinkClick}>
+                      <LandPlot />
+                      <span>Our Culture</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
