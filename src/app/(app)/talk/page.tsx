@@ -2,97 +2,38 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { cn } from '@/lib/utils';
-import { Languages, Loader2, Mic, User, Square, Phone, Bot } from 'lucide-react';
+import { Loader2, Mic, Square, Bot } from 'lucide-react';
 import { chatEmpatheticTone } from '@/ai/flows/chat-empathetic-tone';
-import { Logo } from '@/components/icons';
 import { SidebarTrigger } from '@/components/ui/sidebar';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { textToSpeech } from '@/ai/flows/text-to-speech';
 import { useToast } from '@/hooks/use-toast';
-import { Card, CardContent } from '@/components/ui/card';
-import { useAuth } from '@/hooks/use-auth';
 import { detectCrisis } from '@/ai/flows/detect-crisis';
 import CrisisAlertModal from '@/components/crisis-alert-modal';
 import { ThemeToggle } from '@/components/theme-toggle';
-
-interface Message {
-  sender: 'user' | 'ai';
-  text: string;
-}
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
 
 const SpeechRecognition =
   (typeof window !== 'undefined' && (window.SpeechRecognition || window.webkitSpeechRecognition));
-  
-const languageToSpeechCode: Record<string, string> = {
-    English: 'en-US',
-    Hinglish: 'en-IN',
-    Hindi: 'hi-IN',
-    Sanskrit: 'sa-IN',
-    Urdu: 'ur-IN',
-    Arabic: 'ar-SA',
-    Assamese: 'as-IN',
-    Bodo: 'en-IN', // Fallback
-    Bengali: 'bn-IN',
-    Konkani: 'en-IN', // Fallback
-    Marathi: 'mr-IN',
-    Gujarati: 'gu-IN',
-    Kannada: 'kn-IN',
-    Malayalam: 'ml-IN',
-    Meitei: 'en-IN', // Fallback
-    Mizo: 'en-IN', // Fallback
-    Odia: 'or-IN',
-    Punjabi: 'pa-IN',
-    Nepali: 'ne-NP',
-    Sikkimese: 'en-IN', // Fallback
-    Lepcha: 'en-IN', // Fallback
-    Limbu: 'en-IN', // Fallback
-    Tamil: 'ta-IN',
-    Telugu: 'te-IN',
-    Kokborok: 'en-IN', // Fallback
-    French: 'fr-FR',
-    German: 'de-DE',
-};
-
 
 export default function TalkPage() {
-  const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
-  const [language, setLanguage] = useState('English');
   const [transcript, setTranscript] = useState('');
+  const [aiResponse, setAiResponse] = useState('');
   const [showCrisisModal, setShowCrisisModal] = useState(false);
   
-  const scrollAreaRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const silenceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const transcriptRef = useRef(''); // Use a ref to hold the latest transcript
-  const audioUnlockedRef = useRef(false); // Ref to track if audio context is unlocked
   const { toast } = useToast();
-  const { user } = useAuth();
-
-  useEffect(() => {
-    transcriptRef.current = transcript;
-  }, [transcript]);
-
-  useEffect(() => {
-    if (scrollAreaRef.current) {
-      scrollAreaRef.current.scrollTo({ top: scrollAreaRef.current.scrollHeight, behavior: 'smooth' });
-    }
-  }, [messages]);
 
   const handleAiResponse = async (messageText: string) => {
-    if (!messageText.trim() || !user) return;
-    const userMessage: Message = { sender: 'user', text: messageText };
-    setMessages((prev) => [...prev, userMessage]);
+    if (!messageText.trim()) return;
     setIsLoading(true);
+    setAiResponse('');
 
     try {
-       // First, check for crisis
       const crisisResult = await detectCrisis({ message: messageText });
       if (crisisResult.isCrisis) {
         setShowCrisisModal(true);
@@ -100,13 +41,12 @@ export default function TalkPage() {
         return;
       }
       
-      const result = await chatEmpatheticTone({ message: messageText, language });
-      const aiMessage: Message = { sender: 'ai', text: result.response };
+      const result = await chatEmpatheticTone({ message: messageText, language: 'English' });
+      setAiResponse(result.response);
       
       if (result.response.trim()) {
         const ttsResult = await textToSpeech({ text: result.response });
         if (ttsResult.audioDataUri) {
-            setMessages((prev) => [...prev, aiMessage]);
             const audio = new Audio(ttsResult.audioDataUri);
             audioRef.current = audio;
             audio.play().catch(e => console.error("Error playing audio:", e));
@@ -114,8 +54,7 @@ export default function TalkPage() {
       }
     } catch (error) {
       console.error('Error getting AI response:', error);
-      const errorMessage: Message = { sender: 'ai', text: 'Sorry, I encountered an error. Please try again.' };
-      setMessages((prev) => [...prev, errorMessage]);
+      setAiResponse('Sorry, I encountered an error. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -125,16 +64,12 @@ export default function TalkPage() {
     if (recognitionRef.current) {
       recognitionRef.current.stop();
       recognitionRef.current = null;
-      setIsRecording(false);
-      
-      const finalTranscript = transcriptRef.current;
-      if (finalTranscript.trim()) {
-        handleAiResponse(finalTranscript);
-      }
-      setTranscript('');
-      transcriptRef.current = '';
     }
-  }, [handleAiResponse]); 
+    setIsRecording(false);
+    if (transcript.trim()) {
+        handleAiResponse(transcript);
+    }
+  }, [transcript]); // handleAiResponse is not included to avoid re-creating this function on every render
 
   const startRecording = () => {
     if (audioRef.current) {
@@ -142,72 +77,38 @@ export default function TalkPage() {
       audioRef.current = null;
     }
 
-    if (silenceTimeoutRef.current) {
-        clearTimeout(silenceTimeoutRef.current);
-    }
-
     setIsRecording(true);
     setTranscript('');
-    transcriptRef.current = '';
+    setAiResponse('');
     recognitionRef.current = new SpeechRecognition();
     recognitionRef.current.continuous = true;
     recognitionRef.current.interimResults = true;
-    recognitionRef.current.lang = languageToSpeechCode[language] || 'en-US';
+    recognitionRef.current.lang = 'en-US';
 
     recognitionRef.current.onresult = (event: any) => {
-      if (silenceTimeoutRef.current) {
-        clearTimeout(silenceTimeoutRef.current);
-      }
-      
-      let finalTranscript = '';
       let interimTranscript = '';
-      for (let i = 0; i < event.results.length; ++i) {
-        if (event.results[i].isFinal) {
-          finalTranscript += event.results[i][0].transcript;
-        } else {
+      for (let i = event.resultIndex; i < event.results.length; ++i) {
           interimTranscript += event.results[i][0].transcript;
-        }
       }
-      const fullTranscript = finalTranscript + interimTranscript;
-      setTranscript(fullTranscript);
-      
-      // Reset the silence timer
-      silenceTimeoutRef.current = setTimeout(() => {
-          stopRecording();
-      }, 1500); // Stop after 1.5 seconds of silence
+      setTranscript(interimTranscript);
     };
     
     recognitionRef.current.onerror = (event: any) => {
         console.error('Speech recognition error:', event.error);
         toast({
             title: "Voice Error",
-            description: "There was an error with voice recognition. Please try again.",
+            description: "Could not start voice recognition. Please check your microphone permissions.",
             variant: "destructive",
         });
         setIsRecording(false);
     };
     
     recognitionRef.current.onend = () => {
-        if (silenceTimeoutRef.current) {
-            clearTimeout(silenceTimeoutRef.current);
-        }
-        // Check if the recording was stopped intentionally or automatically
-        if (recognitionRef.current) {
-           stopRecording();
-        }
+      setIsRecording(false);
     }
 
     recognitionRef.current.start();
   };
-  
-  // Function to unlock audio context on mobile
-  const unlockAudio = () => {
-    if (audioUnlockedRef.current) return;
-    const silentAudio = new Audio('/silent.mp3');
-    silentAudio.play().catch(() => {}); // Play and ignore errors (e.g., if already unlocked)
-    audioUnlockedRef.current = true;
-  };
-
 
   const handleMicClick = () => {
     if (!SpeechRecognition) {
@@ -218,9 +119,6 @@ export default function TalkPage() {
       });
       return;
     }
-    
-    unlockAudio(); // Unlock audio on the first user interaction
-
     if (isRecording) {
       stopRecording();
     } else {
@@ -228,130 +126,110 @@ export default function TalkPage() {
     }
   };
 
-  // Cleanup on component unmount
   useEffect(() => {
     return () => {
-      if (silenceTimeoutRef.current) {
-        clearTimeout(silenceTimeoutRef.current);
-      }
       if (recognitionRef.current) {
         recognitionRef.current.stop();
       }
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
     };
   }, []);
+  
+  const getStatusText = () => {
+      if (isRecording) return "Listening... Tap to stop.";
+      if (isLoading) return "Mitra is thinking...";
+      if (aiResponse) return "Tap the microphone to reply.";
+      return "Tap the microphone to start talking.";
+  }
 
   return (
-    <div className="h-full flex flex-col bg-muted/20">
-       <CrisisAlertModal
-        isOpen={showCrisisModal}
-        onClose={() => setShowCrisisModal(false)}
-      />
-      <header className="border-b bg-background p-3 md:p-4 flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <SidebarTrigger className="md:hidden" />
-          <div>
-            <h1 className="text-lg md:text-xl font-bold">Talk to Mitra</h1>
-            <p className="text-sm text-muted-foreground">Have a live voice conversation.</p>
+    <>
+      <style jsx global>{`
+        @keyframes pulse-border {
+          0%, 100% {
+            box-shadow: 0 0 0 0 hsl(var(--primary) / 0.7);
+          }
+          50% {
+            box-shadow: 0 0 0 20px hsl(var(--primary) / 0);
+          }
+        }
+        .animate-pulse-border {
+          animation: pulse-border 2s infinite;
+        }
+      `}</style>
+      <div className="h-full flex flex-col">
+        <CrisisAlertModal
+          isOpen={showCrisisModal}
+          onClose={() => setShowCrisisModal(false)}
+        />
+        <header className="border-b p-3 md:p-4 flex items-center justify-between gap-2 shrink-0">
+          <div className="flex items-center gap-2">
+            <SidebarTrigger />
+            <div>
+              <h1 className="text-lg md:text-xl font-bold">Talk to Mitra</h1>
+              <p className="text-sm text-muted-foreground">Have a live voice conversation.</p>
+            </div>
           </div>
-        </div>
-        <div className="flex items-center gap-2">
-           <Languages className="w-5 h-5 text-muted-foreground hidden sm:block"/>
-            <Select value={language} onValueChange={setLanguage}>
-                <SelectTrigger className="w-auto sm:w-[120px]">
-                    <SelectValue placeholder="Language" />
-                </SelectTrigger>
-                <SelectContent>
-                    <SelectItem value="English">English</SelectItem>
-                    <SelectItem value="Hinglish">Hinglish</SelectItem>
-                    <SelectItem value="Hindi">Hindi</SelectItem>
-                    <SelectItem value="Sanskrit">Sanskrit</SelectItem>
-                    <SelectItem value="Urdu">Urdu</SelectItem>
-                    <SelectItem value="Arabic">Arabic</SelectItem>
-                    <SelectItem value="Assamese">Assamese</SelectItem>
-                    <SelectItem value="Bodo">Bodo</SelectItem>
-                    <SelectItem value="Bengali">Bengali</SelectItem>
-                    <SelectItem value="Konkani">Konkani</SelectItem>
-                    <SelectItem value="Marathi">Marathi</SelectItem>
-                    <SelectItem value="Gujarati">Gujarati</SelectItem>
-                    <SelectItem value="Kannada">Kannada</SelectItem>
-                    <SelectItem value="Malayalam">Malayalam</SelectItem>
-                    <SelectItem value="Meitei">Meitei (Manipuri)</SelectItem>
-                    <SelectItem value="Mizo">Mizo</SelectItem>
-                    <SelectItem value="Odia">Odia</SelectItem>
-                    <SelectItem value="Punjabi">Punjabi</SelectItem>
-                    <SelectItem value="Nepali">Nepali</SelectItem>
-                    <SelectItem value="Sikkimese">Sikkimese</SelectItem>
-                    <SelectItem value="Lepcha">Lepcha</SelectItem>
-                    <SelectItem value="Limbu">Limbu</SelectItem>
-                    <SelectItem value="Tamil">Tamil</SelectItem>
-                    <SelectItem value="Telugu">Telugu</SelectItem>
-                    <SelectItem value="Kokborok">Kokborok</SelectItem>
-                </SelectContent>
-            </Select>
-            <ThemeToggle />
-        </div>
-      </header>
-      <main className="flex-1 overflow-hidden p-2 sm:p-4 md:p-6 flex flex-col">
-        <ScrollArea className="flex-1" ref={scrollAreaRef}>
-          <div className="p-2 md:p-4 space-y-6">
-            {messages.length === 0 && !isRecording && (
-              <div className="flex flex-col items-center justify-center h-full pt-10 text-center">
-                 <Phone className="w-16 h-16 text-primary mb-6" />
-                 <h2 className="text-xl md:text-2xl font-semibold">Ready to talk?</h2>
-                 <p className="text-muted-foreground mt-2 max-w-xs">Press the microphone button below to start the conversation.</p>
-              </div>
-            )}
-            {messages.map((message, index) => (
-                <div key={index} className={cn('flex items-start gap-3', message.sender === 'user' ? 'justify-end' : 'justify-start')}>
-                  {message.sender === 'ai' && (
-                    <Avatar className="w-8 h-8 md:w-9 md:h-9 border">
-                       <AvatarFallback className="bg-primary text-primary-foreground"><Bot className="w-4 h-4 md:w-5 md:h-5"/></AvatarFallback>
-                    </Avatar>
-                  )}
-                  <div className={cn('max-w-[80%] rounded-xl px-4 py-3 text-sm md:text-base shadow-sm md:max-w-md lg:max-w-lg', message.sender === 'user' ? 'bg-primary text-primary-foreground rounded-br-none' : 'bg-background text-card-foreground rounded-bl-none border')}>
-                    <p>{message.text}</p>
-                  </div>
-                   {message.sender === 'user' && (
-                    <Avatar className="w-8 h-8 md:w-9 md:h-9 border">
-                        <AvatarFallback>
-                         {user?.email ? user.email[0].toUpperCase() : <User className="w-4 h-4 md:w-5 md:h-5" />}
-                      </AvatarFallback>
-                    </Avatar>
-                  )}
+          <ThemeToggle />
+        </header>
+        <main className="flex-1 flex flex-col items-center justify-center p-4 text-center">
+            <div className="w-full max-w-2xl">
+                <h2 className="text-3xl md:text-4xl font-bold tracking-tight">Talk to your AI companion</h2>
+                <p className="text-muted-foreground text-lg mt-2 mb-12">
+                    Speak your mind and get instant support. Our AI is here to listen and help you navigate your emotions.
+                </p>
+                <div className="flex flex-col items-center justify-center gap-8">
+                    <Button 
+                        className={cn(
+                            "relative rounded-full h-40 w-40 bg-primary text-primary-foreground shadow-lg transition-transform duration-300 ease-in-out hover:scale-105 active:scale-95 focus:outline-none focus:ring-4 focus:ring-primary/50",
+                            isRecording && "scale-105"
+                        )}
+                        onClick={handleMicClick}
+                        disabled={isLoading}
+                    >
+                        {isRecording ? <Square className="text-7xl" /> : <Mic className="text-7xl" />}
+                        {isRecording && <div className="absolute inset-0 rounded-full border-4 border-transparent animate-pulse-border"></div>}
+                    </Button>
+                    <p className="text-muted-foreground text-base h-5">{getStatusText()}</p>
                 </div>
-            ))}
-             {isLoading && (
-               <div className="flex items-start gap-3 justify-start">
-                  <Avatar className="w-8 h-8 md:w-9 md:h-9 border"><AvatarFallback className="bg-primary text-primary-foreground"><Bot className="w-4 h-4 md:w-5 md:h-5"/></AvatarFallback></Avatar>
-                    <div className="bg-background text-card-foreground rounded-xl px-4 py-3 shadow-sm rounded-bl-none border flex items-center text-sm md:text-base">
-                      <Loader2 className="w-5 h-5 animate-spin mr-2"/> Thinking...
-                    </div>
-               </div>
-            )}
-          </div>
-        </ScrollArea>
-        <div className="mt-auto p-4 flex flex-col items-center justify-center gap-4">
-            <Card className="w-full max-w-xl h-24">
-                <CardContent className="p-4 h-full">
-                    <p className="text-sm text-muted-foreground italic">
-                        {isRecording ? transcript || 'Listening...' : messages.length === 0 ? 'Press the mic to speak.' : 'Press the mic to reply.'}
-                    </p>
-                </CardContent>
-            </Card>
-            <Button
-                size="lg"
-                variant={isRecording ? 'destructive' : 'default'}
-                className="rounded-full w-20 h-20 shadow-lg"
-                onClick={handleMicClick}
-                disabled={isLoading}
-            >
-                {isRecording ? <Square className="w-8 h-8" /> : <Mic className="w-8 h-8" />}
-            </Button>
-            <p className="text-sm text-muted-foreground">
-                {isRecording ? 'Listening for you to speak...' : 'Press to talk'}
-            </p>
-        </div>
-      </main>
-    </div>
+
+                <div className={cn("mt-12 text-left transition-opacity duration-500", (transcript || aiResponse || isLoading) ? "opacity-100" : "opacity-0")}>
+                    {transcript && (
+                        <Card className="bg-muted border-none mb-4">
+                            <CardHeader>
+                                <CardTitle className="text-sm font-semibold">You said:</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <p className="text-muted-foreground italic">"{transcript}"</p>
+                            </CardContent>
+                        </Card>
+                    )}
+                    {(aiResponse || isLoading) && (
+                        <Card className="bg-card">
+                            <CardHeader>
+                                <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                                    <Bot className="w-4 h-4 text-primary" />
+                                    Mitra replied:
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                {isLoading ? (
+                                    <div className="flex items-center gap-2 text-muted-foreground">
+                                        <Loader2 className="w-5 h-5 animate-spin" />
+                                        <span>Thinking...</span>
+                                    </div>
+                                ) : (
+                                    <p className="text-foreground">{aiResponse}</p>
+                                )}
+                            </CardContent>
+                        </Card>
+                    )}
+                </div>
+            </div>
+        </main>
+      </div>
+    </>
   );
 }
