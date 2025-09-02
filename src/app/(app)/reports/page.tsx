@@ -92,7 +92,7 @@ const ReportCard = ({ report }: { report: Report }) => {
                          <>
                             <div>
                                 <h3 className="text-lg font-semibold">Initial Assessment (Score: {report.score})</h3>
-                                <p className="mt-2 text-gray-300"><strong>{report.result.level}:</strong> {report.result.recommendation}</p>
+                                {report.result && <p className="mt-2 text-gray-300"><strong>{report.result.level}:</strong> {report.result.recommendation}</p>}
                             </div>
                              <div>
                                 <h3 className="text-lg font-semibold">Doctor's Feedback</h3>
@@ -133,7 +133,7 @@ const ReportCard = ({ report }: { report: Report }) => {
                      <>
                         <div>
                             <h3 className="text-lg font-semibold flex items-center gap-2"><FileQuestion className="w-5 h-5"/>Initial Assessment</h3>
-                             <p className="mt-2 text-gray-400 p-4 bg-black/20 rounded-md"><strong>{report.result.level}:</strong> {report.result.recommendation}</p>
+                             {report.result && <p className="mt-2 text-gray-400 p-4 bg-black/20 rounded-md"><strong>{report.result.level}:</strong> {report.result.recommendation}</p>}
                         </div>
                          <div>
                             <h3 className="text-lg font-semibold">Doctor's Feedback</h3>
