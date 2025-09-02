@@ -19,6 +19,8 @@ import {
   writeBatch,
   updateDoc,
   increment,
+  DocumentData,
+  WithFieldValue,
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { SidebarTrigger } from '@/components/ui/sidebar';
@@ -350,23 +352,23 @@ export default function CommunityPage() {
     setIsSubmitting(true);
 
     try {
-      let imageUrl: string | undefined;
+      const postData: WithFieldValue<DocumentData> = {
+        authorId: user.uid,
+        authorName: user.displayName || user.email,
+        content: newPostContent,
+        createdAt: serverTimestamp(),
+        commentCount: 0,
+        likeCount: 0,
+      };
 
       if (postImage) {
         const imageRef = ref(storage, `community/${user.uid}/${Date.now()}_${postImage.name}`);
         const snapshot = await uploadBytes(imageRef, postImage);
-        imageUrl = await getDownloadURL(snapshot.ref);
+        const imageUrl = await getDownloadURL(snapshot.ref);
+        postData.imageUrl = imageUrl;
       }
 
-      await addDoc(collection(db, 'posts'), {
-        authorId: user.uid,
-        authorName: user.displayName || user.email,
-        content: newPostContent,
-        imageUrl: imageUrl || null,
-        createdAt: serverTimestamp(),
-        commentCount: 0,
-        likeCount: 0,
-      });
+      await addDoc(collection(db, 'posts'), postData);
       
       setNewPostContent('');
       removeImage();
