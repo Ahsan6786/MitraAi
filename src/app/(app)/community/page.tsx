@@ -299,6 +299,16 @@ function CommentSection({ postId }: { postId: string }) {
     );
 }
 
+interface PostData {
+    authorId: string;
+    authorName: string | null;
+    content: string;
+    createdAt: any;
+    commentCount: number;
+    likeCount: number;
+    imageUrl?: string;
+}
+
 export default function CommunityPage() {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -350,9 +360,16 @@ export default function CommunityPage() {
     e.preventDefault();
     if ((!newPostContent.trim() && !postImage) || !user) return;
     setIsSubmitting(true);
-
+  
     try {
-      const postData: WithFieldValue<DocumentData> = {
+      let imageUrl: string | undefined;
+      if (postImage) {
+        const imageRef = ref(storage, `community/${user.uid}/${Date.now()}_${postImage.name}`);
+        const snapshot = await uploadBytes(imageRef, postImage);
+        imageUrl = await getDownloadURL(snapshot.ref);
+      }
+  
+      const postData: PostData = {
         authorId: user.uid,
         authorName: user.displayName || user.email,
         content: newPostContent,
@@ -360,14 +377,11 @@ export default function CommunityPage() {
         commentCount: 0,
         likeCount: 0,
       };
-
-      if (postImage) {
-        const imageRef = ref(storage, `community/${user.uid}/${Date.now()}_${postImage.name}`);
-        const snapshot = await uploadBytes(imageRef, postImage);
-        const imageUrl = await getDownloadURL(snapshot.ref);
+  
+      if (imageUrl) {
         postData.imageUrl = imageUrl;
       }
-
+  
       await addDoc(collection(db, 'posts'), postData);
       
       setNewPostContent('');
