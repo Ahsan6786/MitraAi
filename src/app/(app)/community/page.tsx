@@ -101,18 +101,18 @@ function PostCard({ post }: { post: Post }) {
 
 
   return (
-    <Card className="border border-slate-200">
+    <Card className="border">
       <CardHeader>
         <div className="flex items-start justify-between">
             <div className="flex items-center gap-4">
-                <Avatar className="size-10 rounded-full bg-slate-200 flex items-center justify-center">
-                    <AvatarFallback className="bg-slate-200">
-                        <User className="text-slate-500" />
+                <Avatar className="size-10 rounded-full bg-muted flex items-center justify-center">
+                    <AvatarFallback className="bg-muted">
+                        <User className="text-muted-foreground" />
                     </AvatarFallback>
                 </Avatar>
                 <div>
-                    <h3 className="text-slate-800 text-base font-bold">{post.authorName}</h3>
-                    <p className="text-slate-500 text-sm">
+                    <h3 className="text-foreground text-base font-bold">{post.authorName}</h3>
+                    <p className="text-muted-foreground text-sm">
                         Posted {post.createdAt ? formatDistanceToNow(post.createdAt.toDate(), { addSuffix: true }) : 'just now'}
                     </p>
                 </div>
@@ -120,7 +120,7 @@ function PostCard({ post }: { post: Post }) {
             {canDelete && (
                 <AlertDialog>
                     <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="icon" disabled={isDeleting} className="text-slate-500 hover:text-slate-700">
+                        <Button variant="ghost" size="icon" disabled={isDeleting} className="text-muted-foreground hover:text-foreground">
                             {isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <MoreHorizontal className="w-5 h-5" />}
                         </Button>
                     </AlertDialogTrigger>
@@ -141,15 +141,15 @@ function PostCard({ post }: { post: Post }) {
         </div>
       </CardHeader>
       <CardContent>
-        <p className="text-slate-600 text-base leading-relaxed whitespace-pre-wrap">{post.content}</p>
+        <p className="text-secondary-foreground text-base leading-relaxed whitespace-pre-wrap">{post.content}</p>
       </CardContent>
-      <CardFooter className="flex justify-between items-center text-slate-500">
+      <CardFooter className="flex justify-between items-center text-muted-foreground">
          <div className="flex items-center gap-4">
-            <button className="flex items-center gap-1.5 hover:text-blue-600">
+            <button className="flex items-center gap-1.5 hover:text-primary">
                 <ThumbsUp className="w-4 h-4" />
                 <span className="text-sm font-medium">{post.likeCount || 0}</span>
             </button>
-            <button className="flex items-center gap-1.5 hover:text-blue-600" onClick={() => setShowComments(!showComments)}>
+            <button className="flex items-center gap-1.5 hover:text-primary" onClick={() => setShowComments(!showComments)}>
                 <MessageSquare className="w-4 h-4" />
                 <span className="text-sm font-medium">{post.commentCount || 0}</span>
             </button>
@@ -232,17 +232,17 @@ function CommentSection({ postId }: { postId: string }) {
                             <Avatar className="w-8 h-8">
                                <AvatarFallback>{comment.authorName ? comment.authorName[0].toUpperCase() : 'A'}</AvatarFallback>
                             </Avatar>
-                            <div className="flex-1 bg-slate-100 p-3 rounded-lg">
+                            <div className="flex-1 bg-muted p-3 rounded-lg">
                                <div className="flex justify-between items-center">
-                                    <p className="text-sm font-semibold text-slate-800">{comment.authorName}</p>
+                                    <p className="text-sm font-semibold text-foreground">{comment.authorName}</p>
                                     <div className="flex items-center gap-1">
-                                        <p className="text-xs text-slate-500 mr-1">
+                                        <p className="text-xs text-muted-foreground mr-1">
                                             {comment.createdAt ? formatDistanceToNow(comment.createdAt.toDate(), { addSuffix: true }) : ''}
                                         </p>
                                         {(isCommentAuthor || isOwner) && (
                                              <AlertDialog>
                                                 <AlertDialogTrigger asChild>
-                                                    <Button variant="ghost" size="icon" className="h-6 w-6 text-slate-500 hover:text-slate-700">
+                                                    <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-foreground">
                                                         <Trash2 className="w-4 h-4" />
                                                     </Button>
                                                 </AlertDialogTrigger>
@@ -262,7 +262,7 @@ function CommentSection({ postId }: { postId: string }) {
                                         )}
                                     </div>
                                </div>
-                                <p className="text-sm mt-1 text-slate-700">{comment.content}</p>
+                                <p className="text-sm mt-1 text-secondary-foreground">{comment.content}</p>
                             </div>
                         </div>
                     );
@@ -330,7 +330,7 @@ export default function CommunityPage() {
   };
 
   return (
-    <div className="h-full flex flex-col bg-[#f7f9fc]">
+    <div className="h-full flex flex-col bg-muted/30">
       <header className="border-b bg-background p-3 md:p-4 flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <SidebarTrigger className="md:hidden" />
@@ -346,13 +346,13 @@ export default function CommunityPage() {
       <main className="flex-1 overflow-auto p-2 sm:p-4 md:p-6">
         <div className="max-w-3xl mx-auto space-y-6">
             <div className="p-4">
-                <h1 className="text-slate-800 text-4xl font-bold leading-tight tracking-tight">Community Forum</h1>
-                <p className="text-slate-500 text-lg font-normal leading-normal mt-2">A safe space to share and connect with others.</p>
+                <h1 className="text-foreground text-4xl font-bold leading-tight tracking-tight">Community Forum</h1>
+                <p className="text-muted-foreground text-lg font-normal leading-normal mt-2">A safe space to share and connect with others.</p>
             </div>
 
             <div className="flex flex-col md:flex-row items-center justify-between gap-4 p-4">
                 <div className="relative w-full md:w-auto flex-1">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-5 h-5" />
                     <Input className="pl-10" placeholder="Search for posts..." type="text"/>
                 </div>
                 <Button className="w-full md:w-auto">
@@ -401,4 +401,3 @@ export default function CommunityPage() {
     </div>
   );
 }
-
