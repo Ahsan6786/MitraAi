@@ -163,11 +163,15 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
             )}
             {userType === 'user' && (
               <>
+                {/* Highlighted & Reordered Items */}
                 <SidebarMenuItem>
                   <SidebarMenuButton asChild isActive={pathname === '/chat'}>
-                    <Link href="/chat" onClick={handleLinkClick}>
-                      <MessageSquare />
-                      <span>MitraGPT</span>
+                    <Link href="/chat" onClick={handleLinkClick} className="flex items-center justify-between w-full">
+                      <div className="flex items-center gap-2">
+                        <MessageSquare />
+                        <span>MitraGPT</span>
+                      </div>
+                      <Trophy className="w-4 h-4 text-amber-500" />
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -182,7 +186,53 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild isActive={pathname === '/screening-tools'}>
+                    <Link href="/screening-tools" onClick={handleLinkClick} className="flex items-center justify-between w-full">
+                      <div className="flex items-center gap-2">
+                        <FileText />
+                        <span>Screening Tools</span>
+                      </div>
+                      <Trophy className="w-4 h-4 text-amber-500" />
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild isActive={pathname.startsWith('/culture')}>
+                    <Link href="/culture" onClick={handleLinkClick} className="flex items-center justify-between w-full">
+                      <div className="flex items-center gap-2">
+                        <LandPlot />
+                        <span>Our Culture</span>
+                      </div>
+                      <Trophy className="w-4 h-4 text-amber-500" />
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
                  <SidebarMenuItem>
+                  <SidebarMenuButton asChild isActive={pathname === '/community'}>
+                    <Link href="/community" onClick={handleLinkClick} className="flex items-center justify-between w-full">
+                       <div className="flex items-center gap-2">
+                        <Users />
+                        <span>Community</span>
+                      </div>
+                      <Trophy className="w-4 h-4 text-amber-500" />
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={pathname === '/reports'}
+                  >
+                    <Link href="/reports" onClick={handleLinkClick}>
+                      <FileText />
+                      <span>Doctor's Reports</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+
+                {/* Rest of the items */}
+                <SidebarMenuItem>
                   <SidebarMenuButton asChild isActive={pathname === '/dashboard'}>
                     <Link href="/dashboard" onClick={handleLinkClick}>
                       <LayoutDashboard />
@@ -199,35 +249,15 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
                 <SidebarMenuItem>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={pathname === '/screening-tools'}
-                  >
-                    <Link href="/screening-tools" onClick={handleLinkClick}>
-                      <FileText />
-                      <span>Screening Tools</span>
+                  <SidebarMenuButton asChild isActive={pathname === '/live-mood'}>
+                    <Link href="/live-mood" onClick={handleLinkClick}>
+                      <Camera />
+                      <span>Live Mood Analysis</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
                 <SidebarMenuItem>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={pathname === '/live-mood'}
-                  >
-                    <Link href="/live-mood" onClick={handleLinkClick} className="flex items-center justify-between w-full">
-                      <div className="flex items-center gap-2">
-                        <Camera />
-                        <span>Live Mood Analysis</span>
-                      </div>
-                      <Trophy className="w-4 h-4 text-amber-500" />
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={pathname === '/booking'}
-                  >
+                  <SidebarMenuButton asChild isActive={pathname === '/booking'}>
                     <Link href="/booking" onClick={handleLinkClick}>
                       <CalendarPlus />
                       <span>Book Appointment</span>
@@ -235,35 +265,10 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
                 <SidebarMenuItem>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={pathname === '/my-appointments'}
-                  >
+                  <SidebarMenuButton asChild isActive={pathname === '/my-appointments'}>
                     <Link href="/my-appointments" onClick={handleLinkClick}>
                       <CalendarClock />
                       <span>My Appointments</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                 <SidebarMenuItem>
-                  <SidebarMenuButton asChild isActive={pathname === '/community'}>
-                    <Link href="/community" onClick={handleLinkClick} className="flex items-center justify-between w-full">
-                       <div className="flex items-center gap-2">
-                        <Users />
-                        <span>Community</span>
-                      </div>
-                      <Star className="w-4 h-4 text-amber-500" />
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={pathname.startsWith('/culture')}
-                  >
-                    <Link href="/culture" onClick={handleLinkClick}>
-                      <LandPlot />
-                      <span>Our Culture</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -302,17 +307,6 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
                     <Link href="/exercises" onClick={handleLinkClick}>
                       <HeartPulse />
                       <span>Mindful Exercises</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={pathname === '/reports'}
-                  >
-                    <Link href="/reports" onClick={handleLinkClick}>
-                      <FileText />
-                      <span>Doctor's Reports</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
