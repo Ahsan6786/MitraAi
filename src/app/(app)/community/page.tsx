@@ -120,8 +120,8 @@ function PostCard({ post }: { post: Post }) {
             {canDelete && (
                 <AlertDialog>
                     <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="icon" disabled={isDeleting} className="text-muted-foreground hover:text-foreground">
-                            {isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <MoreHorizontal className="w-5 h-5" />}
+                        <Button variant="ghost" size="icon" disabled={isDeleting} className="text-muted-foreground hover:text-destructive">
+                            {isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-5 h-5" />}
                         </Button>
                     </AlertDialogTrigger>
                     <AlertDialogContent>
@@ -242,7 +242,7 @@ function CommentSection({ postId }: { postId: string }) {
                                         {(isCommentAuthor || isOwner) && (
                                              <AlertDialog>
                                                 <AlertDialogTrigger asChild>
-                                                    <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-foreground">
+                                                    <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-destructive">
                                                         <Trash2 className="w-4 h-4" />
                                                     </Button>
                                                 </AlertDialogTrigger>
@@ -290,6 +290,7 @@ export default function CommunityPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [newPostContent, setNewPostContent] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isCreatingPost, setIsCreatingPost] = useState(false);
 
   useEffect(() => {
     const q = query(collection(db, 'posts'), orderBy('createdAt', 'desc'));
@@ -321,6 +322,7 @@ export default function CommunityPage() {
         likeCount: 0,
       });
       setNewPostContent('');
+      setIsCreatingPost(false);
     } catch (error) {
       console.error('Error creating post:', error);
       toast({ title: "Error", description: "Could not create post.", variant: "destructive" });
@@ -355,33 +357,38 @@ export default function CommunityPage() {
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-5 h-5" />
                     <Input className="pl-10" placeholder="Search for posts..." type="text"/>
                 </div>
-                <Button className="w-full md:w-auto">
+                <Button className="w-full md:w-auto" onClick={() => setIsCreatingPost(true)}>
                     <Plus className="mr-2 h-4 w-4" />Create Post
                 </Button>
             </div>
             
-            <Card>
-                <form onSubmit={handleCreatePost}>
-                <CardHeader>
-                    <CardTitle className="text-lg">Share with the Community</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <Textarea
-                    placeholder="What's on your mind?"
-                    rows={4}
-                    value={newPostContent}
-                    onChange={(e) => setNewPostContent(e.target.value)}
-                    disabled={isSubmitting}
-                    />
-                </CardContent>
-                <CardFooter>
-                    <Button type="submit" disabled={isSubmitting || !newPostContent.trim()}>
-                    {isSubmitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                    Post
-                    </Button>
-                </CardFooter>
-                </form>
-            </Card>
+            {isCreatingPost && (
+              <Card>
+                  <form onSubmit={handleCreatePost}>
+                  <CardHeader>
+                      <CardTitle className="text-lg">Share with the Community</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                      <Textarea
+                      placeholder="What's on your mind?"
+                      rows={4}
+                      value={newPostContent}
+                      onChange={(e) => setNewPostContent(e.target.value)}
+                      disabled={isSubmitting}
+                      />
+                  </CardContent>
+                  <CardFooter className="flex justify-end gap-2">
+                      <Button variant="ghost" onClick={() => setIsCreatingPost(false)} disabled={isSubmitting}>
+                          Cancel
+                      </Button>
+                      <Button type="submit" disabled={isSubmitting || !newPostContent.trim()}>
+                          {isSubmitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                          Post
+                      </Button>
+                  </CardFooter>
+                  </form>
+              </Card>
+            )}
 
             {isLoading ? (
                 <div className="flex justify-center py-10">
