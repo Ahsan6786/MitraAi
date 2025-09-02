@@ -137,7 +137,6 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
               <Logo className="size-8 text-primary" />
               <span className="text-lg font-semibold font-headline">MitraAI</span>
             </div>
-            <SidebarTrigger />
           </div>
         </SidebarHeader>
         <SidebarContent>
@@ -335,7 +334,10 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
       </Sidebar>
       <SidebarInset>
         <div className="flex flex-col h-full">
-          <div className="flex-1">
+          <div className="flex-1 relative">
+            <div className="absolute top-3 left-3 z-10">
+                <SidebarTrigger />
+            </div>
             {children}
           </div>
           <footer className="p-4 border-t text-center text-xs text-muted-foreground bg-background">

@@ -10,7 +10,7 @@ export default function ChatPage() {
     <div className="h-full flex flex-col">
       <header className="border-b p-3 md:p-4 flex items-center justify-between gap-2 shrink-0">
         <div className="flex items-center gap-2">
-          <SidebarTrigger className="md:hidden" />
+          {/* This SidebarTrigger is now handled by the layout */}
           <div>
             <h1 className="text-lg md:text-xl font-bold">MitraGPT</h1>
             <p className="text-sm text-muted-foreground">Your Personal AI Companion</p>
