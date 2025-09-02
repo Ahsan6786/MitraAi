@@ -120,21 +120,13 @@ export default function AffirmationsPage() {
                                             "{affirmation}"
                                         </p>
                                     )}
-                                    <div className="mt-8 flex items-center justify-center gap-4">
-                                        <Button variant="outline" className="rounded-full bg-background/70">
-                                            <Heart className="mr-2 h-4 w-4"/> Favorite
-                                        </Button>
-                                        <Button variant="outline" className="rounded-full bg-background/70">
-                                            <Share2 className="mr-2 h-4 w-4"/> Share
+                                    <div className="mt-8 flex justify-center">
+                                         <Button onClick={handleGenerateAffirmation} disabled={isGenerating} size="lg" className="rounded-full shadow-lg">
+                                            <RefreshCw className="mr-2 h-4 w-4" />
+                                            New Affirmation
                                         </Button>
                                     </div>
                                 </div>
-                            </div>
-                            <div className="mt-8 flex justify-center">
-                                 <Button onClick={handleGenerateAffirmation} disabled={isGenerating} size="lg" className="rounded-full shadow-lg">
-                                    <RefreshCw className="mr-2 h-4 w-4" />
-                                    New Affirmation
-                                </Button>
                             </div>
                         </div>
                     </div>
