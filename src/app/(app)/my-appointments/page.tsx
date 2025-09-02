@@ -5,57 +5,90 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { db } from '@/lib/firebase';
 import { collection, query, where, onSnapshot, orderBy, Timestamp, doc, updateDoc } from 'firebase/firestore';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { ThemeToggle } from '@/components/theme-toggle';
-import { Loader2, CalendarClock, CheckCircle, Clock, XCircle, Ban } from 'lucide-react';
+import { Loader2, CheckCircle, Clock, XCircle, Ban, CalendarClock } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface Booking {
     id: string;
     counsellor_name: string;
+    counsellor_avatar?: string;
     appointment_date: string;
     appointment_time: string;
     appointment_status: 'Pending' | 'Confirmed' | 'Rejected' | 'Cancelled';
-    counsellor_notes?: string;
     createdAt: Timestamp;
 }
 
-const StatusInfo = ({ status }: { status: Booking['appointment_status'] }) => {
-    switch (status) {
-        case 'Confirmed':
-            return <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"><CheckCircle className="w-3 h-3 mr-1"/>Confirmed</Badge>;
-        case 'Rejected':
-            return <Badge variant="destructive"><XCircle className="w-3 h-3 mr-1"/>Rejected</Badge>;
-        case 'Cancelled':
-            return <Badge variant="outline" className="bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200"><Ban className="w-3 h-3 mr-1"/>Cancelled</Badge>;
-        case 'Pending':
-        default:
-            return <Badge variant="outline"><Clock className="w-3 h-3 mr-1"/>Pending</Badge>;
+const AppointmentCard = ({ booking, onCancel }: { booking: Booking, onCancel: (id: string) => void }) => {
+    const { toast } = useToast();
+    
+    const handleBookAgain = () => {
+        // In a real app, you might pass counsellor ID to pre-fill the booking page
+        toast({ title: "Redirecting to booking page..." });
+        // router.push('/booking');
     }
+
+    return (
+        <div className="bg-card rounded-lg border p-6 flex flex-col md:flex-row items-start md:items-center gap-6">
+            <div className="flex items-center gap-4 flex-1">
+                <Avatar className="w-16 h-16">
+                    <AvatarImage src={booking.counsellor_avatar} alt={booking.counsellor_name} />
+                    <AvatarFallback>{booking.counsellor_name.charAt(0)}</AvatarFallback>
+                </Avatar>
+                <div>
+                    <h3 className="text-foreground text-lg font-bold">{booking.counsellor_name}</h3>
+                    <p className="text-muted-foreground text-sm">
+                        {booking.appointment_status === 'Pending' ? `Session requested for: ` : ''}
+                        {booking.appointment_date} at {booking.appointment_time}
+                    </p>
+                </div>
+            </div>
+            <div className="flex items-center gap-2">
+                {booking.appointment_status === 'Pending' && <Badge variant="outline" className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300 border-yellow-300"><Clock className="w-3 h-3 mr-1.5"/>Pending</Badge>}
+                {booking.appointment_status === 'Confirmed' && <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-200 border-green-300"><CheckCircle className="w-3 h-3 mr-1.5"/>Confirmed</Badge>}
+                {booking.appointment_status === 'Rejected' && <Badge variant="destructive"><XCircle className="w-3 h-3 mr-1.5"/>Rejected</Badge>}
+                {booking.appointment_status === 'Cancelled' && <Badge variant="outline"><Ban className="w-3 h-3 mr-1.5"/>Cancelled</Badge>}
+            </div>
+             <div className="flex items-center gap-4 w-full md:w-auto">
+                {booking.appointment_status === 'Pending' && (
+                    <>
+                        <Button variant="ghost" size="sm" onClick={() => onCancel(booking.id)}>Cancel Request</Button>
+                        <Button variant="secondary" size="sm">View Details</Button>
+                    </>
+                )}
+                 {booking.appointment_status === 'Confirmed' && (
+                    <>
+                        <Button variant="ghost" size="sm">Reschedule</Button>
+                        <Button size="sm">Join Session</Button>
+                    </>
+                )}
+                 {booking.appointment_status === 'Rejected' && (
+                     <>
+                        <Button variant="secondary" size="sm">View Details</Button>
+                        <Button size="sm" asChild><Link href="/booking">Book Again</Link></Button>
+                    </>
+                )}
+                {booking.appointment_status === 'Cancelled' && (
+                    <Button size="sm" asChild><Link href="/booking">Book Again</Link></Button>
+                )}
+            </div>
+        </div>
+    )
 }
+
 
 export default function MyAppointmentsPage() {
     const { user } = useAuth();
     const { toast } = useToast();
     const [bookings, setBookings] = useState<Booking[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [isCancelling, setIsCancelling] = useState<string | null>(null);
 
     useEffect(() => {
         if (!user) return;
@@ -76,7 +109,6 @@ export default function MyAppointmentsPage() {
     }, [user]);
 
     const handleCancelBooking = async (bookingId: string) => {
-        setIsCancelling(bookingId);
         try {
             const bookingRef = doc(db, 'bookings', bookingId);
             await updateDoc(bookingRef, {
@@ -86,87 +118,85 @@ export default function MyAppointmentsPage() {
         } catch (error) {
             console.error("Error cancelling booking: ", error);
             toast({ title: "Error", description: "Could not cancel the appointment.", variant: "destructive" });
-        } finally {
-            setIsCancelling(null);
         }
     };
 
+    const upcomingBookings = bookings.filter(b => b.appointment_status === 'Pending' || b.appointment_status === 'Confirmed');
+    const pastBookings = bookings.filter(b => b.appointment_status === 'Rejected' || b.appointment_status === 'Cancelled');
+    
+    const pending = upcomingBookings.filter(b => b.appointment_status === 'Pending');
+    const confirmed = upcomingBookings.filter(b => b.appointment_status === 'Confirmed');
+
+
     return (
-        <div className="h-full flex flex-col">
-            <header className="border-b p-3 md:p-4 flex items-center justify-between gap-2">
+        <div className="h-full flex flex-col bg-muted/30">
+            <header className="border-b bg-background p-3 md:p-4 flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
                     <SidebarTrigger className="md:hidden" />
                     <div>
                         <h1 className="text-lg md:text-xl font-bold">My Appointments</h1>
                         <p className="text-sm text-muted-foreground">
-                            Track the status of your counsellor bookings.
+                            Manage your upcoming and past counseling sessions.
                         </p>
                     </div>
                 </div>
                 <ThemeToggle />
             </header>
             <main className="flex-1 overflow-auto p-2 sm:p-4 md:p-6">
-                <div className="max-w-3xl mx-auto">
+                <div className="max-w-5xl mx-auto">
                     {isLoading ? (
                         <div className="flex justify-center py-10">
                             <Loader2 className="w-8 h-8 animate-spin text-primary" />
                         </div>
-                    ) : bookings.length === 0 ? (
-                        <Card className="text-center p-6 md:p-10">
-                            <CalendarClock className="mx-auto w-12 h-12 text-muted-foreground mb-4"/>
-                            <CardTitle>No Appointments Yet</CardTitle>
-                            <CardDescription className="mt-2">
-                                You haven't booked any appointments. <Link href="/booking" className="text-primary underline">Book one now</Link>.
-                            </CardDescription>
-                        </Card>
                     ) : (
-                        <div className="space-y-4">
-                            {bookings.map(booking => (
-                                <Card key={booking.id} className={cn((booking.appointment_status === 'Rejected' || booking.appointment_status === 'Cancelled') && 'bg-muted/50')}>
-                                    <CardHeader>
-                                        <div className="flex justify-between items-start">
+                         <Tabs defaultValue="upcoming" className="w-full">
+                            <TabsList className="bg-transparent p-0 border-b rounded-none w-full justify-start">
+                                <TabsTrigger value="upcoming" className="data-[state=active]:border-primary data-[state=inactive]:border-transparent border-b-2 rounded-none shadow-none bg-transparent data-[state=active]:text-primary data-[state=inactive]:text-muted-foreground">Upcoming</TabsTrigger>
+                                <TabsTrigger value="past" className="data-[state=active]:border-primary data-[state=inactive]:border-transparent border-b-2 rounded-none shadow-none bg-transparent data-[state=active]:text-primary data-[state=inactive]:text-muted-foreground">Past</TabsTrigger>
+                            </TabsList>
+                            <TabsContent value="upcoming" className="mt-6">
+                                {upcomingBookings.length === 0 ? (
+                                    <div className="text-center py-10">
+                                        <CalendarClock className="mx-auto w-12 h-12 text-muted-foreground mb-4"/>
+                                        <h3 className="text-xl font-semibold">No Upcoming Appointments</h3>
+                                        <p className="text-muted-foreground mt-2">You have no pending or confirmed appointments.</p>
+                                        <Button asChild className="mt-4"><Link href="/booking">Book a Session</Link></Button>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-8">
+                                        {pending.length > 0 && (
                                             <div>
-                                                <CardTitle className="text-lg">{booking.counsellor_name}</CardTitle>
-                                                <CardDescription>
-                                                    {booking.appointment_date} at {booking.appointment_time}
-                                                </CardDescription>
+                                                <h2 className="text-lg font-semibold text-foreground mb-4">Pending Confirmation</h2>
+                                                <div className="space-y-4">
+                                                    {pending.map(booking => <AppointmentCard key={booking.id} booking={booking} onCancel={handleCancelBooking} />)}
+                                                </div>
                                             </div>
-                                            <StatusInfo status={booking.appointment_status} />
-                                        </div>
-                                    </CardHeader>
-                                    {booking.counsellor_notes && (
-                                        <CardContent>
-                                            <p className="text-sm font-semibold">Message from Counsellor:</p>
-                                            <p className="text-sm text-muted-foreground p-3 bg-muted rounded-md whitespace-pre-wrap mt-1">{booking.counsellor_notes}</p>
-                                        </CardContent>
-                                    )}
-                                    {(booking.appointment_status === 'Pending' || booking.appointment_status === 'Confirmed') && (
-                                        <CardFooter>
-                                            <AlertDialog>
-                                                <AlertDialogTrigger asChild>
-                                                    <Button variant="destructive" size="sm" disabled={isCancelling === booking.id}>
-                                                        {isCancelling === booking.id && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                                        Cancel Appointment
-                                                    </Button>
-                                                </AlertDialogTrigger>
-                                                <AlertDialogContent>
-                                                    <AlertDialogHeader>
-                                                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                                        <AlertDialogDescription>
-                                                            This action cannot be undone. This will cancel your appointment with {booking.counsellor_name}.
-                                                        </AlertDialogDescription>
-                                                    </AlertDialogHeader>
-                                                    <AlertDialogFooter>
-                                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                        <AlertDialogAction onClick={() => handleCancelBooking(booking.id)}>Continue</AlertDialogAction>
-                                                    </AlertDialogFooter>
-                                                </AlertDialogContent>
-                                            </AlertDialog>
-                                        </CardFooter>
-                                    )}
-                                </Card>
-                            ))}
-                        </div>
+                                        )}
+                                        {confirmed.length > 0 && (
+                                            <div>
+                                                <h2 className="text-lg font-semibold text-foreground mb-4">Confirmed</h2>
+                                                <div className="space-y-4">
+                                                    {confirmed.map(booking => <AppointmentCard key={booking.id} booking={booking} onCancel={handleCancelBooking} />)}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                            </TabsContent>
+                            <TabsContent value="past" className="mt-6">
+                               {pastBookings.length === 0 ? (
+                                    <div className="text-center py-10">
+                                        <CalendarClock className="mx-auto w-12 h-12 text-muted-foreground mb-4"/>
+                                        <h3 className="text-xl font-semibold">No Past Appointments</h3>
+                                        <p className="text-muted-foreground mt-2">Your past appointment history will appear here.</p>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-8">
+                                        {pastBookings.map(booking => <AppointmentCard key={booking.id} booking={booking} onCancel={handleCancelBooking} />)}
+                                    </div>
+                                )}
+                            </TabsContent>
+                        </Tabs>
                     )}
                 </div>
             </main>

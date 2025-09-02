@@ -6,7 +6,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { db } from '@/lib/firebase';
 import { collection, query, where, getDocs, addDoc, serverTimestamp } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Loader2, CalendarPlus, Mail, Phone, Calendar as CalendarIcon } from 'lucide-react';
 import { SidebarTrigger } from '@/components/ui/sidebar';
@@ -32,6 +32,7 @@ interface Counsellor {
   name: string;
   email: string;
   phone: string;
+  avatarUrl?: string;
 }
 
 function BookingDialog({ counsellor, user, isOpen, onOpenChange }: { counsellor: Counsellor | null, user: any, isOpen: boolean, onOpenChange: (open: boolean) => void }) {
@@ -67,6 +68,7 @@ function BookingDialog({ counsellor, user, isOpen, onOpenChange }: { counsellor:
                 counsellor_id: counsellor.id,
                 counsellor_name: counsellor.name,
                 counsellor_email: counsellor.email,
+                counsellor_avatar: counsellor.avatarUrl || null,
                 appointment_date: format(date, 'yyyy-MM-dd'),
                 appointment_time: time,
                 appointment_status: 'Pending',
@@ -170,7 +172,12 @@ export default function BookingPage() {
             try {
                 const q = query(collection(db, 'counsellors'), where('status', '==', 'approved'));
                 const querySnapshot = await getDocs(q);
-                const counsellorsData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Counsellor));
+                const counsellorsData = querySnapshot.docs.map(doc => {
+                    const data = doc.data();
+                    // Add a placeholder avatar if none exists
+                    const avatarUrl = data.avatarUrl || `https://i.pravatar.cc/150?u=${doc.id}`;
+                    return { id: doc.id, ...data, avatarUrl } as Counsellor
+                });
                 setCounsellors(counsellorsData);
             } catch (error) {
                 console.error("Error fetching counsellors:", error);
@@ -221,6 +228,7 @@ export default function BookingPage() {
                                 <CardHeader>
                                     <div className="flex items-center gap-4">
                                         <Avatar className="w-16 h-16">
+                                            <AvatarImage src={c.avatarUrl} alt={c.name} />
                                             <AvatarFallback>{c.name.charAt(0)}</AvatarFallback>
                                         </Avatar>
                                         <div>
