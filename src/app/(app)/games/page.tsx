@@ -10,6 +10,7 @@ import { CheckCircle, Lightbulb, Gamepad2, RotateCcw, ArrowLeft, Cat, Dog, Bird,
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { cn } from '@/lib/utils';
+import Image from 'next/image';
 
 // --- Game Components ---
 
@@ -404,11 +405,12 @@ function TicTacToeGame() {
     );
 }
 
+
 const games = [
+    { id: 'guess-the-number', name: 'Guess the Number', component: <GuessTheNumberGame />, description: "I'm thinking of a number between 1 and 100. Can you guess it?", image: "https://picsum.photos/600/400", imageHint: "numbers abstract" },
     { id: 'memory-match', name: 'Memory Match', component: <MemoryMatchGame />, description: "Test your memory with this classic game. Match pairs of cards to clear the board and improve focus.", image: "https://picsum.photos/600/400", imageHint: "abstract pattern" },
     { id: 'word-unscramble', name: 'Word Unscramble', component: <WordUnscrambleGame />, description: "Unscramble letters to form words. A fun way to boost your vocabulary and cognitive skills.", image: "https://picsum.photos/600/400", imageHint: "letters words" },
     { id: 'tic-tac-toe', name: 'Tic-Tac-Toe', component: <TicTacToeGame />, description: "A simple yet engaging game to challenge your strategic thinking. Play against the AI.", image: "https://picsum.photos/600/400", imageHint: "game strategy" },
-    { id: 'guess-the-number', name: 'Guess the Number', component: <GuessTheNumberGame />, description: "I'm thinking of a number between 1 and 100. Can you guess it?", image: "https://picsum.photos/600/400", imageHint: "numbers abstract" },
 ];
 
 // --- Main Page Component ---
@@ -446,7 +448,6 @@ export default function GamesPage() {
                             <p className="mt-2 text-lg text-muted-foreground">Engage your mind with relaxing games designed to promote mental wellness.</p>
                         </div>
 
-                        {/* This is a visual-only tabs navigation for now */}
                         <div className="border-b">
                             <nav className="-mb-px flex space-x-8">
                                 <span className="whitespace-nowrap border-b-2 border-primary px-1 py-4 text-base font-semibold text-primary"> All Games </span>
@@ -457,16 +458,20 @@ export default function GamesPage() {
                            {games.map(game => (
                                 <Card key={game.id} className="bg-card/80 backdrop-blur-sm">
                                     <CardContent className="p-8">
-                                        <div className="grid grid-cols-1 gap-8 lg:grid-cols-2 lg:items-center">
-                                            <div className="aspect-video w-full overflow-hidden rounded-lg bg-muted">
-                                                <img 
-                                                    alt={`${game.name} Game`} 
-                                                    className="h-full w-full object-cover" 
-                                                    src={game.image}
-                                                    data-ai-hint={game.imageHint}
-                                                />
+                                        <div className="grid grid-cols-1 gap-8 lg:grid-cols-3 lg:items-center">
+                                            <div className="lg:col-span-1">
+                                                <div className="aspect-square relative w-full max-w-xs mx-auto overflow-hidden rounded-lg bg-muted">
+                                                    <Image 
+                                                        alt={`${game.name} Game`} 
+                                                        className="h-full w-full object-cover" 
+                                                        src={game.image}
+                                                        width={400}
+                                                        height={400}
+                                                        data-ai-hint={game.imageHint}
+                                                    />
+                                                </div>
                                             </div>
-                                            <div className="flex flex-col justify-center">
+                                            <div className="flex flex-col justify-center lg:col-span-2">
                                                 <h3 className="text-2xl font-bold tracking-tight">{game.name}</h3>
                                                 <p className="mt-2 text-muted-foreground">{game.description}</p>
                                                 <div className="mt-6">
@@ -482,7 +487,6 @@ export default function GamesPage() {
                         </div>
                     </>
                 )}
-
                </div>
             </main>
         </div>
