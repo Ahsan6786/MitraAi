@@ -45,7 +45,8 @@ function QuestionnaireContent() {
         return <div className="flex h-screen items-center justify-center"><Loader2 className="h-8 w-8 animate-spin" /></div>;
     }
 
-    const { questions, scoring_options, interpretation } = questionnaireData;
+    const { questions, interpretation } = questionnaireData;
+    const scoring_options = 'scoring_options' in questionnaireData ? questionnaireData.scoring_options : questionnaireData.scoring_methods.find(m => m.method === 'Likert')?.options || [];
     const totalQuestions = questions.length;
     const progress = ((currentQuestionIndex + 1) / totalQuestions) * 100;
     const currentQuestion = questions[currentQuestionIndex];
@@ -74,9 +75,16 @@ function QuestionnaireContent() {
     };
 
     const getResultFromScore = (score: number) => {
+        if (typeof interpretation === 'string') {
+            return { severity: "Result based on score", recommendation: `${interpretation} Your score is ${score}.` };
+        }
+        
         const resultTier = interpretation.find(tier => {
-            const [min, max] = tier.range.split('-').map(Number);
-            return score >= min && score <= max;
+            if (tier.range.includes('-')) {
+                const [min, max] = tier.range.split('-').map(Number);
+                return score >= min && score <= max;
+            }
+            return false;
         });
         return resultTier ? { severity: resultTier.severity, recommendation: resultTier.recommendation || "Follow up with a professional for guidance." } : { severity: "Result could not be determined", recommendation: "Please consult a professional."};
     };

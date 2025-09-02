@@ -32,7 +32,7 @@ export default function ScreeningToolsPage() {
                             These clinically recognized questionnaires are designed to help you gain insight into your mental health.
                         </p>
                     </div>
-                    <div className="grid gap-6 md:grid-cols-2">
+                    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                         {Object.values(screeningToolsData).map((tool) => (
                             <Card key={tool.id} className="flex flex-col">
                                 <CardHeader>
