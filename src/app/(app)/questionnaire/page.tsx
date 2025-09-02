@@ -41,6 +41,33 @@ function QuestionnaireContent() {
         }
     }, [searchParams, router]);
 
+    // This useEffect must be called before any conditional returns
+    useEffect(() => {
+        const handleKeyDown = (event: KeyboardEvent) => {
+            // Ensure data is loaded before processing keydown
+            if (!questionnaireData) return;
+
+            const currentQuestion = questionnaireData.questions[currentQuestionIndex];
+            const isLastQuestion = currentQuestionIndex === questionnaireData.questions.length - 1;
+
+            if (event.key === 'Enter' && answers[currentQuestion.id] !== undefined) {
+                if (isLastQuestion) {
+                    // We can't call handleSubmit directly as it's not memoized and would
+                    // cause this effect to re-run constantly. Instead, we can simulate a click
+                    // or handle the logic carefully. For simplicity, let's just trigger the next/submit.
+                    // A better approach might be to wrap handleSubmit in useCallback.
+                    document.getElementById('submit-button')?.click();
+                    document.getElementById('next-button')?.click();
+                } else {
+                    setCurrentQuestionIndex(prev => prev + 1);
+                }
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [answers, currentQuestionIndex, questionnaireData]);
+
+
     if (!questionnaireData || !testId) {
         return <div className="flex h-screen items-center justify-center"><Loader2 className="h-8 w-8 animate-spin" /></div>;
     }
@@ -123,20 +150,6 @@ function QuestionnaireContent() {
         }
     };
 
-    useEffect(() => {
-        const handleKeyDown = (event: KeyboardEvent) => {
-            if (event.key === 'Enter' && answers[currentQuestion.id] !== undefined) {
-                if (isLastQuestion) {
-                    handleSubmit();
-                } else {
-                    handleNext();
-                }
-            }
-        };
-        window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [answers, currentQuestion, isLastQuestion]);
 
     if (loading) {
         return <div className="flex h-screen items-center justify-center"><Loader2 className="h-8 w-8 animate-spin" /></div>;
@@ -224,12 +237,12 @@ function QuestionnaireContent() {
                                 Previous
                             </Button>
                             {isLastQuestion ? (
-                                <Button onClick={handleSubmit} disabled={isSubmitting || answers[currentQuestion.id] === undefined} size="lg">
+                                <Button id="submit-button" onClick={handleSubmit} disabled={isSubmitting || answers[currentQuestion.id] === undefined} size="lg">
                                     {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle className="mr-2 h-4 w-4" />}
                                     Submit
                                 </Button>
                             ) : (
-                                <Button onClick={handleNext} disabled={answers[currentQuestion.id] === undefined} size="lg">
+                                <Button id="next-button" onClick={handleNext} disabled={answers[currentQuestion.id] === undefined} size="lg">
                                     Next
                                     <ArrowRight className="ml-2 h-4 w-4" />
                                 </Button>
