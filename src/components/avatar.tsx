@@ -26,11 +26,11 @@ const useLipSync = (audioRef: React.RefObject<THREE.Audio<AudioNode> | undefined
       const jaw = modelRef.current.getObjectByName('Jaw');
 
       if (head && jaw) {
-        const jawMorphIndex = head.morphTargetDictionary?.['jawOpen'];
+        const jawMorphIndex = (head as THREE.SkinnedMesh).morphTargetDictionary?.['jawOpen'];
         
-        if (jawMorphIndex !== undefined && head.morphTargetInfluences) {
-          head.morphTargetInfluences[jawMorphIndex] = THREE.MathUtils.lerp(
-            head.morphTargetInfluences[jawMorphIndex],
+        if (jawMorphIndex !== undefined && (head as THREE.SkinnedMesh).morphTargetInfluences) {
+          ((head as THREE.SkinnedMesh).morphTargetInfluences as number[])[jawMorphIndex] = THREE.MathUtils.lerp(
+            ((head as THREE.SkinnedMesh).morphTargetInfluences as number[])[jawMorphIndex],
             mouthOpen,
             0.5
           );
@@ -52,7 +52,9 @@ export function Avatar({ audioUrl }: { audioUrl: string | null }) {
   camera.add(audioListener);
 
   useEffect(() => {
-    actions['idle']?.play();
+    if (actions['idle']) {
+        actions['idle'].play();
+    }
   }, [actions]);
 
   useEffect(() => {
