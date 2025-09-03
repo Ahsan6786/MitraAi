@@ -42,6 +42,7 @@ function BookingDialog({ counsellor, user, isOpen, onOpenChange }: { counsellor:
     const [ampm, setAmPm] = useState('');
     const [notes, setNotes] = useState('');
     const [isBooking, setIsBooking] = useState(false);
+    const [isCalendarOpen, setIsCalendarOpen] = useState(false);
     const { toast } = useToast();
 
     const resetForm = () => {
@@ -102,7 +103,7 @@ function BookingDialog({ counsellor, user, isOpen, onOpenChange }: { counsellor:
                     </DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
-                    <Popover>
+                    <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
                         <PopoverTrigger asChild>
                             <Button
                                 variant={"outline"}
@@ -119,7 +120,10 @@ function BookingDialog({ counsellor, user, isOpen, onOpenChange }: { counsellor:
                             <Calendar
                                 mode="single"
                                 selected={date}
-                                onSelect={setDate}
+                                onSelect={(selectedDate) => {
+                                    setDate(selectedDate);
+                                    setIsCalendarOpen(false);
+                                }}
                                 disabled={(date) => date < new Date() || date < new Date("1900-01-01")}
                                 initialFocus
                             />
