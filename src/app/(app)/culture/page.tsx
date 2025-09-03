@@ -85,6 +85,8 @@ export default function CulturePage() {
                                                 objectFit="cover"
                                                 className="transition-transform duration-300 group-hover:scale-105"
                                                 data-ai-hint={hint}
+                                                width={400}
+                                                height={300}
                                             />
                                             <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
                                             <h3 className="absolute bottom-2 left-3 text-white text-base font-bold">{state.name}</h3>
