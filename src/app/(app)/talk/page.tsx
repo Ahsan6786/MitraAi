@@ -3,7 +3,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
-import { Loader2, Mic, Square, Bot } from 'lucide-react';
+import { Loader2, Mic, Square, Bot, Languages } from 'lucide-react';
 import { chatEmpatheticTone } from '@/ai/flows/chat-empathetic-tone';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { textToSpeech } from '@/ai/flows/text-to-speech';
@@ -11,11 +11,44 @@ import { useToast } from '@/hooks/use-toast';
 import { detectCrisis } from '@/ai/flows/detect-crisis';
 import CrisisAlertModal from '@/components/crisis-alert-modal';
 import { ThemeToggle } from '@/components/theme-toggle';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+
 
 const SpeechRecognition =
   (typeof window !== 'undefined' && (window.SpeechRecognition || window.webkitSpeechRecognition));
+
+const languages = [
+    { value: 'English', label: 'English', speechCode: 'en-US' },
+    { value: 'Hinglish', label: 'Hinglish', speechCode: 'en-IN' },
+    { value: 'Hindi', label: 'Hindi', speechCode: 'hi-IN' },
+    { value: 'Bengali', label: 'Bengali', speechCode: 'bn-IN' },
+    { value: 'Gujarati', label: 'Gujarati', speechCode: 'gu-IN' },
+    { value: 'Kannada', label: 'Kannada', speechCode: 'kn-IN' },
+    { value: 'Malayalam', label: 'Malayalam', speechCode: 'ml-IN' },
+    { value: 'Marathi', label: 'Marathi', speechCode: 'mr-IN' },
+    { value: 'Tamil', label: 'Tamil', speechCode: 'ta-IN' },
+    { value: 'Telugu', label: 'Telugu', speechCode: 'te-IN' },
+    { value: 'Urdu', label: 'Urdu', speechCode: 'ur-IN' },
+    { value: 'Sanskrit', label: 'Sanskrit' },
+    { value: 'Arabic', label: 'Arabic' },
+    { value: 'Assamese', label: 'Assamese' },
+    { value: 'Bodo', label: 'Bodo' },
+    { value: 'Konkani', label: 'Konkani' },
+    { value: 'Meitei', label: 'Meitei' },
+    { value: 'Mizo', label: 'Mizo' },
+    { value: 'Odia', label: 'Odia' },
+    { value: 'Punjabi', label: 'Punjabi' },
+    { value: 'Nepali', label: 'Nepali' },
+    { value: 'Sikkimese', label: 'Sikkimese' },
+    { value: 'Lepcha', label: 'Lepcha' },
+    { value: 'Limbu', label: 'Limbu' },
+    { value: 'Kokborok', label: 'Kokborok' },
+    { value: 'Bhojpuri', label: 'Bhojpuri' },
+    { value: 'French', label: 'French' },
+    { value: 'German', label: 'German' },
+];
 
 export default function TalkPage() {
   const [isLoading, setIsLoading] = useState(false);
@@ -23,6 +56,7 @@ export default function TalkPage() {
   const [transcript, setTranscript] = useState('');
   const [aiResponse, setAiResponse] = useState('');
   const [showCrisisModal, setShowCrisisModal] = useState(false);
+  const [language, setLanguage] = useState('English');
   
   const recognitionRef = useRef<any | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -41,7 +75,7 @@ export default function TalkPage() {
         return;
       }
       
-      const result = await chatEmpatheticTone({ message: messageText, language: 'English' });
+      const result = await chatEmpatheticTone({ message: messageText, language: language });
       setAiResponse(result.response);
       
       if (result.response.trim()) {
@@ -69,7 +103,7 @@ export default function TalkPage() {
     if (transcript.trim()) {
         handleAiResponse(transcript);
     }
-  }, [transcript]); // handleAiResponse is not included to avoid re-creating this function on every render
+  }, [transcript, language]); // Added language dependency
 
   const startRecording = () => {
     if (audioRef.current) {
@@ -83,7 +117,7 @@ export default function TalkPage() {
     recognitionRef.current = new SpeechRecognition();
     recognitionRef.current.continuous = true;
     recognitionRef.current.interimResults = true;
-    recognitionRef.current.lang = 'en-US';
+    recognitionRef.current.lang = languages.find(l => l.value === language)?.speechCode || 'en-US';
 
     recognitionRef.current.onresult = (event: any) => {
       let interimTranscript = '';
@@ -172,7 +206,20 @@ export default function TalkPage() {
               <p className="text-sm text-muted-foreground">Have a live voice conversation.</p>
             </div>
           </div>
-          <ThemeToggle />
+          <div className="flex items-center gap-2">
+             <Select value={language} onValueChange={setLanguage} disabled={isRecording || isLoading}>
+                <SelectTrigger className="w-auto">
+                    <Languages className="w-4 h-4 mr-2"/>
+                    <SelectValue placeholder="Language" />
+                </SelectTrigger>
+                <SelectContent>
+                    {languages.map(lang => (
+                        <SelectItem key={lang.value} value={lang.value}>{lang.label}</SelectItem>
+                    ))}
+                </SelectContent>
+            </Select>
+            <ThemeToggle />
+          </div>
         </header>
         <main className="flex-1 flex flex-col items-center justify-center p-4 text-center">
             <div className="w-full max-w-2xl">

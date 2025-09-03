@@ -26,6 +26,37 @@ import { useChatHistory, type Message } from '@/hooks/use-chat-history';
 const SpeechRecognition =
   (typeof window !== 'undefined' && (window.SpeechRecognition || window.webkitSpeechRecognition));
 
+const languages = [
+    { value: 'English', label: 'English' },
+    { value: 'Hinglish', label: 'Hinglish' },
+    { value: 'Hindi', label: 'Hindi' },
+    { value: 'Sanskrit', label: 'Sanskrit' },
+    { value: 'Urdu', label: 'Urdu' },
+    { value: 'Arabic', label: 'Arabic' },
+    { value: 'Assamese', label: 'Assamese' },
+    { value: 'Bodo', label: 'Bodo' },
+    { value: 'Bengali', label: 'Bengali' },
+    { value: 'Konkani', label: 'Konkani' },
+    { value: 'Marathi', label: 'Marathi' },
+    { value: 'Gujarati', label: 'Gujarati' },
+    { value: 'Kannada', label: 'Kannada' },
+    { value: 'Malayalam', label: 'Malayalam' },
+    { value: 'Meitei', label: 'Meitei' },
+    { value: 'Mizo', label: 'Mizo' },
+    { value: 'Odia', label: 'Odia' },
+    { value: 'Punjabi', label: 'Punjabi' },
+    { value: 'Nepali', label: 'Nepali' },
+    { value: 'Sikkimese', label: 'Sikkimese' },
+    { value: 'Lepcha', label: 'Lepcha' },
+    { value: 'Limbu', label: 'Limbu' },
+    { value: 'Tamil', label: 'Tamil' },
+    { value: 'Telugu', label: 'Telugu' },
+    { value: 'Kokborok', label: 'Kokborok' },
+    { value: 'Bhojpuri', label: 'Bhojpuri' },
+    { value: 'French', label: 'French' },
+    { value: 'German', label: 'German' },
+];
+
 // Component to render code blocks with a copy button
 const CodeBlock = ({ code }: { code: string }) => {
     const [isCopied, setIsCopied] = useState(false);
@@ -473,12 +504,25 @@ export default function ChatInterface() {
           </div>
         </form>
          <div className="flex items-center justify-between mt-2">
-            <div className="flex items-center space-x-2">
-                <Switch id="genz-mode" checked={isGenzMode} onCheckedChange={handleGenzModeChange} />
-                <Label htmlFor="genz-mode" className="flex items-center gap-1 text-sm text-muted-foreground">
-                    <Sparkles className="w-4 h-4 text-purple-400"/>
-                    Gen Z Mode
-                </Label>
+             <div className="flex items-center space-x-4">
+                <div className="flex items-center space-x-2">
+                    <Switch id="genz-mode" checked={isGenzMode} onCheckedChange={handleGenzModeChange} />
+                    <Label htmlFor="genz-mode" className="flex items-center gap-1 text-sm text-muted-foreground">
+                        <Sparkles className="w-4 h-4 text-purple-400"/>
+                        Gen Z Mode
+                    </Label>
+                </div>
+                <Select value={language} onValueChange={setLanguage}>
+                    <SelectTrigger className="w-auto h-8 text-xs">
+                        <Languages className="w-3 h-3 mr-1.5"/>
+                        <SelectValue placeholder="Language" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {languages.map(lang => (
+                            <SelectItem key={lang.value} value={lang.value}>{lang.label}</SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
             </div>
          </div>
       </footer>
