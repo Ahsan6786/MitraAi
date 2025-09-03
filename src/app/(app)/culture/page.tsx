@@ -7,39 +7,18 @@ import { Card, CardContent } from '@/components/ui/card';
 import Link from 'next/link';
 import { statesData, allIndianStates } from '@/lib/states-data';
 import { cn } from '@/lib/utils';
-import Image from 'next/image';
 
-const stateImageHints: Record<string, string> = {
-    'india': 'India culture',
-    'andhra-pradesh': 'Tirupati temple',
-    'arunachal-pradesh': 'Tawang monastery',
-    'assam': 'tea plantation',
-    'bihar': 'Bodhgaya temple',
-    'chhattisgarh': 'Chitrakote falls',
-    'goa': 'Goa beach',
-    'gujarat': 'Rann Utsav',
-    'haryana': 'Kurukshetra field',
-    'himachal-pradesh': 'Shimla mountains',
-    'jammu-and-kashmir': 'Dal Lake',
-    'jharkhand': 'Pahari Mandir',
-    'karnataka': 'Hampi ruins',
-    'kerala': 'Kerala backwaters',
-    'madhya-pradesh': 'Khajuraho temple',
-    'maharashtra': 'Gateway India',
-    'manipur': 'Loktak Lake',
-    'meghalaya': 'living root bridge',
-    'mizoram': 'Mizoram hills',
-    'nagaland': 'Hornbill festival',
-    'odisha': 'Konark temple',
-    'punjab': 'Golden Temple',
-    'rajasthan': 'Hawa Mahal',
-    'sikkim': 'Rumtek monastery',
-    'tamil-nadu': 'Meenakshi temple',
-    'telangana': 'Charminar monument',
-    'tripura': 'Ujjayanta Palace',
-    'uttar-pradesh': 'Taj Mahal',
-    'uttarakhand': 'Kedarnath temple',
-    'west-bengal': 'Howrah Bridge'
+// Simple hash function to generate a color from a string
+const stringToColor = (str: string) => {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+        hash = str.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const c = (hash & 0x00FFFFFF)
+        .toString(16)
+        .toUpperCase();
+
+    return "00000".substring(0, 6 - c.length) + c;
 };
 
 
@@ -68,8 +47,7 @@ export default function CulturePage() {
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
                         {allIndianStates.map(state => {
                             const isAvailable = availableStateIds.has(state.id);
-                            const placeholderImageUrl = `https://picsum.photos/seed/${state.id}/400/300`;
-                            const hint = stateImageHints[state.id] || "India culture";
+                            const tileColor = `#${stringToColor(state.name)}`;
                             
                             const cardContent = (
                                 <Card className={cn(
@@ -77,17 +55,12 @@ export default function CulturePage() {
                                     isAvailable ? "hover:shadow-lg hover:-translate-y-1" : "opacity-50 cursor-not-allowed"
                                 )}>
                                     <CardContent className="p-0">
-                                        <div className="relative aspect-[4/3] w-full">
-                                            <Image
-                                                src={placeholderImageUrl}
-                                                alt={`A cultural scene from ${state.name}`}
-                                                fill
-                                                objectFit="cover"
-                                                className="transition-transform duration-300 group-hover:scale-105"
-                                                data-ai-hint={hint}
-                                            />
-                                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
-                                            <h3 className="absolute bottom-2 left-3 text-white text-base font-bold">{state.name}</h3>
+                                        <div 
+                                            className="relative aspect-[4/3] w-full flex items-center justify-center transition-transform duration-300 group-hover:scale-105"
+                                            style={{ backgroundColor: tileColor }}
+                                        >
+                                            <div className="absolute inset-0 bg-black/20"></div>
+                                            <h3 className="relative text-white text-base font-bold text-center p-2">{state.name}</h3>
                                         </div>
                                     </CardContent>
                                 </Card>
