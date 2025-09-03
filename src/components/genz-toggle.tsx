@@ -14,7 +14,7 @@ export function GenZToggle() {
 
   const toggleGenZMode = () => {
     if (isGenZMode) {
-      setTheme("theme-green-dark") // Or your preferred default dark theme
+      setTheme("theme-blue-light") // Set to blue light theme when turned off
     } else {
       setTheme("theme-genz-dark")
     }
