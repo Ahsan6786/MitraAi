@@ -48,6 +48,7 @@ interface QuestionnaireSubmission {
     id: string;
     createdAt: Timestamp;
     userEmail: string;
+    testName: string;
     score: number;
     result: {
         level: string;
@@ -222,7 +223,10 @@ function QuestionnaireReviews() {
                     <AccordionTrigger className="p-4 hover:no-underline text-left">
                         <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 w-full">
                             <div className="flex items-center gap-4"><AlertTriangle className="w-5 h-5 text-yellow-500" /><FileQuestion className="w-5 h-5 text-primary" /></div>
-                            <div className="flex-1"><div className="font-semibold text-sm sm:text-base truncate">{sub.userEmail}</div><div className="text-xs sm:text-sm text-muted-foreground">{sub.createdAt.toDate().toLocaleString()}</div></div>
+                            <div className="flex-1">
+                                <div className="font-semibold text-sm sm:text-base truncate">{sub.userEmail}</div>
+                                <div className="text-xs sm:text-sm text-muted-foreground">{sub.testName} - {sub.createdAt.toDate().toLocaleString()}</div>
+                            </div>
                             <Badge variant="destructive" className="capitalize mt-1 sm:mt-0">{sub.result.level}</Badge>
                         </div>
                     </AccordionTrigger>
