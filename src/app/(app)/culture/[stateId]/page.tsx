@@ -45,16 +45,18 @@ export default function StateCulturePage() {
                                 <CardTitle className="text-2xl md:text-3xl">{entry.title}</CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-6">
-                                <div className="aspect-video overflow-hidden rounded-lg border shadow-lg">
-                                    <iframe
-                                        className="w-full h-full"
-                                        src={entry.youtubeUrl}
-                                        title={`Cultural video for ${entry.title}`}
-                                        frameBorder="0"
-                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                                        allowFullScreen
-                                    ></iframe>
-                                </div>
+                                {entry.youtubeUrl && (
+                                    <div className="aspect-video overflow-hidden rounded-lg border shadow-lg">
+                                        <iframe
+                                            className="w-full h-full"
+                                            src={entry.youtubeUrl}
+                                            title={`Cultural video for ${entry.title}`}
+                                            frameBorder="0"
+                                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                            allowFullScreen
+                                        ></iframe>
+                                    </div>
+                                )}
                                 <div className="prose prose-sm sm:prose-base dark:prose-invert max-w-none text-foreground whitespace-pre-wrap">
                                    {entry.description}
                                 </div>
@@ -66,5 +68,7 @@ export default function StateCulturePage() {
         </div>
     );
 }
+
+    
 
     

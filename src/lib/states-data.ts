@@ -233,7 +233,7 @@ Modern: Known for Assam Tea, Kaziranga, Bihu dance. Played role in Quit India Mo
         entries: [
             {
                 title: 'History of Bihar',
-                youtubeUrl: 'https://www.youtube.com/embed/wu-f5O7heDU', // Example original video
+                youtubeUrl: '',
                 description: `Ancient: Magadha empire (Mauryas, Guptas). Birthplace of Buddhism (Bodh Gaya) and Jainism (Vaishali). Nalanda University, a center of learning.
 
 Medieval: Ruled by Palas, then Delhi Sultanate, Mughals. Sher Shah Suri's tomb in Sasaram.
@@ -467,5 +467,7 @@ export const allIndianStates = [
     { id: 'uttarakhand', name: 'Uttarakhand' },
     { id: 'west-bengal', name: 'West Bengal' },
 ];
+
+    
 
     
