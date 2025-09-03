@@ -64,7 +64,7 @@ export default function CulturePage() {
                                 )}>
                                     <CardContent className="p-0">
                                         <div 
-                                            className="relative aspect-[4/3] w-full flex items-center justify-center transition-transform duration-300 group-hover:scale-105"
+                                            className="relative aspect-[4/3] w-full flex items-center justify-center transition-transform duration-300 group-hover:scale-105 rounded-lg"
                                             style={{ background: `linear-gradient(45deg, ${color1}, ${color2})` }}
                                         >
                                             <div className="absolute inset-0 bg-black/20"></div>
