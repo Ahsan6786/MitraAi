@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
-import { Languages, Loader2, Mic, Send, User, Square, Paperclip, X, Copy, Check, Download, Sparkles } from 'lucide-react';
+import { Languages, Loader2, Mic, Send, User, Square, Paperclip, X, Copy, Check, Download, Sparkles, Sidebar } from 'lucide-react';
 import { chatEmpatheticTone, ChatEmpatheticToneInput } from '@/ai/flows/chat-empathetic-tone';
 import { Logo } from '@/components/icons';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -21,6 +21,9 @@ import { detectCrisis } from '@/ai/flows/detect-crisis';
 import CrisisAlertModal from '@/components/crisis-alert-modal';
 import type { User as FirebaseUser } from 'firebase/auth';
 import { useChatHistory, type Message } from '@/hooks/use-chat-history';
+import { SidebarTrigger } from './ui/sidebar';
+import { ThemeToggle } from './theme-toggle';
+import { GenZToggle } from './genz-toggle';
 
 // Check for SpeechRecognition API
 const SpeechRecognition =
@@ -399,6 +402,19 @@ export default function ChatInterface() {
         isOpen={showCrisisModal}
         onClose={() => setShowCrisisModal(false)}
       />
+      <header className="border-b p-3 md:p-4 flex items-center justify-between gap-2 shrink-0">
+        <div className="flex items-center gap-2">
+          <SidebarTrigger />
+          <div>
+            <h1 className="text-lg md:text-xl font-bold">MitraGPT</h1>
+            <p className="text-sm text-muted-foreground">Your Personal AI Companion</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <GenZToggle />
+          <ThemeToggle />
+        </div>
+      </header>
       <main className="flex-1 overflow-hidden">
         <ScrollArea className="h-full" ref={scrollAreaRef}>
           <div className="p-4 md:p-6 space-y-6">
@@ -468,7 +484,7 @@ export default function ChatInterface() {
           </div>
         </ScrollArea>
       </main>
-      <footer className="px-4 py-3">
+      <footer className="px-4 py-3 border-t">
         {imagePreview && (
             <div className="relative w-24 h-24 mb-2 rounded-md overflow-hidden border">
                 <Image src={imagePreview} alt="Image preview" layout="fill" objectFit="cover" />
