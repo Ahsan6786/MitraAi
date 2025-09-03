@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useRef, useEffect, useCallback, Suspense } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Loader2, Mic, Square, Languages } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -12,6 +12,8 @@ import { textToSpeech } from '@/ai/flows/text-to-speech';
 import { detectCrisis } from '@/ai/flows/detect-crisis';
 import CrisisAlertModal from '@/components/crisis-alert-modal';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import Image from 'next/image';
+import { cn } from '@/lib/utils';
 
 const SpeechRecognition =
   (typeof window !== 'undefined' && (window.SpeechRecognition || window.webkitSpeechRecognition));
@@ -26,6 +28,7 @@ export default function AvatarPage() {
     const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
     const [isRecording, setIsRecording] = useState(false);
     const [isProcessing, setIsProcessing] = useState(false);
+    const [isSpeaking, setIsSpeaking] = useState(false);
     const [language, setLanguage] = useState('English');
     const [showCrisisModal, setShowCrisisModal] = useState(false);
     const [statusText, setStatusText] = useState('Tap the microphone to start talking.');
@@ -34,7 +37,6 @@ export default function AvatarPage() {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const recognitionRef = useRef<any>(null);
     const streamRef = useRef<MediaStream | null>(null);
-    const iframeRef = useRef<HTMLIFrameElement>(null);
     const audioRef = useRef<HTMLAudioElement | null>(null);
 
     const { toast } = useToast();
@@ -120,10 +122,10 @@ export default function AvatarPage() {
                 const audio = new Audio(ttsResult.audioDataUri);
                 audioRef.current = audio;
 
-                iframeRef.current?.contentWindow?.postMessage({ type: 'play' }, '*');
+                setIsSpeaking(true);
                 audio.play();
                 audio.onended = () => {
-                    iframeRef.current?.contentWindow?.postMessage({ type: 'stop' }, '*');
+                   setIsSpeaking(false);
                 };
             }
 
@@ -148,8 +150,7 @@ export default function AvatarPage() {
         if (audioRef.current) {
             audioRef.current.pause();
         }
-        iframeRef.current?.contentWindow?.postMessage({ type: 'stop' }, '*');
-
+        setIsSpeaking(false);
 
         const recognition = new SpeechRecognition();
         recognitionRef.current = recognition;
@@ -197,6 +198,21 @@ export default function AvatarPage() {
 
     return (
         <>
+        <style jsx global>{`
+            @keyframes pulse-avatar {
+                0%, 100% {
+                    transform: scale(1);
+                    box-shadow: 0 0 0 0 hsl(var(--primary) / 0.7);
+                }
+                50% {
+                    transform: scale(1.05);
+                    box-shadow: 0 0 0 10px hsl(var(--primary) / 0);
+                }
+            }
+            .animate-pulse-avatar {
+                animation: pulse-avatar 2s infinite;
+            }
+        `}</style>
         <CrisisAlertModal isOpen={showCrisisModal} onClose={() => setShowCrisisModal(false)} />
         <div className="h-full flex flex-col">
             <header className="border-b p-3 md:p-4 flex items-center justify-between gap-2">
@@ -223,7 +239,7 @@ export default function AvatarPage() {
                 </div>
             </header>
 
-            <main className="flex-1 flex flex-col relative">
+            <main className="flex-1 flex flex-col items-center justify-center relative p-4">
                  <div className="absolute top-4 right-4 z-10 w-32 h-24 sm:w-48 sm:h-36 rounded-md overflow-hidden border-2 border-border shadow-lg">
                     <video ref={videoRef} className="w-full h-full object-cover" autoPlay muted playsInline />
                     {hasCameraPermission === false && (
@@ -233,16 +249,18 @@ export default function AvatarPage() {
                     )}
                  </div>
 
-                <div className="flex-1">
-                   <iframe
-                     ref={iframeRef}
-                     src="/avatar.html"
-                     className="w-full h-full border-none"
-                     allow="autoplay"
-                   ></iframe>
+                <div className="flex-1 flex flex-col items-center justify-center w-full">
+                    <div className={cn("relative w-48 h-48 sm:w-64 sm:h-64 rounded-full transition-all", isSpeaking && "animate-pulse-avatar")}>
+                       <Image
+                         src="https://api.dicebear.com/9.x/adventurer/svg?seed=Brian"
+                         alt="avatar"
+                         layout="fill"
+                         className="rounded-full"
+                       />
+                    </div>
                 </div>
                 
-                <footer className="border-t p-4 text-center bg-background/80 backdrop-blur-sm">
+                <footer className="p-4 text-center bg-transparent">
                     <Button
                         onClick={handleMicClick}
                         disabled={hasCameraPermission !== true || isProcessing}
