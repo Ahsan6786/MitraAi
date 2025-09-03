@@ -3,12 +3,10 @@
 
 import { useState, useRef, useEffect, useCallback, Suspense } from 'react';
 import { Button } from '@/components/ui/button';
-import { Loader2, Mic, Square, Bot, Camera, User, Languages } from 'lucide-react';
+import { Loader2, Mic, Square, Camera, Languages } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/hooks/use-auth';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { ThemeToggle } from '@/components/theme-toggle';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { predictLiveMood } from '@/ai/flows/predict-live-mood';
 import { textToSpeech } from '@/ai/flows/text-to-speech';
 import { detectCrisis } from '@/ai/flows/detect-crisis';
@@ -223,7 +221,7 @@ export default function AvatarPage() {
                  </div>
 
                 <div className="flex-1">
-                   <Canvas key={language} camera={{ position: [0, 0, 2.5], fov: 25 }}>
+                   <Canvas camera={{ position: [0, 0, 2.5], fov: 25 }}>
                        <Suspense fallback={null}>
                             <Environment preset="sunset" />
                             <Avatar audioUrl={audioUrl} />
