@@ -140,21 +140,42 @@ const chatEmpatheticToneFlow = ai.defineFlow(
       };
 
     } else {
-      // The user wants a text response (e.g., blog, chat, poem).
-      const { output } = await prompt(
-        { message, language, isGenzMode, imageDataUri, history },
-        {
-          config: {
-            safetySettings: [
-              { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_NONE' },
-              { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' },
-              { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_NONE' },
-              { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_NONE' },
-            ],
-          },
+      // The user wants a text response.
+      // Implement a retry mechanism for temporary model overload errors.
+      const maxRetries = 2;
+      let attempt = 0;
+
+      while (attempt <= maxRetries) {
+        try {
+          const { output } = await prompt(
+            { message, language, isGenzMode, imageDataUri, history },
+            {
+              config: {
+                safetySettings: [
+                  { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_NONE' },
+                  { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' },
+                  { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_NONE' },
+                  { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_NONE' },
+                ],
+              },
+            }
+          );
+          return { response: output!.response, imageUrl: undefined };
+        } catch (error: any) {
+          attempt++;
+          // Only retry on 503 Service Unavailable errors.
+          if (attempt > maxRetries || !error.message.includes('503 Service Unavailable')) {
+            // If it's the last attempt or a different error, re-throw to fail the flow.
+            throw error;
+          }
+          console.log(`Model overloaded. Retrying attempt ${attempt} of ${maxRetries}...`);
+          // Wait for a short duration before retrying.
+          await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
         }
-      );
-      return { response: output!.response, imageUrl: undefined };
+      }
+
+      // This should not be reached, but as a fallback, throw an error.
+      throw new Error('Failed to get a response from the AI model after several retries.');
     }
   }
 );
