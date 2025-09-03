@@ -101,7 +101,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
     }
   };
   
-  if (pathname.startsWith('/questionnaire') || pathname.startsWith('/screening-tools')) {
+  if (pathname.startsWith('/questionnaire')) {
     return <>{children}</>;
   }
 
