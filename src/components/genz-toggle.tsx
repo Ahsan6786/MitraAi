@@ -2,16 +2,18 @@
 "use client"
 
 import * as React from "react"
-import { Sparkles } from "lucide-react"
 import { useTheme } from "next-themes"
-
-import { Button } from "@/components/ui/button"
+import { Switch } from "@/components/ui/switch"
+import { Label } from "@/components/ui/label"
+import { Sparkles } from "lucide-react"
 
 export function GenZToggle() {
   const { theme, setTheme } = useTheme()
 
+  const isGenZMode = theme === "theme-genz-dark";
+
   const toggleGenZMode = () => {
-    if (theme === "theme-genz-dark") {
+    if (isGenZMode) {
       setTheme("theme-green-dark") // Or your preferred default dark theme
     } else {
       setTheme("theme-genz-dark")
@@ -19,9 +21,16 @@ export function GenZToggle() {
   }
 
   return (
-    <Button variant="ghost" size="icon" onClick={toggleGenZMode}>
-      <Sparkles className="h-[1.2rem] w-[1.2rem] transition-all text-purple-400" />
-      <span className="sr-only">Toggle GenZ Mode</span>
-    </Button>
+    <div className="flex items-center space-x-2">
+      <Switch
+        id="genz-mode-toggle"
+        checked={isGenZMode}
+        onCheckedChange={toggleGenZMode}
+      />
+      <Label htmlFor="genz-mode-toggle" className="flex items-center gap-1 cursor-pointer">
+        <Sparkles className="h-[1.2rem] w-[1.2rem] transition-all text-purple-400" />
+        Gen Z Mode
+      </Label>
+    </div>
   )
 }
