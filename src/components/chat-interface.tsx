@@ -136,12 +136,13 @@ const MessageBubble = ({ message, senderName }: { message: Message; senderName: 
                 'text-base font-normal leading-normal rounded-lg px-4 py-3 max-w-md',
                 message.sender === 'user'
                     ? 'bg-primary text-primary-foreground rounded-tr-none'
-                    : 'bg-muted text-foreground rounded-tl-none'
+                    : 'bg-muted text-foreground rounded-tl-none',
+                message.imageUrl && !message.text ? 'p-1 bg-transparent shadow-none' : 'shadow-sm' // Special style for image-only messages
             )}
         >
             {message.imageUrl && (
-                <div className="relative w-full aspect-video rounded-md overflow-hidden mb-2 group/image">
-                    <Image src={message.imageUrl} alt="Image in chat" fill={true} className="object-cover" />
+                <div className="relative w-full max-w-sm aspect-auto rounded-md overflow-hidden group/image mb-2">
+                    <Image src={message.imageUrl} alt="Image in chat" width={400} height={400} className="object-cover h-auto w-full" />
                      <a
                         href={message.imageUrl}
                         download="mitra-ai-generated-image.png"
@@ -154,7 +155,7 @@ const MessageBubble = ({ message, senderName }: { message: Message; senderName: 
                     </a>
                 </div>
             )}
-            <MessageContent text={message.text} />
+            {message.text && <MessageContent text={message.text} />}
         </div>
       </div>
     );
