@@ -255,7 +255,7 @@ export default function AvatarPage() {
                          src="https://api.dicebear.com/9.x/adventurer/svg?seed=Brian"
                          alt="avatar"
                          layout="fill"
-                         className="rounded-full"
+                         className="rounded-full dark:invert"
                        />
                     </div>
                 </div>
