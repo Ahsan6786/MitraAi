@@ -216,13 +216,41 @@ Medieval: Ahom dynasty (1228–1826), resisted Mughals successfully.
 Colonial: Annexed after Treaty of Yandabo (1826). Tea plantations and oil industry developed.
 
 Modern: Known for Assam Tea, Kaziranga, Bihu dance. Played role in Quit India Movement.` },
-    { id: 'bihar', name: 'Bihar', youtubeUrl: 'https://www.youtube.com/embed/ia_3_iMkh38', description: `Ancient: Magadha, Mauryas (Ashoka), Guptas. Nalanda & Vikramshila universities. Birthplace of Buddhism & Jainism.
+    { id: 'bihar', name: 'Bihar', youtubeUrl: 'https://www.youtube.com/embed/6e6Hp6R5SVU', description: `🌞 Chhath Puja (Bihar)
 
-Medieval: Ruled by Delhi Sultanate, Mughals.
+Chhath Puja is an ancient Hindu festival dedicated to the worship of the Sun God (Surya) and Chhathi Maiya (the consort of Surya, considered the goddess of energy and wellbeing). It is celebrated with immense devotion in Bihar, where it is not just a religious practice but also a cultural identity.
 
-Colonial: Indigo Revolt (1859), Champaran Satyagraha (1917).
+✨ Key Features of Chhath Puja
 
-Modern: Jharkhand carved out (2000). Known for Bodh Gaya, rich political history.` },
+Timing: Celebrated on the sixth day (Shashti) of Kartika month (October–November), right after Diwali. It is also observed in Chaitra month (March–April).
+
+Duration: The festival lasts 4 days, each with special rituals:
+
+Day 1 (Nahay Khay): Devotees take a holy dip, usually in the Ganga or other rivers, and prepare pure vegetarian food.
+
+Day 2 (Kharna): A full day fast is observed, broken only after sunset with kheer (rice pudding), fruits, and chapati.
+
+Day 3 (Sandhya Arghya): Devotees and families gather at rivers/ponds to offer the first Arghya (prayers and offerings) to the setting sun.
+
+Day 4 (Usha Arghya): Final offering is made to the rising sun, marking the end of the festival.
+
+Offerings (Prasad): Includes thekua (a sweet made of wheat flour, jaggery, and ghee), fruits, sugarcane, and rice laddu.
+
+Rituals: Observed with utmost purity — no onion, garlic, or non-vegetarian food is cooked during Chhath.
+
+Significance of Water Bodies: Devotees stand in water during Arghya, symbolizing gratitude and reverence to nature.
+
+🌍 Cultural & Social Significance
+
+Environmental Harmony: Worship of the sun emphasizes renewable energy and nature’s balance.
+
+Community Bonding: Families and communities unite at ghats, reflecting equality and unity.
+
+Discipline & Purity: The rigorous fasting and rituals highlight self-control, dedication, and cleanliness.
+
+🎇 Why It’s Unique
+
+Unlike other Hindu festivals, no idol worship is done. Instead, the Sun God and natural elements (water, air, light) are worshiped, symbolizing direct connection between humans and nature.` },
     { id: 'chhattisgarh', name: 'Chhattisgarh', youtubeUrl: 'https://www.youtube.com/embed/HpLD9h-9-Es', description: `Ancient: Dakshina Kosala kingdom, associated with Ramayana.
 
 Medieval: Kalachuris, Gonds ruled.
