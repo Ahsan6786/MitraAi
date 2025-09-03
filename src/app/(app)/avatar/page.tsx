@@ -15,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import { GenZToggle } from '@/components/genz-toggle';
+import { useAuth } from '@/hooks/use-auth';
 
 const SpeechRecognition =
   (typeof window !== 'undefined' && (window.SpeechRecognition || window.webkitSpeechRecognition));
@@ -26,6 +27,7 @@ const languageToSpeechCode: Record<string, string> = {
 };
 
 export default function AvatarPage() {
+    const { user } = useAuth();
     const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
     const [isRecording, setIsRecording] = useState(false);
     const [isProcessing, setIsProcessing] = useState(false);
@@ -197,6 +199,8 @@ export default function AvatarPage() {
         }
     };
 
+    const avatarSeed = user?.displayName || user?.email || 'MitraAI';
+
     return (
         <>
         <style jsx global>{`
@@ -252,13 +256,12 @@ export default function AvatarPage() {
                  </div>
 
                 <div className="flex-1 flex flex-col items-center justify-center w-full">
-                    <div className={cn("relative w-48 h-48 sm:w-64 sm:h-64 rounded-full transition-all", isSpeaking && "animate-pulse-avatar")}>
+                    <div className={cn("relative w-48 h-48 sm:w-64 sm:h-64 transition-all", isSpeaking && "animate-pulse-avatar")}>
                        <Image
-                         src="https://img.freepik.com/free-psd/3d-illustration-person-with-sunglasses_23-2149436188.jpg"
+                         src={`https://api.multiavatar.com/${encodeURIComponent(avatarSeed)}.svg`}
                          alt="avatar"
                          layout="fill"
-                         className="rounded-full"
-                         unoptimized // Using unoptimized to avoid potential Next.js image optimization issues with external URLs
+                         className="p-2"
                        />
                     </div>
                 </div>
