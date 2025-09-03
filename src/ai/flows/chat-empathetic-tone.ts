@@ -122,23 +122,10 @@ const chatEmpatheticToneFlow = ai.defineFlow(
     if (isImageRequest) {
       // The user wants an image.
       const imageResult = await generateImage({ prompt: message });
-      // The prompt now handles the short confirmation message.
-      const textResponse = await prompt(
-        { message, language, imageDataUri, history },
-        {
-          config: {
-            safetySettings: [
-              { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_NONE' },
-              { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' },
-              { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_NONE' },
-              { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_NONE' },
-            ],
-          },
-        }
-      );
       
+      // Return a simple, hardcoded confirmation. This is more reliable than a second AI call.
       return {
-        response: textResponse.output?.response || "Here is the image you requested.",
+        response: "Here is the image you asked for.",
         imageUrl: imageResult.imageUrl,
       };
 
