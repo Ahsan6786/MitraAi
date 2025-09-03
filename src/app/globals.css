@@ -174,33 +174,33 @@ body {
   }
 
   .theme-genz-dark {
-    --background: 0 0% 7%;
+    --background: 0 0% 0%;
     --foreground: 270 10% 85%;
-    --card: 0 0% 11%;
+    --card: 0 0% 0%;
     --card-foreground: 270 10% 85%;
-    --popover: 0 0% 7%;
+    --popover: 0 0% 0%;
     --popover-foreground: 270 10% 85%;
     --primary: 273 70% 61%;
     --primary-foreground: 270 10% 95%;
-    --secondary: 270 10% 20%;
+    --secondary: 270 10% 12%;
     --secondary-foreground: 270 10% 85%;
-    --muted: 270 10% 20%;
+    --muted: 270 10% 12%;
     --muted-foreground: 270 10% 60%;
-    --accent: 187 100% 50%;
-    --accent-foreground: 0 0% 7%;
+    --accent: 273 70% 61%;
+    --accent-foreground: 270 10% 95%;
     --destructive: 0 70% 50%;
     --destructive-foreground: 0 0% 100%;
-    --border: 270 10% 25%;
-    --input: 270 10% 25%;
-    --ring: 187 100% 50%;
-    --sidebar-background: 0 0% 11%;
+    --border: 270 10% 17%;
+    --input: 270 10% 17%;
+    --ring: 273 70% 61%;
+    --sidebar-background: 0 0% 0%;
     --sidebar-foreground: 270 10% 85%;
     --sidebar-primary: 273 70% 61%;
     --sidebar-primary-foreground: 270 10% 95%;
-    --sidebar-accent: 187 100% 50%;
-    --sidebar-accent-foreground: 0 0% 7%;
-    --sidebar-border: 270 10% 25%;
-    --sidebar-ring: 187 100% 50%;
+    --sidebar-accent: 270 10% 12%;
+    --sidebar-accent-foreground: 270 10% 95%;
+    --sidebar-border: 270 10% 17%;
+    --sidebar-ring: 273 70% 61%;
   }
 
   .theme-gold-light {
