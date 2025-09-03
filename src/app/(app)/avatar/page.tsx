@@ -3,7 +3,7 @@
 
 import { useState, useRef, useEffect, useCallback, Suspense } from 'react';
 import { Button } from '@/components/ui/button';
-import { Loader2, Mic, Square, Camera, Languages } from 'lucide-react';
+import { Loader2, Mic, Square, Languages } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { ThemeToggle } from '@/components/theme-toggle';
@@ -12,9 +12,6 @@ import { textToSpeech } from '@/ai/flows/text-to-speech';
 import { detectCrisis } from '@/ai/flows/detect-crisis';
 import CrisisAlertModal from '@/components/crisis-alert-modal';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Canvas } from '@react-three/fiber';
-import { Environment } from '@react-three/drei';
-import { Avatar } from '@/components/avatar';
 
 const SpeechRecognition =
   (typeof window !== 'undefined' && (window.SpeechRecognition || window.webkitSpeechRecognition));
@@ -31,13 +28,15 @@ export default function AvatarPage() {
     const [isProcessing, setIsProcessing] = useState(false);
     const [language, setLanguage] = useState('English');
     const [showCrisisModal, setShowCrisisModal] = useState(false);
-    const [audioUrl, setAudioUrl] = useState<string | null>(null);
     const [statusText, setStatusText] = useState('Tap the microphone to start talking.');
 
     const videoRef = useRef<HTMLVideoElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const recognitionRef = useRef<any>(null);
     const streamRef = useRef<MediaStream | null>(null);
+    const iframeRef = useRef<HTMLIFrameElement>(null);
+    const audioRef = useRef<HTMLAudioElement | null>(null);
+
     const { toast } = useToast();
     
     useEffect(() => {
@@ -115,7 +114,17 @@ export default function AvatarPage() {
             const ttsResult = await textToSpeech({ text: moodResult.response });
             
             if (ttsResult.audioDataUri) {
-                setAudioUrl(ttsResult.audioDataUri);
+                if (audioRef.current) {
+                    audioRef.current.pause();
+                }
+                const audio = new Audio(ttsResult.audioDataUri);
+                audioRef.current = audio;
+
+                iframeRef.current?.contentWindow?.postMessage({ type: 'play' }, '*');
+                audio.play();
+                audio.onended = () => {
+                    iframeRef.current?.contentWindow?.postMessage({ type: 'stop' }, '*');
+                };
             }
 
         } catch (error) {
@@ -135,8 +144,12 @@ export default function AvatarPage() {
         if (isRecording || isProcessing) return;
 
         setIsRecording(true);
-        setAudioUrl(null);
         setStatusText('Listening...');
+        if (audioRef.current) {
+            audioRef.current.pause();
+        }
+        iframeRef.current?.contentWindow?.postMessage({ type: 'stop' }, '*');
+
 
         const recognition = new SpeechRecognition();
         recognitionRef.current = recognition;
@@ -221,13 +234,12 @@ export default function AvatarPage() {
                  </div>
 
                 <div className="flex-1">
-                   <Canvas camera={{ position: [0, 0, 2.5], fov: 25 }}>
-                       <Suspense fallback={null}>
-                            <ambientLight intensity={0.5} />
-                            <Environment preset="sunset" />
-                            <Avatar audioUrl={audioUrl} />
-                       </Suspense>
-                   </Canvas>
+                   <iframe
+                     ref={iframeRef}
+                     src="/avatar.html"
+                     className="w-full h-full border-none"
+                     allow="autoplay"
+                   ></iframe>
                 </div>
                 
                 <footer className="border-t p-4 text-center bg-background/80 backdrop-blur-sm">
