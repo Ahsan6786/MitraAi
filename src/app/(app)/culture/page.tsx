@@ -14,10 +14,17 @@ const stringToColor = (str: string) => {
     for (let i = 0; i < str.length; i++) {
         hash = str.charCodeAt(i) + ((hash << 5) - hash);
     }
-    const c = (hash & 0x00FFFFFF)
-        .toString(16)
-        .toUpperCase();
+    const c = (hash & 0x00FFFFFF).toString(16).toUpperCase();
+    return "00000".substring(0, 6 - c.length) + c;
+};
 
+// A slightly different hash function for the second gradient color
+const stringToColor2 = (str: string) => {
+    let hash = 5381; // Different seed
+    for (let i = 0; i < str.length; i++) {
+        hash = (hash * 33) ^ str.charCodeAt(i);
+    }
+    const c = (hash & 0x00FFFFFF).toString(16).toUpperCase();
     return "00000".substring(0, 6 - c.length) + c;
 };
 
@@ -47,17 +54,18 @@ export default function CulturePage() {
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
                         {allIndianStates.map(state => {
                             const isAvailable = availableStateIds.has(state.id);
-                            const tileColor = `#${stringToColor(state.name)}`;
+                            const color1 = `#${stringToColor(state.name)}`;
+                            const color2 = `#${stringToColor2(state.name)}`;
                             
                             const cardContent = (
                                 <Card className={cn(
-                                    "group overflow-hidden transition-all duration-300",
+                                    "group overflow-hidden transition-all duration-300 rounded-lg",
                                     isAvailable ? "hover:shadow-lg hover:-translate-y-1" : "opacity-50 cursor-not-allowed"
                                 )}>
                                     <CardContent className="p-0">
                                         <div 
                                             className="relative aspect-[4/3] w-full flex items-center justify-center transition-transform duration-300 group-hover:scale-105"
-                                            style={{ backgroundColor: tileColor }}
+                                            style={{ background: `linear-gradient(45deg, ${color1}, ${color2})` }}
                                         >
                                             <div className="absolute inset-0 bg-black/20"></div>
                                             <h3 className="relative text-white text-base font-bold text-center p-2">{state.name}</h3>
@@ -82,3 +90,4 @@ export default function CulturePage() {
         </div>
     );
 }
+
