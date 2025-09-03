@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -50,7 +51,27 @@ const detectCrisisFlow = ai.defineFlow(
     outputSchema: DetectCrisisOutputSchema,
   },
   async ({ message }) => {
-    const { output } = await prompt({ message });
-    return output!;
+    const maxRetries = 2;
+    let attempt = 0;
+
+    while (attempt <= maxRetries) {
+      try {
+        const { output } = await prompt({ message });
+        return output!;
+      } catch (error: any) {
+        attempt++;
+        // Only retry on 503 Service Unavailable errors.
+        if (attempt > maxRetries || !error.message.includes('503 Service Unavailable')) {
+          // If it's the last attempt or a different error, re-throw to fail the flow.
+          throw error;
+        }
+        console.log(`Crisis detection model overloaded. Retrying attempt ${attempt} of ${maxRetries}...`);
+        // Wait for a short duration before retrying.
+        await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+      }
+    }
+
+    // This should not be reached, but as a fallback, throw an error.
+    throw new Error('Failed to get a response from the crisis detection model after several retries.');
   }
 );
