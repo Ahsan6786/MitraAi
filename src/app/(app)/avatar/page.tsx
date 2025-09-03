@@ -252,10 +252,10 @@ export default function AvatarPage() {
                 <div className="flex-1 flex flex-col items-center justify-center w-full">
                     <div className={cn("relative w-48 h-48 sm:w-64 sm:h-64 rounded-full transition-all", isSpeaking && "animate-pulse-avatar")}>
                        <Image
-                         src="https://api.dicebear.com/9.x/adventurer/svg?seed=Brian"
+                         src="https://img.freepik.com/free-psd/3d-illustration-person-with-sunglasses_23-2149436188.jpg"
                          alt="avatar"
                          layout="fill"
-                         className="rounded-full dark:invert"
+                         className="rounded-full"
                        />
                     </div>
                 </div>
