@@ -223,7 +223,7 @@ export default function AvatarPage() {
                  </div>
 
                 <div className="flex-1">
-                   <Canvas camera={{ position: [0, 0, 2.5], fov: 25 }}>
+                   <Canvas key={language} camera={{ position: [0, 0, 2.5], fov: 25 }}>
                        <Suspense fallback={null}>
                             <Environment preset="sunset" />
                             <Avatar audioUrl={audioUrl} />
