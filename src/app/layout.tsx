@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
-import { Poppins } from 'next/font/google'
+import { Inter } from 'next/font/google'
 import { ThemeProvider } from '@/components/theme-provider';
 
 export const metadata: Metadata = {
@@ -9,10 +9,10 @@ export const metadata: Metadata = {
   description: 'Your AI Mental Health Companion',
 };
 
-const poppins = Poppins({
+const inter = Inter({
   subsets: ['latin'],
   weight: ['300', '400', '500', '600', '700'],
-  variable: '--font-poppins',
+  variable: '--font-inter',
 })
 
 export default function RootLayout({
@@ -22,7 +22,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${poppins.variable} font-body antialiased`}>
+      <body className={`${inter.variable} font-body antialiased`}>
         <ThemeProvider
           attribute="class"
           defaultTheme="theme-green-dark"
