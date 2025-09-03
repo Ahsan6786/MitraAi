@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { BookHeart, MessageSquare, MicVocal, ShieldCheck, LogOut, FileText, Puzzle, Phone, LayoutDashboard, Info, HeartPulse, Sparkles, Trophy, Newspaper, User, Users, Star, Camera, UserCheck, CalendarPlus, CalendarClock, Menu, LandPlot } from 'lucide-react';
+import { BookHeart, MessageSquare, MicVocal, ShieldCheck, LogOut, FileText, Puzzle, Phone, LayoutDashboard, Info, HeartPulse, Sparkles, Trophy, Newspaper, User, Users, Star, Camera, UserCheck, CalendarPlus, CalendarClock, Menu, LandPlot, Smile } from 'lucide-react';
 import {
   SidebarProvider,
   Sidebar,
@@ -65,7 +65,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const checkQuestionnaire = async () => {
-        if (userType === 'user' && !pathname.startsWith('/questionnaire') && !pathname.startsWith('/screening-tools')) {
+        if (userType === 'user') {
             const dismissed = sessionStorage.getItem('questionnaireDismissed');
             if (dismissed) return;
 
@@ -100,10 +100,6 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
       sidebar.setOpenMobile(false);
     }
   };
-  
-  if (pathname.startsWith('/questionnaire')) {
-    return <>{children}</>;
-  }
 
 
   if (loading || !user) {
@@ -165,6 +161,17 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
             {userType === 'user' && (
               <>
                 {/* Highlighted & Reordered Items */}
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild isActive={pathname === '/avatar'}>
+                    <Link href="/avatar" onClick={handleLinkClick} className="flex items-center justify-between w-full">
+                      <div className="flex items-center gap-2">
+                        <Smile />
+                        <span>Avatar</span>
+                      </div>
+                      <Trophy className="w-4 h-4 text-amber-500" />
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
                 <SidebarMenuItem>
                   <SidebarMenuButton asChild isActive={pathname === '/chat'}>
                     <Link href="/chat" onClick={handleLinkClick} className="flex items-center justify-between w-full">
@@ -388,3 +395,5 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     </AuthProvider>
   );
 }
+
+    
