@@ -425,7 +425,7 @@ export default function ChatInterface() {
                       <Logo className="w-5 h-5"/>
                     </AvatarFallback>
                   </Avatar>
-                  <MessageBubble message={{sender: 'ai', text: "Hello there! How are you feeling today? I'm here to listen and support you in any way I can. Feel free to share your thoughts and feelings with me."}} senderName="AI Companion" />
+                  <MessageBubble message={{sender: 'ai', text: "Hello there! How are you feeling today? I'm here to listen and support you in any way I can. Feel free to share your thoughts and feelings with me."}} senderName="Mitra" />
               </div>
             ) : (
               messages.map((message, index) => (
@@ -446,7 +446,7 @@ export default function ChatInterface() {
                    <div className={cn('flex flex-col gap-1', message.sender === 'user' ? 'items-end' : 'items-start')}>
                      <MessageBubble 
                         message={message} 
-                        senderName={message.sender === 'user' ? (user?.displayName || 'You') : 'AI Companion'}
+                        senderName={message.sender === 'user' ? (user?.displayName || 'You') : 'Mitra'}
                      />
                    </div>
                   {message.sender === 'user' && (
@@ -467,7 +467,7 @@ export default function ChatInterface() {
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex flex-col gap-1 items-start">
-                        <span className="text-muted-foreground text-sm font-medium">AI Companion</span>
+                        <span className="text-muted-foreground text-sm font-medium">Mitra</span>
                         <div className="bg-muted text-foreground rounded-lg rounded-tl-none px-4 py-3 flex items-center text-base">
                           <Loader2 className="w-5 h-5 animate-spin mr-2"/> Thinking...
                         </div>
