@@ -162,17 +162,6 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
               <>
                 {/* Highlighted & Reordered Items */}
                 <SidebarMenuItem>
-                  <SidebarMenuButton asChild isActive={pathname === '/avatar'}>
-                    <Link href="/avatar" onClick={handleLinkClick} className="flex items-center justify-between w-full">
-                      <div className="flex items-center gap-2">
-                        <Smile />
-                        <span>Avatar</span>
-                      </div>
-                      <Trophy className="w-4 h-4 text-amber-500" />
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
                   <SidebarMenuButton asChild isActive={pathname === '/chat'}>
                     <Link href="/chat" onClick={handleLinkClick} className="flex items-center justify-between w-full">
                       <div className="flex items-center gap-2">
@@ -395,5 +384,3 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     </AuthProvider>
   );
 }
-
-    
