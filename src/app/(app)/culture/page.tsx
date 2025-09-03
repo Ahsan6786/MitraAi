@@ -9,6 +9,40 @@ import { statesData, allIndianStates } from '@/lib/states-data';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
 
+const stateImageHints: Record<string, string> = {
+    'india': 'India culture',
+    'andhra-pradesh': 'Tirupati temple',
+    'arunachal-pradesh': 'Tawang monastery',
+    'assam': 'tea plantation',
+    'bihar': 'Bodhgaya temple',
+    'chhattisgarh': 'Chitrakote falls',
+    'goa': 'Goa beach',
+    'gujarat': 'Rann Utsav',
+    'haryana': 'Kurukshetra field',
+    'himachal-pradesh': 'Shimla mountains',
+    'jammu-and-kashmir': 'Dal Lake',
+    'jharkhand': 'Pahari Mandir',
+    'karnataka': 'Hampi ruins',
+    'kerala': 'Kerala backwaters',
+    'madhya-pradesh': 'Khajuraho temple',
+    'maharashtra': 'Gateway India',
+    'manipur': 'Loktak Lake',
+    'meghalaya': 'living root bridge',
+    'mizoram': 'Mizoram hills',
+    'nagaland': 'Hornbill festival',
+    'odisha': 'Konark temple',
+    'punjab': 'Golden Temple',
+    'rajasthan': 'Hawa Mahal',
+    'sikkim': 'Rumtek monastery',
+    'tamil-nadu': 'Meenakshi temple',
+    'telangana': 'Charminar monument',
+    'tripura': 'Ujjayanta Palace',
+    'uttar-pradesh': 'Taj Mahal',
+    'uttarakhand': 'Kedarnath temple',
+    'west-bengal': 'Howrah Bridge'
+};
+
+
 export default function CulturePage() {
     const availableStateIds = new Set(statesData.map(s => s.id));
 
@@ -35,6 +69,7 @@ export default function CulturePage() {
                         {allIndianStates.map(state => {
                             const isAvailable = availableStateIds.has(state.id);
                             const placeholderImageUrl = `https://picsum.photos/seed/${state.id}/400/300`;
+                            const hint = stateImageHints[state.id] || "India culture";
                             
                             const cardContent = (
                                 <Card className={cn(
@@ -49,7 +84,7 @@ export default function CulturePage() {
                                                 layout="fill"
                                                 objectFit="cover"
                                                 className="transition-transform duration-300 group-hover:scale-105"
-                                                data-ai-hint="culture landscape"
+                                                data-ai-hint={hint}
                                             />
                                             <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
                                             <h3 className="absolute bottom-2 left-3 text-white text-base font-bold">{state.name}</h3>
