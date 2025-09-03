@@ -220,11 +220,20 @@ export default function ChatInterface() {
 
     try {
       // First, check for crisis
-      const crisisResult = await detectCrisis({ message: messageText });
-      if (crisisResult.isCrisis) {
+      try {
+        const crisisResult = await detectCrisis({ message: messageText });
+        if (crisisResult.isCrisis) {
+          setShowCrisisModal(true);
+          setIsLoading(false);
+          // Remove the crisis message from history to not affect the AI
+          setMessages(messages);
+          return;
+        }
+      } catch (crisisError) {
+        console.error("Crisis detection service failed:", crisisError);
+        // Fail-safe: If the crisis check fails, assume a crisis to be safe.
         setShowCrisisModal(true);
         setIsLoading(false);
-        // Remove the crisis message from history to not affect the AI
         setMessages(messages);
         return;
       }
