@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { Users, Heart, BrainCircuit, ShieldCheck, Handshake, FileQuestion } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
+import { GenZToggle } from '@/components/genz-toggle';
 
 export default function AboutPage() {
     return (
@@ -19,7 +20,10 @@ export default function AboutPage() {
                       </p>
                     </div>
                 </div>
-                <ThemeToggle />
+                <div className="flex items-center gap-2">
+                    <GenZToggle />
+                    <ThemeToggle />
+                </div>
             </header>
             <main className="flex-1 overflow-auto p-2 sm:p-4 md:p-6 space-y-6">
                 <Card>

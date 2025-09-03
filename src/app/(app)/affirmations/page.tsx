@@ -12,6 +12,7 @@ import { SidebarTrigger } from '@/components/ui/sidebar';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { generateAffirmation } from '@/ai/flows/generate-affirmation';
 import { useToast } from '@/hooks/use-toast';
+import { GenZToggle } from '@/components/genz-toggle';
 
 interface LastEntry {
     mood: string;
@@ -89,7 +90,10 @@ export default function AffirmationsPage() {
                       </p>
                     </div>
                 </div>
-                <ThemeToggle />
+                <div className="flex items-center gap-2">
+                    <GenZToggle />
+                    <ThemeToggle />
+                </div>
             </header>
             <main className="flex-1 overflow-auto p-4 sm:px-6 lg:px-8 flex items-center justify-center pb-24">
                  {isLoading ? (

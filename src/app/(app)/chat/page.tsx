@@ -4,6 +4,7 @@
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { ThemeToggle } from '@/components/theme-toggle';
 import ChatInterface from '@/components/chat-interface';
+import { GenZToggle } from '@/components/genz-toggle';
 
 export default function ChatPage() {
   return (
@@ -16,7 +17,10 @@ export default function ChatPage() {
             <p className="text-sm text-muted-foreground">Your Personal AI Companion</p>
           </div>
         </div>
-        <ThemeToggle />
+        <div className="flex items-center gap-2">
+          <GenZToggle />
+          <ThemeToggle />
+        </div>
       </header>
       <main className="flex-1 overflow-auto bg-muted/30 p-0 sm:p-4">
           <ChatInterface />

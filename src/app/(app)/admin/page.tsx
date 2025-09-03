@@ -28,6 +28,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import { GenZToggle } from '@/components/genz-toggle';
 
 
 const ADMIN_EMAIL = 'ahsan.khan@mitwpu.edu.in';
@@ -395,7 +396,10 @@ export default function AdminPage() {
                         <p className="text-sm text-muted-foreground">Review user submissions and requests.</p>
                     </div>
                 </div>
-                <ThemeToggle />
+                <div className="flex items-center gap-2">
+                    <GenZToggle />
+                    <ThemeToggle />
+                </div>
             </header>
             <main className="flex-1 overflow-auto p-2 sm:p-4 md:p-6">
                 <Tabs defaultValue="counsellor-requests" className="w-full">

@@ -26,6 +26,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
+import { GenZToggle } from '@/components/genz-toggle';
 
 interface Counsellor {
   id: string;
@@ -210,7 +211,10 @@ export default function BookingPage() {
                       </p>
                     </div>
                 </div>
-                <ThemeToggle />
+                <div className="flex items-center gap-2">
+                    <GenZToggle />
+                    <ThemeToggle />
+                </div>
             </header>
             <main className="flex-1 overflow-auto p-2 sm:p-4 md:p-6">
                  {isLoading ? (

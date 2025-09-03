@@ -27,6 +27,7 @@ import { signOut } from 'firebase/auth';
 import { collection, getDocs, limit, query, where, doc, getDoc } from 'firebase/firestore';
 import StartQuestionnaireModal from '@/components/start-questionnaire-modal';
 import { ChatHistoryProvider } from '@/hooks/use-chat-history';
+import { GenZToggle } from '@/components/genz-toggle';
 
 const ADMIN_EMAIL = 'ahsan.khan@mitwpu.edu.in';
 
