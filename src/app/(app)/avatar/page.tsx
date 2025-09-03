@@ -7,7 +7,7 @@ import { Loader2, Mic, Square, Bot, Camera, User, Languages } from 'lucide-react
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
 import { SidebarTrigger } from '@/components/ui/sidebar';
-import { ThemeToggle } from '@/components/ui/theme-toggle';
+import { ThemeToggle } from '@/components/theme-toggle';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { predictLiveMood } from '@/ai/flows/predict-live-mood';
 import { textToSpeech } from '@/ai/flows/text-to-speech';
@@ -251,5 +251,3 @@ export default function AvatarPage() {
         </>
     );
 }
-
-    
