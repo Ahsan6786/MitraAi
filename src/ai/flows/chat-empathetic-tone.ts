@@ -24,6 +24,7 @@ const ChatMessageSchema = z.object({
 const ChatEmpatheticToneInputSchema = z.object({
   message: z.string().describe('The user message to the AI companion.'),
   language: z.string().describe('The regional language to respond in.'),
+  isGenzMode: z.boolean().optional().describe('If true, the AI should respond in a casual, Gen Z slang-filled tone.'),
   imageDataUri: z.string().optional().describe("An optional image from the user, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."),
   history: z.array(ChatMessageSchema).optional().describe('The history of the conversation so far.'),
 });
@@ -43,7 +44,16 @@ const prompt = ai.definePrompt({
   name: 'chatEmpatheticTonePrompt',
   input: { schema: ChatEmpatheticToneInputSchema },
   output: { schema: ChatEmpatheticToneOutputSchema },
-  prompt: `You are an AI companion named Mitra, designed to provide intelligent, helpful, and empathetic responses to users in their regional language. Analyze the user's text and any accompanying image to understand their mood and context. Consider the entire conversation history.
+  prompt: `You are an AI companion named Mitra. Your personality depends on the user's preference.
+
+  **Personality Instructions:**
+  {{#if isGenzMode}}
+  - **Persona:** You are in Gen Z Mode. Talk like a friend. Be super casual, use modern slang, and keep it real. Use emojis where it feels natural. Your vibe is chill, supportive, and maybe a little bit funny. Forget the formal stuff.
+  {{else}}
+  - **Persona:** You are in standard mode. Provide intelligent, helpful, and empathetic responses to users in their regional language.
+  {{/if}}
+  
+  Analyze the user's text and any accompanying image to understand their mood and context. Consider the entire conversation history.
 
   **Task Instructions:**
 
@@ -52,7 +62,7 @@ const prompt = ai.definePrompt({
       - In this specific case, your text response should be a simple confirmation like "Here is the image you asked for." or "I've created this for you."
 
   2.  **Creative & General Chat Task:**
-      - For all other requests (including writing blogs, poems, code, stories, or general conversation), provide a thoughtful, comprehensive, and human-like response in the user's specified language.
+      - For all other requests (including writing blogs, poems, code, stories, or general conversation), provide a thoughtful, comprehensive, and human-like response in the user's specified language, following your assigned persona.
       - Be intelligent, creative, and detailed in your answers. Do not give short, repetitive, or unhelpful replies.
   
   **Creator Identity:**
@@ -115,7 +125,7 @@ const chatEmpatheticToneFlow = ai.defineFlow(
     inputSchema: ChatEmpatheticToneInputSchema,
     outputSchema: ChatEmpatheticToneOutputSchema,
   },
-  async ({ message, language, imageDataUri, history }) => {
+  async ({ message, language, isGenzMode, imageDataUri, history }) => {
     // This regex is now more specific: it requires both an action word AND an image-related noun.
     const isImageRequest = /\b(generate|create|draw|make)\b.*\b(image|picture|photo|drawing|painting)\b/i.test(message);
 
@@ -125,14 +135,14 @@ const chatEmpatheticToneFlow = ai.defineFlow(
       
       // Return a simple, hardcoded confirmation. This is more reliable than a second AI call.
       return {
-        response: "Here is the image you asked for.",
+        response: isGenzMode ? "gotchu, here's the pic ✨" : "Here is the image you asked for.",
         imageUrl: imageResult.imageUrl,
       };
 
     } else {
       // The user wants a text response (e.g., blog, chat, poem).
       const { output } = await prompt(
-        { message, language, imageDataUri, history },
+        { message, language, isGenzMode, imageDataUri, history },
         {
           config: {
             safetySettings: [
