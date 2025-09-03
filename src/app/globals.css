@@ -186,8 +186,8 @@ body {
     --secondary-foreground: 60 5% 85%;
     --muted: 60 5% 12%;
     --muted-foreground: 60 5% 60%;
-    --accent: 54 100% 50%;
-    --accent-foreground: 60 100% 5%;
+    --accent: 60 5% 12%;
+    --accent-foreground: 60 5% 85%;
     --destructive: 0 70% 50%;
     --destructive-foreground: 0 0% 100%;
     --border: 60 5% 17%;
@@ -197,7 +197,7 @@ body {
     --sidebar-foreground: 60 5% 85%;
     --sidebar-primary: 54 100% 50%;
     --sidebar-primary-foreground: 60 100% 5%;
-    --sidebar-accent: 60 5% 12%;
+    --sidebar-accent: 54 100% 50%;
     --sidebar-accent-foreground: 60 100% 5%;
     --sidebar-border: 60 5% 17%;
     --sidebar-ring: 54 100% 50%;
