@@ -14,6 +14,7 @@ import CrisisAlertModal from '@/components/crisis-alert-modal';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
+import { GenZToggle } from '@/components/genz-toggle';
 
 const SpeechRecognition =
   (typeof window !== 'undefined' && (window.SpeechRecognition || window.webkitSpeechRecognition));
@@ -235,6 +236,7 @@ export default function AvatarPage() {
                             <SelectItem value="Hinglish">Hinglish</SelectItem>
                         </SelectContent>
                     </Select>
+                    <GenZToggle />
                     <ThemeToggle />
                 </div>
             </header>
@@ -256,6 +258,7 @@ export default function AvatarPage() {
                          alt="avatar"
                          layout="fill"
                          className="rounded-full"
+                         unoptimized // Using unoptimized to avoid potential Next.js image optimization issues with external URLs
                        />
                     </div>
                 </div>
