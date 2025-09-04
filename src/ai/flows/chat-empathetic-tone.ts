@@ -27,6 +27,7 @@ const ChatEmpatheticToneInputSchema = z.object({
   isGenzMode: z.boolean().optional().describe('If true, the AI should respond in a casual, Gen Z slang-filled tone.'),
   imageDataUri: z.string().optional().describe("An optional image from the user, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."),
   history: z.array(ChatMessageSchema).optional().describe('The history of the conversation so far.'),
+  companionName: z.string().optional().describe("The user's custom name for the AI companion."),
 });
 export type ChatEmpatheticToneInput = z.infer<typeof ChatEmpatheticToneInputSchema>;
 
@@ -44,7 +45,7 @@ const prompt = ai.definePrompt({
   name: 'chatEmpatheticTonePrompt',
   input: { schema: ChatEmpatheticToneInputSchema },
   output: { schema: ChatEmpatheticToneOutputSchema },
-  prompt: `You are an AI companion named Mitra. Your personality depends on the user's preference.
+  prompt: `You are an AI companion. Your name is {{#if companionName}}{{companionName}}{{else}}Mitra{{/if}}. Your personality depends on the user's preference.
 
   **Personality Instructions:**
   {{#if isGenzMode}}
@@ -125,7 +126,7 @@ const chatEmpatheticToneFlow = ai.defineFlow(
     inputSchema: ChatEmpatheticToneInputSchema,
     outputSchema: ChatEmpatheticToneOutputSchema,
   },
-  async ({ message, language, isGenzMode, imageDataUri, history }) => {
+  async ({ message, language, isGenzMode, imageDataUri, history, companionName }) => {
     // This regex is now more specific: it requires both an action word AND an image-related noun.
     const isImageRequest = /\b(generate|create|draw|make)\b.*\b(image|picture|photo|drawing|painting)\b/i.test(message);
 
@@ -148,7 +149,7 @@ const chatEmpatheticToneFlow = ai.defineFlow(
       while (attempt <= maxRetries) {
         try {
           const { output } = await prompt(
-            { message, language, isGenzMode, imageDataUri, history },
+            { message, language, isGenzMode, imageDataUri, history, companionName },
             {
               config: {
                 safetySettings: [

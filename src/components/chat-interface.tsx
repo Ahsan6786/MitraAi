@@ -22,6 +22,8 @@ import { SidebarTrigger } from './ui/sidebar';
 import { ThemeToggle } from './theme-toggle';
 import { useTheme } from 'next-themes';
 import { GenZToggle } from './genz-toggle';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
 // Check for SpeechRecognition API
 const SpeechRecognition =
@@ -208,6 +210,7 @@ export default function ChatInterface() {
   const [showCrisisModal, setShowCrisisModal] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [companionName, setCompanionName] = useState('Mitra');
   
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any | null>(null);
@@ -219,7 +222,21 @@ export default function ChatInterface() {
   const { theme } = useTheme();
 
   const isGenzMode = theme === 'theme-genz-dark';
-
+  
+  useEffect(() => {
+    const fetchCompanionName = async () => {
+        if (user) {
+            const userDocRef = doc(db, 'users', user.uid);
+            const docSnap = await getDoc(userDocRef);
+            if (docSnap.exists() && docSnap.data().companionName) {
+                setCompanionName(docSnap.data().companionName);
+            } else {
+                setCompanionName('Mitra');
+            }
+        }
+    };
+    fetchCompanionName();
+  }, [user]);
 
   useEffect(() => {
     if (scrollAreaRef.current) {
@@ -291,6 +308,7 @@ export default function ChatInterface() {
         isGenzMode,
         imageDataUri,
         history,
+        companionName,
       });
       
       const aiMessage: Message = { sender: 'ai', text: chatResult.response, imageUrl: chatResult.imageUrl };
@@ -399,7 +417,7 @@ export default function ChatInterface() {
         <div className="flex items-center gap-2">
           <SidebarTrigger />
           <div>
-            <h1 className="text-lg md:text-xl font-bold">Mitra</h1>
+            <h1 className="text-lg md:text-xl font-bold">{companionName}</h1>
             <p className="text-sm text-muted-foreground">Your Personal AI Companion</p>
           </div>
         </div>
@@ -418,7 +436,7 @@ export default function ChatInterface() {
                       <Logo className="w-5 h-5"/>
                     </AvatarFallback>
                   </Avatar>
-                  <MessageBubble message={{sender: 'ai', text: "Hello there! How are you feeling today? I'm here to listen and support you in any way I can. Feel free to share your thoughts and feelings with me."}} senderName="Mitra" />
+                  <MessageBubble message={{sender: 'ai', text: `Hello there! I'm ${companionName}. How are you feeling today? I'm here to listen and support you in any way I can. Feel free to share your thoughts and feelings with me.`}} senderName={companionName} />
               </div>
             ) : (
               messages.map((message, index) => (
@@ -439,7 +457,7 @@ export default function ChatInterface() {
                    <div className={cn('flex flex-col gap-1', message.sender === 'user' ? 'items-end' : 'items-start')}>
                      <MessageBubble 
                         message={message} 
-                        senderName={message.sender === 'user' ? (user?.displayName || 'You') : 'Mitra'}
+                        senderName={message.sender === 'user' ? (user?.displayName || 'You') : companionName}
                      />
                    </div>
                   {message.sender === 'user' && (
@@ -460,7 +478,7 @@ export default function ChatInterface() {
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex flex-col gap-1 items-start">
-                        <span className="text-muted-foreground text-sm font-medium">Mitra</span>
+                        <span className="text-muted-foreground text-sm font-medium">{companionName}</span>
                         <div className="bg-muted text-foreground rounded-lg rounded-tl-none px-4 py-3 flex items-center text-base">
                           <Loader2 className="w-5 h-5 animate-spin mr-2"/> Thinking...
                         </div>
