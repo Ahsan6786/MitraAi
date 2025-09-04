@@ -8,18 +8,15 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
-import { Languages, Loader2, Mic, Send, User, Square, Paperclip, X, Copy, Check, Download, Sparkles, Sidebar } from 'lucide-react';
+import { Languages, Loader2, Mic, Send, User, Square, Paperclip, X, Copy, Check, Download } from 'lucide-react';
 import { chatEmpatheticTone, ChatEmpatheticToneInput } from '@/ai/flows/chat-empathetic-tone';
 import { Logo } from '@/components/icons';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
 import { textToSpeech } from '@/ai/flows/text-to-speech';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
 import { detectCrisis } from '@/ai/flows/detect-crisis';
 import CrisisAlertModal from '@/components/crisis-alert-modal';
-import type { User as FirebaseUser } from 'firebase/auth';
 import { useChatHistory, type Message } from '@/hooks/use-chat-history';
 import { SidebarTrigger } from './ui/sidebar';
 import { ThemeToggle } from './theme-toggle';
@@ -392,7 +389,7 @@ export default function ChatInterface() {
   };
 
   return (
-    <div className="w-full h-full flex flex-col z-10 bg-card rounded-xl">
+    <div className="w-full h-full flex flex-col z-10">
       <CrisisAlertModal
         isOpen={showCrisisModal}
         onClose={() => setShowCrisisModal(false)}
