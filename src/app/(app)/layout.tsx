@@ -288,22 +288,11 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
                  <SidebarMenuItem>
                   <SidebarMenuButton
                     asChild
-                    isActive={pathname === '/games'}
+                    isActive={pathname === '/mindful-games'}
                   >
-                    <Link href="/games" onClick={handleLinkClick}>
+                    <Link href="/mindful-games" onClick={handleLinkClick}>
                       <Puzzle />
-                      <span>Mind Games</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                 <SidebarMenuItem>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={pathname === '/exercises'}
-                  >
-                    <Link href="/exercises" onClick={handleLinkClick}>
-                      <HeartPulse />
-                      <span>Mindful Exercises</span>
+                      <span>Mindful Games</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
