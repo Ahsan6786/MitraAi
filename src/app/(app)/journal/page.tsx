@@ -27,6 +27,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import Link from 'next/link';
+import { GenZToggle } from '@/components/genz-toggle';
 
 interface JournalEntry {
   id: string;
@@ -182,7 +183,10 @@ export default function JournalPage() {
               </p>
             </div>
         </div>
-        <ThemeToggle />
+        <div className="flex items-center gap-2">
+            <GenZToggle />
+            <ThemeToggle />
+        </div>
       </header>
 
       <main className="flex-1 overflow-auto p-2 sm:p-4 md:p-6">

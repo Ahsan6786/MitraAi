@@ -11,6 +11,7 @@ import { ThemeToggle } from '@/components/theme-toggle';
 import { generateAiNews, GenerateAiNewsOutput } from '@/ai/flows/generate-ai-news';
 import { generateImage } from '@/ai/flows/generate-image';
 import { useToast } from '@/hooks/use-toast';
+import { GenZToggle } from '@/components/genz-toggle';
 
 interface NewsArticle {
     id: number;
@@ -82,7 +83,10 @@ export default function NewsPage() {
                       </p>
                     </div>
                 </div>
-                <ThemeToggle />
+                <div className="flex items-center gap-2">
+                    <GenZToggle />
+                    <ThemeToggle />
+                </div>
             </header>
             <main className="flex-1 overflow-auto p-2 sm:p-4 md:p-6">
                 <div className="max-w-4xl mx-auto space-y-6">

@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { Logo } from '@/components/icons';
+import { GenZToggle } from '@/components/genz-toggle';
 
 interface JournalReport {
     id: string;
@@ -222,7 +223,10 @@ export default function ReportsPage() {
                       </p>
                     </div>
                 </div>
-                <ThemeToggle />
+                <div className="flex items-center gap-2">
+                    <GenZToggle />
+                    <ThemeToggle />
+                </div>
             </header>
             <main className="flex-1 overflow-auto p-2 sm:p-4 md:p-6 lg:p-12">
                 <div className="max-w-4xl mx-auto">

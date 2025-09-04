@@ -12,6 +12,7 @@ import { Bar, BarChart as RechartsBarChart, Line, LineChart as RechartsLineChart
 import { subDays, format, eachDayOfInterval, startOfDay } from 'date-fns';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { GenZToggle } from '@/components/genz-toggle';
 
 interface JournalEntry {
     id: string;
@@ -141,7 +142,10 @@ export default function DashboardPage() {
                       </p>
                     </div>
                 </div>
-                <ThemeToggle />
+                <div className="flex items-center gap-2">
+                    <GenZToggle />
+                    <ThemeToggle />
+                </div>
             </header>
             <main className="flex-1 overflow-auto p-2 sm:p-4 md:p-6 space-y-8">
                 {isLoading ? (

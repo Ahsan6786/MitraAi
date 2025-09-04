@@ -8,6 +8,7 @@ import { ThemeToggle } from '@/components/theme-toggle';
 import { screeningToolsData } from '@/lib/screening-tools';
 import Link from 'next/link';
 import { ArrowRight, FileQuestion } from 'lucide-react';
+import { GenZToggle } from '@/components/genz-toggle';
 
 export default function ScreeningToolsPage() {
     return (
@@ -22,7 +23,10 @@ export default function ScreeningToolsPage() {
                         </p>
                     </div>
                 </div>
-                <ThemeToggle />
+                <div className="flex items-center gap-2">
+                    <GenZToggle />
+                    <ThemeToggle />
+                </div>
             </header>
             <main className="flex-1 overflow-auto p-2 sm:p-4 md:p-6 lg:p-12 flex items-center justify-center">
                 <div className="w-full max-w-4xl space-y-10">

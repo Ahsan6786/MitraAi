@@ -15,6 +15,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { GenZToggle } from '@/components/genz-toggle';
 
 const SpeechRecognition =
   (typeof window !== 'undefined' && (window.SpeechRecognition || window.webkitSpeechRecognition));
@@ -222,6 +223,7 @@ export default function LiveMoodPage() {
                             <SelectItem value="Hinglish">Hinglish</SelectItem>
                         </SelectContent>
                     </Select>
+                    <GenZToggle />
                     <ThemeToggle />
                 </div>
             </header>
@@ -303,5 +305,3 @@ export default function LiveMoodPage() {
         </div>
     );
 }
-
-    

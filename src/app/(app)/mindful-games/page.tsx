@@ -11,6 +11,7 @@ import { cn } from '@/lib/utils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { GenZToggle } from '@/components/genz-toggle';
 
 // --- Mindful Exercises Components ---
 
@@ -574,7 +575,10 @@ export default function MindfulGamesPage() {
               </p>
             </div>
         </div>
-        <ThemeToggle />
+        <div className="flex items-center gap-2">
+            <GenZToggle />
+            <ThemeToggle />
+        </div>
       </header>
       <main className="flex-1 overflow-auto p-4 sm:p-6 md:p-12">
         <div className="mx-auto max-w-5xl">

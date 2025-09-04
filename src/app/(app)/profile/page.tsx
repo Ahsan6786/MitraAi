@@ -13,6 +13,7 @@ import { Loader2, User } from 'lucide-react';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { useToast } from '@/hooks/use-toast';
+import { GenZToggle } from '@/components/genz-toggle';
 
 export default function ProfilePage() {
     const { user, loading } = useAuth();
@@ -66,7 +67,10 @@ export default function ProfilePage() {
                         <p className="text-sm text-muted-foreground">Manage your account settings.</p>
                     </div>
                 </div>
-                <ThemeToggle />
+                <div className="flex items-center gap-2">
+                    <GenZToggle />
+                    <ThemeToggle />
+                </div>
             </header>
             <main className="flex-1 overflow-auto p-2 sm:p-4 md:p-6 flex justify-center items-start">
                 <Card className="w-full max-w-lg">

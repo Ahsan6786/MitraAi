@@ -9,6 +9,7 @@ import { ThemeToggle } from '@/components/theme-toggle';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { statesData } from '@/lib/states-data';
 import { Button } from '@/components/ui/button';
+import { GenZToggle } from '@/components/genz-toggle';
 
 export default function StateCulturePage() {
     const params = useParams();
@@ -35,7 +36,10 @@ export default function StateCulturePage() {
                         <p className="text-sm text-muted-foreground">Discover the Culture</p>
                     </div>
                 </div>
-                <ThemeToggle />
+                <div className="flex items-center gap-2">
+                    <GenZToggle />
+                    <ThemeToggle />
+                </div>
             </header>
             <main className="flex-1 overflow-auto p-2 sm:p-4 md:p-6 lg:p-12">
                 <div className="max-w-4xl mx-auto space-y-8">
@@ -68,7 +72,3 @@ export default function StateCulturePage() {
         </div>
     );
 }
-
-    
-
-    

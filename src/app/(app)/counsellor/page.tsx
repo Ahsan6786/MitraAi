@@ -24,6 +24,7 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { GenZToggle } from '@/components/genz-toggle';
 
 interface Booking {
     id: string;
@@ -238,7 +239,10 @@ export default function CounsellorPage() {
                         <p className="text-sm text-muted-foreground">Welcome, {user.displayName}</p>
                     </div>
                 </div>
-                <ThemeToggle />
+                <div className="flex items-center gap-2">
+                    <GenZToggle />
+                    <ThemeToggle />
+                </div>
             </header>
             <main className="flex-1 overflow-auto p-2 sm:p-4 md:p-6">
                  <Card>

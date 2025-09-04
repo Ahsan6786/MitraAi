@@ -21,6 +21,7 @@ import { useChatHistory, type Message } from '@/hooks/use-chat-history';
 import { SidebarTrigger } from './ui/sidebar';
 import { ThemeToggle } from './theme-toggle';
 import { useTheme } from 'next-themes';
+import { GenZToggle } from './genz-toggle';
 
 // Check for SpeechRecognition API
 const SpeechRecognition =
@@ -398,11 +399,12 @@ export default function ChatInterface() {
         <div className="flex items-center gap-2">
           <SidebarTrigger />
           <div>
-            <h1 className="text-lg md:text-xl font-bold">MitraGPT</h1>
+            <h1 className="text-lg md:text-xl font-bold">Mitra</h1>
             <p className="text-sm text-muted-foreground">Your Personal AI Companion</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <GenZToggle />
           <ThemeToggle />
         </div>
       </header>

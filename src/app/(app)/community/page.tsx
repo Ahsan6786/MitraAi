@@ -46,6 +46,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { cn } from '@/lib/utils';
+import { GenZToggle } from '@/components/genz-toggle';
 
 interface Post {
   id: string;
@@ -406,6 +407,7 @@ export default function CommunityPage() {
           </div>
         </div>
         <div className="flex items-center gap-2">
+            <GenZToggle />
             <ThemeToggle />
         </div>
       </header>

@@ -14,6 +14,7 @@ import { ThemeToggle } from '@/components/theme-toggle';
 import { predictChatMood } from '@/ai/flows/predict-chat-mood';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
+import { GenZToggle } from '@/components/genz-toggle';
 
 interface Message {
   id: number;
@@ -106,7 +107,10 @@ export default function MoodChatPage() {
             <p className="text-sm text-muted-foreground">Get real-time mood analysis from your chat.</p>
           </div>
         </div>
-        <ThemeToggle />
+        <div className="flex items-center gap-2">
+            <GenZToggle />
+            <ThemeToggle />
+        </div>
       </header>
       <main className="flex-1 overflow-hidden">
         <ScrollArea className="h-full" ref={scrollAreaRef}>

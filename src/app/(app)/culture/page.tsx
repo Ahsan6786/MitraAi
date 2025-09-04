@@ -7,6 +7,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import Link from 'next/link';
 import { statesData, allIndianStates } from '@/lib/states-data';
 import { cn } from '@/lib/utils';
+import { GenZToggle } from '@/components/genz-toggle';
 
 // Simple hash function to generate a color from a string
 const stringToColor = (str: string) => {
@@ -42,7 +43,10 @@ export default function CulturePage() {
                         <p className="text-sm text-muted-foreground">Explore the rich heritage of India.</p>
                     </div>
                 </div>
-                <ThemeToggle />
+                <div className="flex items-center gap-2">
+                    <GenZToggle />
+                    <ThemeToggle />
+                </div>
             </header>
             <main className="flex-1 overflow-auto p-2 sm:p-4 md:p-6 lg:p-12">
                 <div className="max-w-6xl mx-auto">
@@ -90,4 +94,3 @@ export default function CulturePage() {
         </div>
     );
 }
-

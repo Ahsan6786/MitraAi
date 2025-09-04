@@ -14,6 +14,7 @@ import { ThemeToggle } from '@/components/theme-toggle';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { GenZToggle } from '@/components/genz-toggle';
 
 
 const SpeechRecognition =
@@ -218,6 +219,7 @@ export default function TalkPage() {
                     ))}
                 </SelectContent>
             </Select>
+            <GenZToggle />
             <ThemeToggle />
           </div>
         </header>
