@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { BookHeart, MessageSquare, MicVocal, ShieldCheck, LogOut, FileText, Puzzle, Phone, LayoutDashboard, Info, HeartPulse, Sparkles, Trophy, Newspaper, User, Users, Star, Camera, UserCheck, CalendarPlus, CalendarClock, Menu, LandPlot, Smile } from 'lucide-react';
+import { BookHeart, MessageSquare, MicVocal, ShieldCheck, LogOut, FileText, Puzzle, Phone, LayoutDashboard, Info, HeartPulse, Sparkles, Trophy, Newspaper, User, Users, Star, Camera, UserCheck, CalendarPlus, CalendarClock, Menu, LandPlot, Smile, ChevronDown, Stethoscope } from 'lucide-react';
 import {
   SidebarProvider,
   Sidebar,
@@ -28,6 +28,8 @@ import { collection, getDocs, limit, query, where, doc, getDoc } from 'firebase/
 import StartQuestionnaireModal from '@/components/start-questionnaire-modal';
 import { ChatHistoryProvider } from '@/hooks/use-chat-history';
 import { GenZToggle } from '@/components/genz-toggle';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { cn } from '@/lib/utils';
 
 const ADMIN_EMAIL = 'ahsan.khan@mitwpu.edu.in';
 
@@ -38,6 +40,15 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
   const sidebar = useSidebar();
   const [showQuestionnaireModal, setShowQuestionnaireModal] = useState(false);
   const [userType, setUserType] = useState<'user' | 'admin' | 'counsellor' | null>(null);
+
+  const professionalHelpPaths = ['/reports', '/booking', '/my-appointments', '/screening-tools'];
+  const isProfessionalHelpActive = professionalHelpPaths.some(p => pathname.startsWith(p));
+  const [isProfessionalHelpOpen, setIsProfessionalHelpOpen] = useState(isProfessionalHelpActive);
+
+  useEffect(() => {
+    setIsProfessionalHelpOpen(isProfessionalHelpActive);
+  }, [isProfessionalHelpActive]);
+
 
   useEffect(() => {
     if (!loading && !user) {
@@ -183,18 +194,8 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild isActive={pathname === '/screening-tools'}>
-                    <Link href="/screening-tools" onClick={handleLinkClick} className="flex items-center justify-between w-full">
-                      <div className="flex items-center gap-2">
-                        <FileText />
-                        <span>Screening Tools</span>
-                      </div>
-                      <Trophy className="w-4 h-4 text-amber-500" />
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
+                
+                 <SidebarMenuItem>
                   <SidebarMenuButton asChild isActive={pathname.startsWith('/culture')}>
                     <Link href="/culture" onClick={handleLinkClick} className="flex items-center justify-between w-full">
                       <div className="flex items-center gap-2">
@@ -216,17 +217,55 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={pathname === '/reports'}
-                  >
-                    <Link href="/reports" onClick={handleLinkClick}>
-                      <FileText />
-                      <span>Doctor's Reports</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
+                
+                {/* Professional Help Section */}
+                <Collapsible open={isProfessionalHelpOpen} onOpenChange={setIsProfessionalHelpOpen}>
+                  <CollapsibleTrigger asChild>
+                    <SidebarMenuButton
+                      isActive={isProfessionalHelpActive}
+                      className="w-full justify-between"
+                    >
+                      <div className="flex items-center gap-2">
+                        <Stethoscope />
+                        <span>Professional Help</span>
+                      </div>
+                      <ChevronDown
+                        className={cn(
+                          'h-4 w-4 transition-transform',
+                          isProfessionalHelpOpen && 'rotate-180'
+                        )}
+                      />
+                    </SidebarMenuButton>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <div className="pl-6 pt-1 space-y-1">
+                      <SidebarMenuButton asChild isActive={pathname === '/screening-tools'}>
+                        <Link href="/screening-tools" onClick={handleLinkClick}>
+                          <FileText />
+                          <span>Screening Tools</span>
+                        </Link>
+                      </SidebarMenuButton>
+                      <SidebarMenuButton asChild isActive={pathname === '/booking'}>
+                        <Link href="/booking" onClick={handleLinkClick}>
+                          <CalendarPlus />
+                          <span>Book Appointment</span>
+                        </Link>
+                      </SidebarMenuButton>
+                      <SidebarMenuButton asChild isActive={pathname === '/my-appointments'}>
+                        <Link href="/my-appointments" onClick={handleLinkClick}>
+                          <CalendarClock />
+                          <span>My Appointments</span>
+                        </Link>
+                      </SidebarMenuButton>
+                      <SidebarMenuButton asChild isActive={pathname === '/reports'}>
+                        <Link href="/reports" onClick={handleLinkClick}>
+                          <FileText />
+                          <span>Doctor's Reports</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
 
                 {/* Rest of the items */}
                 <SidebarMenuItem>
@@ -250,22 +289,6 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
                     <Link href="/live-mood" onClick={handleLinkClick}>
                       <Camera />
                       <span>Live Mood Analysis</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild isActive={pathname === '/booking'}>
-                    <Link href="/booking" onClick={handleLinkClick}>
-                      <CalendarPlus />
-                      <span>Book Appointment</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild isActive={pathname === '/my-appointments'}>
-                    <Link href="/my-appointments" onClick={handleLinkClick}>
-                      <CalendarClock />
-                      <span>My Appointments</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
