@@ -143,14 +143,14 @@ export default function AboutPage() {
                  <Card>
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
-                           <Users className="w-6 h-6 text-primary"/> About the Founder – Ahsan Imam Khan
+                           <Users className="w-6 h-6 text-primary"/> About the Founders – PulseCoders Team
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
                        <p className="text-muted-foreground">
-                        MitraAI was founded by Ahsan Imam Khan, a passionate tech enthusiast with a deep belief that technology should heal, not harm. Ahsan saw how people often suffer silently due to mental health stigma or lack of access to support. This inspired him to create an AI-powered platform that combines empathy with technology to help individuals track and improve their emotional well-being.
+                        MitraAI was founded by the PulseCoders Team, a group of passionate innovators driven by the belief that technology should heal, not harm. Witnessing how millions silently struggle with mental health challenges due to stigma or lack of accessible support, the team came together with a shared mission: to build a platform where empathy and technology work hand in hand.
                         <br/><br/>
-                        He envisions MitraAI as a global companion for anyone feeling lost, anxious, or alone. Ahsan’s goal is not just to build an app but to build hope — making mental wellness accessible to all, breaking the silence around mental health, and showing that nobody has to fight their battles alone.
+                        With diverse expertise in technology, design, and human behavior, the PulseCoders Team envisions MitraAI as a global companion for anyone feeling lost, anxious, or alone. Their goal goes beyond creating just an app — they aim to build hope, spark conversations, and break the silence around mental health. By making mental wellness accessible to everyone, the team seeks to show that nobody has to fight their battles alone.
                        </p>
                     </CardContent>
                 </Card>
