@@ -45,9 +45,15 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
   const isProfessionalHelpActive = professionalHelpPaths.some(p => pathname.startsWith(p));
   const [isProfessionalHelpOpen, setIsProfessionalHelpOpen] = useState(isProfessionalHelpActive);
 
+  const emotionsDiaryPaths = ['/journal', '/live-mood'];
+  const isEmotionsDiaryActive = emotionsDiaryPaths.some(p => pathname.startsWith(p));
+  const [isEmotionsDiaryOpen, setIsEmotionsDiaryOpen] = useState(isEmotionsDiaryActive);
+
+
   useEffect(() => {
     setIsProfessionalHelpOpen(isProfessionalHelpActive);
-  }, [isProfessionalHelpActive]);
+    setIsEmotionsDiaryOpen(isEmotionsDiaryActive);
+  }, [isProfessionalHelpActive, isEmotionsDiaryActive]);
 
 
   useEffect(() => {
@@ -267,28 +273,49 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
                   </CollapsibleContent>
                 </Collapsible>
 
+                {/* Emotions Diary Section */}
+                <Collapsible open={isEmotionsDiaryOpen} onOpenChange={setIsEmotionsDiaryOpen}>
+                  <CollapsibleTrigger asChild>
+                    <SidebarMenuButton
+                      isActive={isEmotionsDiaryActive}
+                      className="w-full justify-between"
+                    >
+                      <div className="flex items-center gap-2">
+                        <BookHeart />
+                        <span>Emotions Diary</span>
+                      </div>
+                      <ChevronDown
+                        className={cn(
+                          'h-4 w-4 transition-transform',
+                          isEmotionsDiaryOpen && 'rotate-180'
+                        )}
+                      />
+                    </SidebarMenuButton>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <div className="pl-6 pt-1 space-y-1">
+                      <SidebarMenuButton asChild isActive={pathname === '/journal'}>
+                        <Link href="/journal" onClick={handleLinkClick}>
+                          <PenSquare />
+                          <span>Journal</span>
+                        </Link>
+                      </SidebarMenuButton>
+                      <SidebarMenuButton asChild isActive={pathname === '/live-mood'}>
+                        <Link href="/live-mood" onClick={handleLinkClick}>
+                          <Camera />
+                          <span>Live Mood Analysis</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
+                
                 {/* Rest of the items */}
                 <SidebarMenuItem>
                   <SidebarMenuButton asChild isActive={pathname === '/dashboard'}>
                     <Link href="/dashboard" onClick={handleLinkClick}>
                       <LayoutDashboard />
                       <span>Dashboard</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                 <SidebarMenuItem>
-                  <SidebarMenuButton asChild isActive={pathname === '/journal'}>
-                    <Link href="/journal" onClick={handleLinkClick}>
-                      <BookHeart />
-                      <span>Journal</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild isActive={pathname === '/live-mood'}>
-                    <Link href="/live-mood" onClick={handleLinkClick}>
-                      <Camera />
-                      <span>Live Mood Analysis</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
