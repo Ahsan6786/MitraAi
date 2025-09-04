@@ -2,7 +2,7 @@
 "use client"
 
 import * as React from "react"
-import { Moon, Sun, Palette } from "lucide-react"
+import { Moon, Sun, Palette, Sparkles } from "lucide-react"
 import { useTheme } from "next-themes"
 
 import { Button } from "@/components/ui/button"
@@ -54,6 +54,11 @@ export function ThemeToggle() {
         </DropdownMenuItem>
          <DropdownMenuItem onClick={() => setTheme("theme-green-dark")}>
           Green Black
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+         <DropdownMenuItem onClick={() => setTheme("theme-genz-dark")} className="flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-purple-400" />
+            Gen Z Mode
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={() => setTheme("system")}>

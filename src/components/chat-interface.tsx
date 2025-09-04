@@ -23,7 +23,7 @@ import type { User as FirebaseUser } from 'firebase/auth';
 import { useChatHistory, type Message } from '@/hooks/use-chat-history';
 import { SidebarTrigger } from './ui/sidebar';
 import { ThemeToggle } from './theme-toggle';
-import { GenZToggle } from './genz-toggle';
+import { useTheme } from 'next-themes';
 
 // Check for SpeechRecognition API
 const SpeechRecognition =
@@ -206,7 +206,6 @@ export default function ChatInterface() {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [language, setLanguage] = useState('English');
-  const [isGenzMode, setIsGenzMode] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [showCrisisModal, setShowCrisisModal] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -219,6 +218,10 @@ export default function ChatInterface() {
 
   const { toast } = useToast();
   const { user } = useAuth(); // Can be null if not logged in
+  const { theme } = useTheme();
+
+  const isGenzMode = theme === 'theme-genz-dark';
+
 
   useEffect(() => {
     if (scrollAreaRef.current) {
@@ -228,14 +231,6 @@ export default function ChatInterface() {
       });
     }
   }, [messages]);
-  
-  const handleGenzModeChange = (checked: boolean) => {
-    setIsGenzMode(checked);
-    toast({
-      title: checked ? "Gen Z Mode Activated! 😎" : "Gen Z Mode Deactivated. 🫡",
-      description: checked ? "Ready for some real talk. What's the tea?" : "Returning to standard empathetic mode.",
-    });
-  };
 
   const fileToDataUri = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
@@ -411,7 +406,6 @@ export default function ChatInterface() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <GenZToggle />
           <ThemeToggle />
         </div>
       </header>
@@ -521,13 +515,6 @@ export default function ChatInterface() {
         </form>
          <div className="flex items-center justify-between mt-2">
              <div className="flex items-center space-x-4">
-                <div className="flex items-center space-x-2">
-                    <Switch id="genz-mode" checked={isGenzMode} onCheckedChange={handleGenzModeChange} />
-                    <Label htmlFor="genz-mode" className="flex items-center gap-1 text-sm text-muted-foreground">
-                        <Sparkles className="w-4 h-4 text-purple-400"/>
-                        Gen Z Mode
-                    </Label>
-                </div>
                 <Select value={language} onValueChange={setLanguage}>
                     <SelectTrigger className="w-auto h-8 text-xs">
                         <Languages className="w-3 h-3 mr-1.5"/>

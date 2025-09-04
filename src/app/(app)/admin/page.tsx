@@ -28,7 +28,6 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { GenZToggle } from '@/components/genz-toggle';
 
 
 const ADMIN_EMAIL = 'ahsan.khan@mitwpu.edu.in';
@@ -397,7 +396,6 @@ export default function AdminPage() {
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
-                    <GenZToggle />
                     <ThemeToggle />
                 </div>
             </header>
