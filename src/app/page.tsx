@@ -10,6 +10,7 @@ import { ThemeToggle } from '@/components/theme-toggle';
 import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { GenZToggle } from '@/components/genz-toggle';
+import IntroAnimation from '@/components/intro-animation';
 
 // --- Interactive Hero Section Component ---
 function InteractiveHero() {
@@ -439,13 +440,28 @@ function LandingPageContent() {
 
 export default function LandingPage() {
     const [isClient, setIsClient] = useState(false);
+    const [showIntro, setShowIntro] = useState(true);
 
     useEffect(() => {
         setIsClient(true);
+        // Use sessionStorage to only show the intro once per session
+        const hasSeenIntro = sessionStorage.getItem('hasSeenIntro');
+        if (hasSeenIntro) {
+            setShowIntro(false);
+        }
     }, []);
 
+    const handleIntroFinish = () => {
+        sessionStorage.setItem('hasSeenIntro', 'true');
+        setShowIntro(false);
+    };
+
     if (!isClient) {
-        return null;
+        return null; // Render nothing on the server to avoid hydration mismatch
+    }
+
+    if (showIntro) {
+        return <IntroAnimation onFinish={handleIntroFinish} />;
     }
     
     return <LandingPageContent />;
