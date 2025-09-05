@@ -526,9 +526,10 @@ export default function CommunityPage() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-            <Button asChild variant="ghost" className="relative text-white hover:bg-[#233648] hover:text-white">
-                <Link href="/friends">
+            <Button asChild variant="ghost" className="relative text-white hover:bg-[#233648] hover:text-white px-3 h-9">
+                <Link href="/friends" className="flex items-center gap-2">
                     <UserPlus className="w-5 h-5" />
+                    <span className="text-sm font-medium">My Friends</span>
                     {friendRequestCount > 0 && (
                         <Badge className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center bg-primary text-primary-foreground">
                           {friendRequestCount}
@@ -536,9 +537,10 @@ export default function CommunityPage() {
                     )}
                 </Link>
             </Button>
-            <Button asChild variant="ghost" className="text-white hover:bg-[#233648] hover:text-white">
-                <Link href="/groups">
+            <Button asChild variant="ghost" className="text-white hover:bg-[#233648] hover:text-white px-3 h-9">
+                <Link href="/groups" className="flex items-center gap-2">
                     <UsersIcon className="w-5 h-5" />
+                    <span className="text-sm font-medium">Groups</span>
                 </Link>
             </Button>
             <GenZToggle />
