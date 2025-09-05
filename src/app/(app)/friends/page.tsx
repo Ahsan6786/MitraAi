@@ -72,7 +72,7 @@ export default function FriendsPage() {
           const senderData = senderDoc.data();
           const currentUserFriendRef = doc(db, 'users', user.uid, 'friends', senderId);
           batch.set(currentUserFriendRef, {
-            displayName: senderData.displayName,
+            displayName: senderData.displayName || senderData.email, // Fallback to email
             email: senderData.email,
             addedAt: serverTimestamp(),
           });
@@ -81,7 +81,7 @@ export default function FriendsPage() {
         // Add current user to sender's friends list
         const senderFriendRef = doc(db, 'users', senderId, 'friends', user.uid);
         batch.set(senderFriendRef, {
-            displayName: user.displayName,
+            displayName: user.displayName || user.email, // Fallback to email
             email: user.email,
             addedAt: serverTimestamp(),
         });
