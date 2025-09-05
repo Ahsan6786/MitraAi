@@ -68,20 +68,34 @@ export default function FriendsPage() {
 
         // Get sender's data to add to current user's friends list
         const senderDoc = await getDoc(doc(db, 'users', senderId));
-        if (senderDoc.exists()) {
-          const senderData = senderDoc.data();
-          const currentUserFriendRef = doc(db, 'users', user.uid, 'friends', senderId);
-          batch.set(currentUserFriendRef, {
-            displayName: senderData.displayName || senderData.email, // Fallback to email
+        // Get current user's data to add to sender's friends list
+        const currentUserDoc = await getDoc(doc(db, 'users', user.uid));
+
+        if (!senderDoc.exists() || !currentUserDoc.exists()) {
+            throw new Error("Could not find user profiles.");
+        }
+
+        const senderData = senderDoc.data();
+        const currentUserData = currentUserDoc.data();
+
+        const senderName = senderData.displayName || senderData.email;
+        const currentUserName = currentUserData.displayName || user.email;
+
+        if (!senderName || !currentUserName) {
+            throw new Error("User display names are missing.");
+        }
+
+        const currentUserFriendRef = doc(db, 'users', user.uid, 'friends', senderId);
+        batch.set(currentUserFriendRef, {
+            displayName: senderName,
             email: senderData.email,
             addedAt: serverTimestamp(),
-          });
-        }
+        });
         
         // Add current user to sender's friends list
         const senderFriendRef = doc(db, 'users', senderId, 'friends', user.uid);
         batch.set(senderFriendRef, {
-            displayName: user.displayName || user.email, // Fallback to email
+            displayName: currentUserName,
             email: user.email,
             addedAt: serverTimestamp(),
         });
@@ -92,9 +106,9 @@ export default function FriendsPage() {
         await batch.commit();
         toast({ title: 'Friend Added' });
 
-      } catch (error) {
+      } catch (error: any) {
         console.error("Error accepting friend request:", error);
-        toast({ title: 'Error', description: 'Could not accept request.', variant: 'destructive' });
+        toast({ title: 'Error', description: error.message || 'Could not accept request.', variant: 'destructive' });
       }
 
     } else {
