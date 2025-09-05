@@ -35,12 +35,18 @@ service cloud.firestore {
         allow create: if request.auth != null && request.auth.uid == senderId;
         // The recipient can read/delete their own requests.
         allow read, delete: if request.auth != null && request.auth.uid == userId;
+        // Any logged-in user can check if they have a pending request with another user.
+        allow get: if request.auth != null && (request.auth.uid == userId || request.auth.uid == senderId);
+        // Allow a user to list their own friend requests
+        allow list: if request.auth != null && request.auth.uid == userId;
       }
       
       // FRIENDS SUBCOLLECTION
       match /friends/{friendId} {
          // Users can read their own friends list.
         allow read: if request.auth != null && request.auth.uid == userId;
+        // Any logged-in user can check if they are friends with another user
+        allow get: if request.auth != null && (request.auth.uid == userId || request.auth.uid == friendId);
         // This rule allows the batch write to happen when a request is accepted.
         // Also allows a user to delete a friend.
         allow write, delete: if request.auth != null && (request.auth.uid == userId || request.auth.uid == friendId);
