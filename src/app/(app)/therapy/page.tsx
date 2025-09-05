@@ -7,7 +7,8 @@ import { ThemeToggle } from '@/components/theme-toggle';
 import { GenZToggle } from '@/components/genz-toggle';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Sparkles, ArrowLeft, Wind, Waves, Laugh, Frown } from 'lucide-react';
+import { Sparkles, ArrowLeft, Wind, Waves, Laugh, Frown, Info } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 type Mood = 'stress' | 'anxiety' | 'sadness' | 'happiness';
 
@@ -110,6 +111,15 @@ export default function TherapyPage() {
                 <h1 className="text-3xl md:text-4xl font-bold tracking-tight">How are you feeling?</h1>
                 <p className="mt-2 text-lg text-muted-foreground">Select an option below to begin your immersive therapy session.</p>
             </div>
+            
+            <Alert className="mb-10">
+                <Info className="h-4 w-4" />
+                <AlertTitle>Usage Recommendation</AlertTitle>
+                <AlertDescription>
+                  For a true 360° real-time experience, please use a VR headset. For enjoying the soothing music and visuals, using a laptop is recommended.
+                </AlertDescription>
+            </Alert>
+            
             <div className="grid gap-6 md:grid-cols-2">
                 {therapyVideos.map((video) => {
                     const Icon = video.icon;
