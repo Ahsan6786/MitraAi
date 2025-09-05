@@ -97,18 +97,16 @@ export default function MyAppointmentsPage() {
     useEffect(() => {
         if (!user) return;
 
-        // Query for both identified and anonymous bookings made by the user
+        // Query for bookings made by the user
         const q = query(
             collection(db, 'bookings'),
-            where('student_id', '==', user.uid),
-            orderBy('created_at', 'desc')
+            where('student_id', '==', user.uid)
         );
 
         const unsubscribe = onSnapshot(q, (snapshot) => {
             const bookingsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Booking));
-            // In a real app, anonymous bookings would be stored locally or retrieved via a secure method.
-            // For this implementation, we can only show identified bookings.
-            // This logic can be expanded if anonymous codes are stored in localStorage.
+            // Sort the data on the client-side
+            bookingsData.sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis());
             setBookings(bookingsData);
             setIsLoading(false);
         });
