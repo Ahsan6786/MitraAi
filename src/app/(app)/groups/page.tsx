@@ -89,27 +89,14 @@ function CreateGroupDialog() {
     setIsLoading(true);
     
     try {
-        const currentUserDoc = await getDoc(doc(db, 'users', user.uid));
         const members = [user.uid, ...selectedFriends];
-        const memberInfo: Record<string, { displayName: string }> = {};
-
-        // Add current user to member info
-        memberInfo[user.uid] = { displayName: currentUserDoc.data()?.displayName || user.email || 'Unknown User' };
-
-        // Add selected friends to member info
-        for (const friendId of selectedFriends) {
-            const friend = friends.find(f => f.id === friendId);
-            if (friend) {
-                memberInfo[friendId] = { displayName: friend.displayName };
-            }
-        }
-
+        
         await addDoc(collection(db, 'groups'), {
             name: groupName,
             createdBy: user.uid,
+            admins: [user.uid], // Creator is the first admin
             createdAt: serverTimestamp(),
             members: members,
-            memberInfo: memberInfo,
         });
 
         toast({ title: 'Group Created!', description: `You can now start chatting in "${groupName}".`});
@@ -124,7 +111,7 @@ function CreateGroupDialog() {
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+    <Dialog open={isOpen} onOpenChange={(open) => { if (!open) resetState(); setIsOpen(open); }}>
       <DialogTrigger asChild>
         <Button>
           <MessageSquarePlus className="mr-2 h-4 w-4" />
