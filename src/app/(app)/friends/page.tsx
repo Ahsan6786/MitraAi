@@ -71,24 +71,20 @@ export default function FriendsPage() {
         // Get current user's data to add to sender's friends list
         const currentUserDoc = await getDoc(doc(db, 'users', user.uid));
 
-        if (!senderDoc.exists() || !currentUserDoc.exists()) {
-            throw new Error("Could not find user profiles.");
-        }
-
         const senderData = senderDoc.data();
         const currentUserData = currentUserDoc.data();
 
-        const senderName = senderData.displayName || senderData.email;
-        const currentUserName = currentUserData.displayName || user.email;
+        // Robustly get names with multiple fallbacks
+        const senderName = senderData?.displayName || senderData?.email || 'Unknown User';
+        const senderEmail = senderData?.email || 'No email';
+        const currentUserName = currentUserData?.displayName || user.displayName || user.email;
+        const currentUserEmail = currentUserData?.email || user.email;
 
-        if (!senderName || !currentUserName) {
-            throw new Error("User display names are missing.");
-        }
-
+        // Add sender to current user's friends list
         const currentUserFriendRef = doc(db, 'users', user.uid, 'friends', senderId);
         batch.set(currentUserFriendRef, {
             displayName: senderName,
-            email: senderData.email,
+            email: senderEmail,
             addedAt: serverTimestamp(),
         });
         
@@ -96,7 +92,7 @@ export default function FriendsPage() {
         const senderFriendRef = doc(db, 'users', senderId, 'friends', user.uid);
         batch.set(senderFriendRef, {
             displayName: currentUserName,
-            email: user.email,
+            email: currentUserEmail,
             addedAt: serverTimestamp(),
         });
 
