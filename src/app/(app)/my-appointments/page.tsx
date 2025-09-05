@@ -97,17 +97,19 @@ export default function MyAppointmentsPage() {
     useEffect(() => {
         if (!user) return;
 
-        // Query for bookings made by the user
+        // Query for bookings made by the user, ordered by creation date
         const q = query(
             collection(db, 'bookings'),
-            where('student_id', '==', user.uid)
+            where('student_id', '==', user.uid),
+            orderBy('createdAt', 'desc')
         );
 
         const unsubscribe = onSnapshot(q, (snapshot) => {
             const bookingsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Booking));
-            // Sort the data on the client-side
-            bookingsData.sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis());
             setBookings(bookingsData);
+            setIsLoading(false);
+        }, (error) => {
+            console.error("Firestore snapshot error:", error);
             setIsLoading(false);
         });
 
@@ -212,3 +214,5 @@ export default function MyAppointmentsPage() {
         </div>
     );
 }
+
+    
