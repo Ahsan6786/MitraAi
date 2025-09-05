@@ -10,3 +10,4 @@ import '@/ai/flows/generate-affirmation.ts';
 import '@/ai/flows/generate-ai-news.ts';
 import '@/ai/flows/generate-image.ts';
 import '@/ai/flows/predict-live-mood.ts';
+import '@/ai/tools/feature-navigator.ts';

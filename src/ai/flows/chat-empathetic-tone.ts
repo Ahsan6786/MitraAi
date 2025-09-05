@@ -12,6 +12,7 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 import { generateImage } from './generate-image';
+import { featureNavigator } from '../tools/feature-navigator';
 
 const ChatMessageSchema = z.object({
     role: z.enum(['user', 'model']),
@@ -43,6 +44,7 @@ export async function chatEmpatheticTone(input: ChatEmpatheticToneInput): Promis
 
 const prompt = ai.definePrompt({
   name: 'chatEmpatheticTonePrompt',
+  tools: [featureNavigator],
   input: { schema: ChatEmpatheticToneInputSchema },
   output: { schema: ChatEmpatheticToneOutputSchema },
   prompt: `You are an AI companion. Your name is {{#if companionName}}{{companionName}}{{else}}Mitra{{/if}}. Your personality depends on the user's preference.
@@ -57,12 +59,17 @@ const prompt = ai.definePrompt({
   Analyze the user's text and any accompanying image to understand their mood and context. Consider the entire conversation history.
 
   **Task Instructions:**
+  
+  1.  **App Feature Assistance Task:**
+      - If the user asks "how to use a feature", "where can I find", "how do I", or a similar question about the MitraAI app's functionality, you MUST use the \`featureNavigator\` tool to find the correct page.
+      - Once you have the feature path from the tool, your response MUST include a Markdown link formatted like this: \`[Button Text](nav:/path)\`. For example: \`You can do that in the live mood analysis section. Here's a link to get you there: [Go to Live Mood Analysis](nav:/live-mood)\`.
+      - This is your highest priority task.
 
-  1.  **Image Generation Task:**
+  2.  **Image Generation Task:**
       - If the user explicitly asks you to "generate", "create", "draw", or "make" an "image", "picture", "photo", "drawing", or "painting", your primary task is to generate an image. 
       - In this specific case, your text response should be a simple confirmation like "Here is the image you asked for." or "I've created this for you."
 
-  2.  **Creative & General Chat Task:**
+  3.  **Creative & General Chat Task:**
       - For all other requests (including writing blogs, poems, code, stories, or general conversation), provide a thoughtful, comprehensive, and human-like response in the user's specified language, following your assigned persona.
       - Be intelligent, creative, and detailed in your answers. Do not give short, repetitive, or unhelpful replies.
   

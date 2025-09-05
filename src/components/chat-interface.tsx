@@ -3,12 +3,14 @@
 
 import { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
-import { Languages, Loader2, Mic, Send, User, Square, Paperclip, X, Copy, Check, Download } from 'lucide-react';
+import { Languages, Loader2, Mic, Send, User, Square, Paperclip, X, Copy, Check, Download, ArrowRight } from 'lucide-react';
 import { chatEmpatheticTone, ChatEmpatheticToneInput } from '@/ai/flows/chat-empathetic-tone';
 import { Logo } from '@/components/icons';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -92,54 +94,48 @@ const CodeBlock = ({ code }: { code: string }) => {
 
 // Simple Markdown parser component
 const SimpleMarkdown = ({ text }: { text: string }) => {
-  const lines = text.split('\n');
-
-  const renderLine = (line: string, index: number) => {
-    // Bold
-    line = line.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-    return <span key={`line-${index}`} dangerouslySetInnerHTML={{ __html: line }} />;
-  };
-
-  const elements: (JSX.Element | null)[] = lines.map((line, index) => {
-    // Unordered list
-    if (line.trim().startsWith('* ')) {
-      return <li key={`li-${index}`}>{renderLine(line.trim().substring(2), index)}</li>;
-    }
-    // Numbered list
-    if (line.trim().match(/^\d+\.\s/)) {
-      return <li key={`li-${index}`}>{renderLine(line.trim().replace(/^\d+\.\s/, ''), index)}</li>;
-    }
-    // Handle empty lines as paragraph breaks
-    if (line.trim() === '') {
-        return <br key={`br-${index}`} />;
-    }
-    // Default to a paragraph for other lines
-    return <p key={`p-${index}`}>{renderLine(line, index)}</p>;
-  });
-
-  // Group list items
-  const groupedElements = [];
-  let currentList: (JSX.Element | null)[] | null = null;
-  for (const el of elements) {
-      const isListItem = el?.type === 'li';
-      if (isListItem) {
-          if (!currentList) {
-              currentList = [];
+  const router = useRouter();
+  const parts = text.split(/(\[.*?\]\(nav:.*?_?\))/g);
+  
+  return (
+    <>
+      {parts.map((part, index) => {
+        const navMatch = part.match(/\[(.*?)\]\(nav:(.*?)\)/);
+        if (navMatch) {
+          const [, buttonText, path] = navMatch;
+          return (
+            <Button
+              key={`nav-${index}`}
+              onClick={() => router.push(path)}
+              variant="secondary"
+              className="my-2"
+            >
+              {buttonText}
+              <ArrowRight className="w-4 h-4 ml-2" />
+            </Button>
+          );
+        }
+        
+        // Render regular text, lists, etc.
+        const lines = part.split('\n');
+        const elements = lines.map((line, lineIndex) => {
+          line = line.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+          if (line.trim().startsWith('* ')) {
+            return <li key={`li-${index}-${lineIndex}`} dangerouslySetInnerHTML={{ __html: line.trim().substring(2) }} />;
           }
-          currentList.push(el);
-      } else {
-          if (currentList) {
-              groupedElements.push(<ul key={`ul-${groupedElements.length}`} className="list-disc list-inside space-y-1 my-2 pl-2">{currentList}</ul>);
-              currentList = null;
+          if (line.trim().match(/^\d+\.\s/)) {
+            return <li key={`li-${index}-${lineIndex}`} dangerouslySetInnerHTML={{ __html: line.trim().replace(/^\d+\.\s/, '') }} />;
           }
-          groupedElements.push(el);
-      }
-  }
-  if (currentList) {
-      groupedElements.push(<ul key={`ul-${groupedElements.length}`} className="list-disc list-inside space-y-1 my-2 pl-2">{currentList}</ul>);
-  }
-
-  return <>{groupedElements}</>;
+          if (line.trim() === '') {
+            return <br key={`br-${index}-${lineIndex}`} />;
+          }
+          return <p key={`p-${index}-${lineIndex}`} dangerouslySetInnerHTML={{ __html: line }} />;
+        });
+        
+        return <div key={`text-${index}`}>{elements}</div>;
+      })}
+    </>
+  );
 };
 
 
