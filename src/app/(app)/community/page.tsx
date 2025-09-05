@@ -21,7 +21,8 @@ import {
   increment,
   DocumentData,
   WithFieldValue,
-  setDoc
+  setDoc,
+  getDoc
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { SidebarTrigger } from '@/components/ui/sidebar';
@@ -550,3 +551,5 @@ export default function CommunityPage() {
     </div>
   );
 }
+
+    
