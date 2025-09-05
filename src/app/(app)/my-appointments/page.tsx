@@ -126,8 +126,13 @@ export default function MyAppointmentsPage() {
                     const allBookings = [...userBookings, ...anonymousBookings];
                     const uniqueBookings = Array.from(new Map(allBookings.map(item => [item.id, item])).values());
                     
-                    // Sort bookings by creation date
-                    uniqueBookings.sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis());
+                    // Sort bookings by creation date, handling cases where createdAt might be missing
+                    uniqueBookings.sort((a, b) => {
+                        if (a.createdAt && b.createdAt) {
+                            return b.createdAt.toMillis() - a.createdAt.toMillis();
+                        }
+                        return 0; // Keep original order if timestamps are missing
+                    });
 
                     setBookings(uniqueBookings);
                     setIsLoading(false);
