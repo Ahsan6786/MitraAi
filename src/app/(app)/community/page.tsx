@@ -21,6 +21,7 @@ import {
   increment,
   DocumentData,
   WithFieldValue,
+  setDoc
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { SidebarTrigger } from '@/components/ui/sidebar';
@@ -29,7 +30,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Loader2, MessageSquare, Send, Trash2, User, ThumbsUp, Plus, Search, Image as ImageIcon, X } from 'lucide-react';
+import { Loader2, MessageSquare, Send, Trash2, User, ThumbsUp, Plus, Search, Image as ImageIcon, X, UserPlus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { formatDistanceToNow } from 'date-fns';
 import { Separator } from '@/components/ui/separator';
@@ -47,6 +48,8 @@ import {
 } from "@/components/ui/alert-dialog"
 import { cn } from '@/lib/utils';
 import { GenZToggle } from '@/components/genz-toggle';
+import { Badge } from '@/components/ui/badge';
+
 
 interface Post {
   id: string;
@@ -74,17 +77,42 @@ function PostCard({ post }: { post: Post }) {
   const { toast } = useToast();
   const [showComments, setShowComments] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [friendStatus, setFriendStatus] = useState<'not_friends' | 'pending' | 'friends' | 'self'>('not_friends');
   
   const authorInitial = post.authorName ? post.authorName[0].toUpperCase() : 'A';
   const isAuthor = user && user.uid === post.authorId;
   const isOwner = user?.email === OWNER_EMAIL;
   const canDelete = isAuthor || isOwner;
 
+  useEffect(() => {
+    if (!user || !post.authorId) return;
+    if (user.uid === post.authorId) {
+      setFriendStatus('self');
+      return;
+    }
+
+    const checkStatus = async () => {
+      // Check if they are already friends
+      const friendDoc = await getDoc(doc(db, 'users', user.uid, 'friends', post.authorId));
+      if (friendDoc.exists()) {
+        setFriendStatus('friends');
+        return;
+      }
+      // Check for pending request sent by current user
+      const sentRequestDoc = await getDoc(doc(db, 'users', post.authorId, 'friendRequests', user.uid));
+      if (sentRequestDoc.exists()) {
+        setFriendStatus('pending');
+        return;
+      }
+    };
+    checkStatus();
+  }, [user, post.authorId]);
+
+
   const handleDeletePost = async () => {
     if (!canDelete) return; 
     setIsDeleting(true);
     try {
-      // Delete associated image from storage if it exists
       if (post.imageUrl) {
         const imageRef = ref(storage, post.imageUrl);
         await deleteObject(imageRef);
@@ -111,6 +139,25 @@ function PostCard({ post }: { post: Post }) {
     }
   };
 
+  const handleAddFriend = async () => {
+    if (!user || isAuthor) return;
+
+    try {
+      const requestRef = doc(db, 'users', post.authorId, 'friendRequests', user.uid);
+      await setDoc(requestRef, {
+        senderId: user.uid,
+        senderName: user.displayName || user.email,
+        status: 'pending',
+        createdAt: serverTimestamp(),
+      });
+      setFriendStatus('pending');
+      toast({ title: "Friend Request Sent" });
+    } catch (error) {
+      console.error("Error sending friend request:", error);
+      toast({ title: "Error", description: "Could not send friend request.", variant: "destructive" });
+    }
+  };
+
 
   return (
     <Card className="border bg-card">
@@ -128,6 +175,12 @@ function PostCard({ post }: { post: Post }) {
                         Posted {post.createdAt ? formatDistanceToNow(post.createdAt.toDate(), { addSuffix: true }) : 'just now'}
                     </p>
                 </div>
+                {friendStatus !== 'self' && (
+                  <Button size="sm" variant="outline" onClick={handleAddFriend} disabled={friendStatus !== 'not_friends'}>
+                    {friendStatus === 'not_friends' && <UserPlus className="w-4 h-4 mr-2" />}
+                    {friendStatus === 'not_friends' ? 'Add Friend' : (friendStatus === 'pending' ? 'Request Sent' : 'Friends')}
+                  </Button>
+                )}
             </div>
             {canDelete && (
                 <AlertDialog>

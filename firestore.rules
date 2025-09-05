@@ -17,11 +17,34 @@ service cloud.firestore {
       return exists(/databases/$(database)/documents/counsellors/$(request.auth.uid)) &&
              get(/databases/$(database)/documents/counsellors/$(request.auth.uid)).data.status == 'approved';
     }
+    
+    function isFriend(userId1, userId2) {
+      return exists(/databases/$(database)/documents/users/$(userId1)/friends/$(userId2));
+    }
 
     // USERS (for profile data like companionName)
-    // Users can read and write their own profile document.
     match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      // Users can read and write their own profile document.
+      allow read, update: if request.auth != null && request.auth.uid == userId;
+      // Any authenticated user can read public profile data (displayName, email) for friend requests.
+      allow get: if request.auth != null;
+      
+      // FRIEND REQUESTS SUBCOLLECTION
+      match /friendRequests/{senderId} {
+        // Logged-in users can send a request (create a doc in the recipient's subcollection).
+        allow create: if request.auth != null && request.auth.uid == senderId;
+        // The recipient can read/delete their own requests.
+        allow read, delete: if request.auth != null && request.auth.uid == userId;
+      }
+      
+      // FRIENDS SUBCOLLECTION
+      match /friends/{friendId} {
+         // Users can read their own friends list.
+        allow read: if request.auth != null && request.auth.uid == userId;
+        // This rule allows the batch write to happen when a request is accepted.
+        // Also allows a user to delete a friend.
+        allow write, delete: if request.auth != null && (request.auth.uid == userId || request.auth.uid == friendId);
+      }
     }
 
     // JOURNAL ENTRIES
@@ -59,7 +82,8 @@ service cloud.firestore {
     // Users can manage their own bookings. Counsellors can manage theirs.
     match /bookings/{bookingId} {
       allow read, update: if request.auth != null && (isOwner(resource.data) || (isApprovedCounsellor() && resource.data.counsellor_id == request.auth.uid));
-      allow create: if request.auth != null && request.resource.data.student_id == request.auth.uid;
+      // Allow creation for both normal and anonymous bookings
+      allow create: if request.auth != null && (request.resource.data.student_id == request.auth.uid || request.resource.data.is_anonymous == true);
       allow list: if request.auth != null && (request.query.get('student_id') == request.auth.uid || (isApprovedCounsellor() && request.query.get('counsellor_id') == request.auth.uid));
     }
 
@@ -68,7 +92,7 @@ service cloud.firestore {
     // Any user can update the commentCount.
     match /posts/{postId} {
       allow read, create: if request.auth != null;
-      allow update: if request.auth != null && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['commentCount']);
+      allow update: if request.auth != null && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['commentCount', 'likeCount']);
       allow delete: if request.auth != null && (isOwner(resource.data) || isAdmin());
 
       // COMMENTS SUBCOLLECTION

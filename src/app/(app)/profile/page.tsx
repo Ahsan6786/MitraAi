@@ -10,17 +10,22 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Loader2, User, Bot } from 'lucide-react';
+import { Loader2, User, Bot, MapPin } from 'lucide-react';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { useToast } from '@/hooks/use-toast';
 import { GenZToggle } from '@/components/genz-toggle';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { allIndianStates } from '@/lib/states-data';
+
 
 export default function ProfilePage() {
     const { user, loading } = useAuth();
     const { toast } = useToast();
     const [displayName, setDisplayName] = useState('');
     const [companionName, setCompanionName] = useState('');
+    const [state, setState] = useState('');
+    const [city, setCity] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isLoadingData, setIsLoadingData] = useState(true);
 
@@ -31,7 +36,10 @@ export default function ProfilePage() {
                 const userDocRef = doc(db, 'users', user.uid);
                 const docSnap = await getDoc(userDocRef);
                 if (docSnap.exists()) {
-                    setCompanionName(docSnap.data().companionName || '');
+                    const data = docSnap.data();
+                    setCompanionName(data.companionName || '');
+                    setState(data.state || '');
+                    setCity(data.city || '');
                 }
                 setIsLoadingData(false);
             };
@@ -54,9 +62,15 @@ export default function ProfilePage() {
             // Update Auth display name
             await updateProfile(user, { displayName });
             
-            // Update Firestore companion name
+            // Update Firestore user data
             const userDocRef = doc(db, 'users', user.uid);
-            await setDoc(userDocRef, { companionName: companionName.trim() }, { merge: true });
+            await setDoc(userDocRef, { 
+                companionName: companionName.trim(),
+                state: state.trim(),
+                city: city.trim(),
+                displayName: displayName.trim(),
+                email: user.email
+            }, { merge: true });
 
             toast({ title: "Profile Updated", description: "Your changes have been successfully saved." });
         } catch (error: any) {
@@ -116,6 +130,38 @@ export default function ProfilePage() {
                                     placeholder="Enter your name"
                                     disabled={isSubmitting}
                                 />
+                            </div>
+                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="state" className="flex items-center gap-2">
+                                        <MapPin className="w-4 h-4" />
+                                        State
+                                    </Label>
+                                    <Select onValueChange={setState} value={state} disabled={isSubmitting}>
+                                        <SelectTrigger id="state">
+                                            <SelectValue placeholder="Select your state" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {allIndianStates.filter(s => s.id !== 'india').map(s => (
+                                                <SelectItem key={s.id} value={s.name}>{s.name}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="city" className="flex items-center gap-2">
+                                        <MapPin className="w-4 h-4" />
+                                        City
+                                    </Label>
+                                    <Input
+                                        id="city"
+                                        type="text"
+                                        value={city}
+                                        onChange={(e) => setCity(e.target.value)}
+                                        placeholder="Enter your city"
+                                        disabled={isSubmitting}
+                                    />
+                                </div>
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="companionName" className="flex items-center gap-2">
