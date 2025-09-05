@@ -30,7 +30,7 @@ import { ThemeToggle } from '@/components/theme-toggle';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Loader2, MessageSquare, Send, Trash2, User, ThumbsUp, Plus, Search, Image as ImageIcon, X, UserPlus, MoreVertical, Bookmark } from 'lucide-react';
+import { Loader2, MessageSquare, Send, Trash2, User, ThumbsUp, Plus, Search, Image as ImageIcon, X, UserPlus, MoreVertical, Bookmark, Users as UsersIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { formatDistanceToNow } from 'date-fns';
 import { Separator } from '@/components/ui/separator';
@@ -54,6 +54,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import Link from 'next/link';
+import { Badge } from '@/components/ui/badge';
 
 interface Post {
   id: string;
@@ -370,6 +372,7 @@ export default function CommunityPage() {
   const [postImage, setPostImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [friendRequestCount, setFriendRequestCount] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -386,6 +389,16 @@ export default function CommunityPage() {
 
     return () => unsubscribe();
   }, [toast]);
+  
+  useEffect(() => {
+    if (user) {
+      const requestsQuery = query(collection(db, 'users', user.uid, 'friendRequests'));
+      const unsubscribeRequests = onSnapshot(requestsQuery, (snapshot) => {
+        setFriendRequestCount(snapshot.size);
+      });
+      return () => unsubscribeRequests();
+    }
+  }, [user]);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -456,6 +469,16 @@ export default function CommunityPage() {
           </div>
         </div>
         <div className="flex items-center gap-2">
+            <Button asChild variant="ghost" className="relative text-white hover:bg-[#233648] hover:text-white">
+                <Link href="/friends">
+                    <UsersIcon className="w-5 h-5" />
+                    {friendRequestCount > 0 && (
+                        <Badge className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center bg-primary text-primary-foreground">
+                          {friendRequestCount}
+                        </Badge>
+                    )}
+                </Link>
+            </Button>
             <GenZToggle />
             <ThemeToggle />
              <Avatar className="w-10 h-10 border-2 border-primary">
