@@ -44,7 +44,7 @@ export const featureNavigator = ai.defineTool(
     if (query.includes('game') || query.includes('puzzle') || query.includes('breathing')) {
         return { featureName: 'Mindful Games', path: '/mindful-games' };
     }
-    if (query.includes('community') || query.includes('post') || query.includes('friends')) {
+    if (query.includes('community') || query.includes('post') || query.includes('friends') || query.includes('group')) {
         return { featureName: 'Community', path: '/community' };
     }
      if (query.includes('news')) {
@@ -58,6 +58,15 @@ export const featureNavigator = ai.defineTool(
     }
     if (query.includes('test') || query.includes('screening') || query.includes('questionnaire')) {
         return { featureName: 'Screening Tools', path: '/screening-tools' };
+    }
+     if (query.includes('about')) {
+        return { featureName: 'About MitraAI', path: '/about' };
+    }
+     if (query.includes('profile') || query.includes('setting')) {
+        return { featureName: 'Profile', path: '/profile' };
+    }
+     if (query.includes('culture')) {
+        return { featureName: 'Culture', path: '/culture' };
     }
 
     return { featureName: 'Chat', path: '/chat' }; // Default fallback
