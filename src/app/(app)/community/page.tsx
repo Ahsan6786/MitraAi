@@ -27,11 +27,10 @@ import {
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { ThemeToggle } from '@/components/theme-toggle';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Loader2, MessageSquare, Send, Trash2, User, ThumbsUp, Plus, Search, Image as ImageIcon, X, UserPlus } from 'lucide-react';
+import { Loader2, MessageSquare, Send, Trash2, User, ThumbsUp, Plus, Search, Image as ImageIcon, X, UserPlus, MoreVertical, Bookmark } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { formatDistanceToNow } from 'date-fns';
 import { Separator } from '@/components/ui/separator';
@@ -45,12 +44,15 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { cn } from '@/lib/utils';
 import { GenZToggle } from '@/components/genz-toggle';
-import { Badge } from '@/components/ui/badge';
-
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 interface Post {
   id: string;
@@ -80,7 +82,6 @@ function PostCard({ post }: { post: Post }) {
   const [isDeleting, setIsDeleting] = useState(false);
   const [friendStatus, setFriendStatus] = useState<'not_friends' | 'pending' | 'friends' | 'self'>('not_friends');
   
-  const authorInitial = post.authorName ? post.authorName[0].toUpperCase() : 'A';
   const isAuthor = user && user.uid === post.authorId;
   const isOwner = user?.email === OWNER_EMAIL;
   const canDelete = isAuthor || isOwner;
@@ -93,13 +94,11 @@ function PostCard({ post }: { post: Post }) {
     }
 
     const checkStatus = async () => {
-      // Check if they are already friends
       const friendDoc = await getDoc(doc(db, 'users', user.uid, 'friends', post.authorId));
       if (friendDoc.exists()) {
         setFriendStatus('friends');
         return;
       }
-      // Check for pending request sent by current user
       const sentRequestDoc = await getDoc(doc(db, 'users', post.authorId, 'friendRequests', user.uid));
       if (sentRequestDoc.exists()) {
         setFriendStatus('pending');
@@ -131,7 +130,7 @@ function PostCard({ post }: { post: Post }) {
       
       await deleteDoc(doc(db, 'posts', post.id));
 
-      toast({ title: "Post Deleted", description: "The post and all its contents have been removed." });
+      toast({ title: "Post Deleted" });
     } catch (error) {
       console.error("Error deleting post:", error);
       toast({ title: "Error", description: "Could not delete the post.", variant: "destructive" });
@@ -159,75 +158,72 @@ function PostCard({ post }: { post: Post }) {
     }
   };
 
-
   return (
-    <Card className="border bg-card">
-      <CardHeader>
-        <div className="flex items-start justify-between">
+    <div className="bg-[#1a2836] p-5 rounded-lg">
+        <div className="flex items-center justify-between gap-4 mb-4">
             <div className="flex items-center gap-4">
-                <Avatar className="size-10 rounded-full bg-muted flex items-center justify-center">
-                    <AvatarFallback className="bg-muted">
-                        <User className="text-muted-foreground" />
-                    </AvatarFallback>
+                <Avatar className="w-12 h-12">
+                    <AvatarFallback><User /></AvatarFallback>
                 </Avatar>
                 <div>
-                    <h3 className="text-foreground text-base font-bold">{post.authorName}</h3>
-                    <p className="text-muted-foreground text-sm">
-                        Posted {post.createdAt ? formatDistanceToNow(post.createdAt.toDate(), { addSuffix: true }) : 'just now'}
+                    <p className="text-white font-bold">{post.authorName}</p>
+                    <p className="text-gray-400 text-sm">
+                        {post.createdAt ? formatDistanceToNow(post.createdAt.toDate(), { addSuffix: true }) : 'just now'}
                     </p>
                 </div>
-                {friendStatus !== 'self' && (
-                  <Button size="sm" variant="outline" onClick={handleAddFriend} disabled={friendStatus !== 'not_friends'}>
-                    {friendStatus === 'not_friends' && <UserPlus className="w-4 h-4 mr-2" />}
-                    {friendStatus === 'not_friends' ? 'Add Friend' : (friendStatus === 'pending' ? 'Request Sent' : 'Friends')}
-                  </Button>
-                )}
             </div>
-            {canDelete && (
-                <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="icon" disabled={isDeleting} className="text-muted-foreground hover:text-destructive">
-                            {isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-5 h-5" />}
-                        </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                        <AlertDialogHeader>
-                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            This action cannot be undone. This will permanently delete this post and all of its comments.
-                        </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleDeletePost}>Continue</AlertDialogAction>
-                        </AlertDialogFooter>
-                    </AlertDialogContent>
-                </AlertDialog>
-            )}
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="text-gray-400 hover:text-white hover:bg-[#233648]">
+                        <MoreVertical className="w-5 h-5" />
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="bg-[#0d131a] border-[#233648] text-white">
+                    {friendStatus !== 'self' && (
+                        <DropdownMenuItem onSelect={handleAddFriend} disabled={friendStatus !== 'not_friends'}>
+                           <UserPlus className="w-4 h-4 mr-2" />
+                           {friendStatus === 'not_friends' ? 'Add Friend' : (friendStatus === 'pending' ? 'Request Sent' : 'Friends')}
+                        </DropdownMenuItem>
+                    )}
+                    {canDelete && (
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-red-500 focus:bg-red-500/10 focus:text-red-500">
+                                    <Trash2 className="w-4 h-4 mr-2" />
+                                    Delete Post
+                                </DropdownMenuItem>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    This action cannot be undone. This will permanently delete this post and all of its comments.
+                                </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={handleDeletePost}>Delete</AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                    )}
+                </DropdownMenuContent>
+            </DropdownMenu>
         </div>
-      </CardHeader>
-      <CardContent>
+        <p className="text-gray-300 mb-4 whitespace-pre-wrap">{post.content}</p>
         {post.imageUrl && (
-            <div className="relative w-full aspect-video rounded-md overflow-hidden mb-4 border">
-                <Image src={post.imageUrl} alt="Community post image" layout="fill" objectFit="cover" />
+            <div className="w-full bg-center bg-no-repeat aspect-video bg-cover rounded-lg mb-4" style={{ backgroundImage: `url("${post.imageUrl}")` }}>
             </div>
         )}
-        <p className="text-secondary-foreground text-base leading-relaxed whitespace-pre-wrap">{post.content}</p>
-      </CardContent>
-      <CardFooter className="flex justify-between items-center text-muted-foreground">
-         <div className="flex items-center gap-4">
-            <button className="flex items-center gap-1.5 hover:text-primary">
-                <ThumbsUp className="w-4 h-4" />
-                <span className="text-sm font-medium">{post.likeCount || 0}</span>
-            </button>
-            <button className="flex items-center gap-1.5 hover:text-primary" onClick={() => setShowComments(!showComments)}>
-                <MessageSquare className="w-4 h-4" />
-                <span className="text-sm font-medium">{post.commentCount || 0}</span>
-            </button>
-         </div>
-      </CardFooter>
-      {showComments && <CommentSection postId={post.id} />}
-    </Card>
+        <div className="flex justify-between text-gray-400">
+            <div className="flex items-center gap-4">
+                <button className="flex items-center gap-1 hover:text-primary transition-colors"><ThumbsUp className="text-xl"/> {post.likeCount || 0}</button>
+                <button className="flex items-center gap-1 hover:text-primary transition-colors" onClick={() => setShowComments(!showComments)}><MessageSquare className="text-xl"/> {post.commentCount || 0}</button>
+            </div>
+            <button className="hover:text-primary transition-colors"><Bookmark className="text-xl"/></button>
+        </div>
+        {showComments && <CommentSection postId={post.id} />}
+    </div>
   );
 }
 
@@ -290,11 +286,10 @@ function CommentSection({ postId }: { postId: string }) {
     };
 
     return (
-        <div className="px-6 pb-6 pt-2">
-            <Separator className="mb-4" />
+        <div className="pt-4 mt-4 border-t border-gray-700">
             <div className="space-y-4">
-                {isLoading && <Loader2 className="w-5 h-5 animate-spin mx-auto" />}
-                {!isLoading && comments.length === 0 && <p className="text-sm text-muted-foreground text-center">No comments yet. Be the first to comment!</p>}
+                {isLoading && <Loader2 className="w-5 h-5 animate-spin mx-auto text-gray-400" />}
+                {!isLoading && comments.length === 0 && <p className="text-sm text-gray-500 text-center">No comments yet.</p>}
                 {comments.map(comment => {
                     const isCommentAuthor = user?.uid === comment.authorId;
                     const isOwner = user?.email === OWNER_EMAIL;
@@ -303,17 +298,17 @@ function CommentSection({ postId }: { postId: string }) {
                             <Avatar className="w-8 h-8">
                                <AvatarFallback>{comment.authorName ? comment.authorName[0].toUpperCase() : 'A'}</AvatarFallback>
                             </Avatar>
-                            <div className="flex-1 bg-muted p-3 rounded-lg">
+                            <div className="flex-1 bg-[#233648] p-3 rounded-lg">
                                <div className="flex justify-between items-center">
-                                    <p className="text-sm font-semibold text-foreground">{comment.authorName}</p>
+                                    <p className="text-sm font-semibold text-white">{comment.authorName}</p>
                                     <div className="flex items-center gap-1">
-                                        <p className="text-xs text-muted-foreground mr-1">
+                                        <p className="text-xs text-gray-400 mr-1">
                                             {comment.createdAt ? formatDistanceToNow(comment.createdAt.toDate(), { addSuffix: true }) : ''}
                                         </p>
                                         {(isCommentAuthor || isOwner) && (
                                              <AlertDialog>
                                                 <AlertDialogTrigger asChild>
-                                                    <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-destructive">
+                                                    <Button variant="ghost" size="icon" className="h-6 w-6 text-gray-400 hover:text-red-500">
                                                         <Trash2 className="w-4 h-4" />
                                                     </Button>
                                                 </AlertDialogTrigger>
@@ -333,7 +328,7 @@ function CommentSection({ postId }: { postId: string }) {
                                         )}
                                     </div>
                                </div>
-                                <p className="text-sm mt-1 text-secondary-foreground">{comment.content}</p>
+                                <p className="text-sm mt-1 text-gray-300">{comment.content}</p>
                             </div>
                         </div>
                     );
@@ -345,6 +340,7 @@ function CommentSection({ postId }: { postId: string }) {
                     value={newComment}
                     onChange={(e) => setNewComment(e.target.value)}
                     disabled={isSubmitting}
+                    className="bg-[#233648] text-white placeholder-gray-400 border-none rounded-lg p-3 focus:ring-2 focus:ring-primary"
                 />
                 <Button type="submit" size="icon" disabled={isSubmitting || !newComment.trim()}>
                     {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4"/>}
@@ -373,7 +369,6 @@ export default function CommunityPage() {
   const [postImage, setPostImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isCreatingPost, setIsCreatingPost] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -441,7 +436,6 @@ export default function CommunityPage() {
       
       setNewPostContent('');
       removeImage();
-      setIsCreatingPost(false);
     } catch (error) {
       console.error('Error creating post:', error);
       toast({ title: "Error", description: "Could not create post.", variant: "destructive" });
@@ -451,99 +445,80 @@ export default function CommunityPage() {
   };
 
   return (
-    <div className="h-full flex flex-col bg-muted/30">
-      <header className="border-b bg-background p-3 md:p-4 flex items-center justify-between gap-2">
+    <div className="h-full flex flex-col bg-[#111a22]">
+      <header className="border-b border-[#233648] bg-[#0d131a] p-3 md:p-4 flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
-          <SidebarTrigger className="md:hidden" />
-          <div>
-            <h1 className="text-lg md:text-xl font-bold">Community Feed</h1>
-            <p className="text-sm text-muted-foreground">Share your thoughts and connect.</p>
+          <SidebarTrigger className="md:hidden text-white" />
+          <div className="relative w-full md:w-auto flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <Input className="pl-10 bg-[#233648] text-white border-none focus:ring-2 focus:ring-primary placeholder:text-gray-400" placeholder="Search..." type="text"/>
           </div>
         </div>
         <div className="flex items-center gap-2">
             <GenZToggle />
             <ThemeToggle />
+             <Avatar className="w-10 h-10 border-2 border-primary">
+                <AvatarFallback><User /></AvatarFallback>
+            </Avatar>
         </div>
       </header>
-      <main className="flex-1 overflow-auto p-2 sm:p-4 md:p-6">
-        <div className="max-w-3xl mx-auto space-y-6">
-            <div className="p-4">
-                <h1 className="text-foreground text-4xl font-bold leading-tight tracking-tight">Community Forum</h1>
-                <p className="text-muted-foreground text-lg font-normal leading-normal mt-2">A safe space to share and connect with others.</p>
-            </div>
-
-            <div className="flex flex-col md:flex-row items-center justify-between gap-4 p-4">
-                <div className="relative w-full md:w-auto flex-1">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-5 h-5" />
-                    <Input className="pl-10" placeholder="Search for posts..." type="text"/>
-                </div>
-                <Button className="w-full md:w-auto" onClick={() => setIsCreatingPost(true)}>
-                    <Plus className="mr-2 h-4 w-4" />Create Post
+      <main className="flex-1 overflow-auto">
+        <div className="max-w-3xl mx-auto py-8 px-4">
+            <div className="flex items-center justify-between mb-6">
+                <h1 className="text-white text-3xl font-bold">Community Feed</h1>
+                <Button>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Create Post
                 </Button>
             </div>
-            
-            {isCreatingPost && (
-              <Card>
-                  <form onSubmit={handleCreatePost}>
-                  <CardHeader>
-                      <CardTitle className="text-lg">Share with the Community</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                      <div className="space-y-4">
-                        <Textarea
-                            placeholder="What's on your mind?"
-                            rows={4}
-                            value={newPostContent}
-                            onChange={(e) => setNewPostContent(e.target.value)}
-                            disabled={isSubmitting}
+
+            <form onSubmit={handleCreatePost} className="bg-[#1a2836] p-4 rounded-lg mb-6">
+                <div className="flex items-start gap-4">
+                    <Avatar className="w-11 h-11 mt-1">
+                        <AvatarFallback><User /></AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1">
+                        <Textarea 
+                          className="w-full bg-[#233648] text-white placeholder-gray-400 border-none rounded-lg p-3 focus:ring-2 focus:ring-primary resize-none" 
+                          placeholder="What's on your mind?" 
+                          rows={3}
+                          value={newPostContent}
+                          onChange={(e) => setNewPostContent(e.target.value)}
+                          disabled={isSubmitting}
                         />
                         {imagePreview && (
-                            <div className="relative w-32 h-32 rounded-md overflow-hidden border">
+                            <div className="relative w-32 h-32 mt-2 rounded-md overflow-hidden border border-[#233648]">
                                 <Image src={imagePreview} alt="Image preview" layout="fill" objectFit="cover" />
                                 <Button variant="destructive" size="icon" className="absolute top-1 right-1 h-6 w-6" onClick={removeImage}>
                                     <X className="w-4 h-4" />
                                 </Button>
                             </div>
                         )}
-                      </div>
-                  </CardContent>
-                  <CardFooter className="flex justify-between items-center">
-                      <input
-                        type="file"
-                        accept="image/*"
-                        ref={fileInputRef}
-                        onChange={handleImageChange}
-                        className="hidden"
-                      />
-                       <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()} disabled={isSubmitting}>
-                        <ImageIcon className="mr-2 h-4 w-4" />
-                        Add Image
-                      </Button>
-                      <div className="flex gap-2">
-                        <Button variant="ghost" onClick={() => setIsCreatingPost(false)} disabled={isSubmitting}>
-                            Cancel
-                        </Button>
-                        <Button type="submit" disabled={isSubmitting || (!newPostContent.trim() && !postImage)}>
-                            {isSubmitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                            Post
-                        </Button>
-                      </div>
-                  </CardFooter>
-                  </form>
-              </Card>
-            )}
+                        <div className="flex justify-between items-center mt-3">
+                            <div className="flex gap-2 text-gray-400">
+                                <input type="file" accept="image/*" ref={fileInputRef} onChange={handleImageChange} className="hidden" />
+                                <button type="button" onClick={() => fileInputRef.current?.click()} className="hover:text-primary transition-colors"><ImageIcon/></button>
+                            </div>
+                            <Button type="submit" disabled={isSubmitting || (!newPostContent.trim() && !postImage)}>
+                                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                Post
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            </form>
 
             {isLoading ? (
                 <div className="flex justify-center py-10">
-                <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                    <Loader2 className="w-8 h-8 animate-spin text-primary" />
                 </div>
             ) : posts.length === 0 ? (
-                <div className="text-center text-muted-foreground py-10">
+                <div className="text-center text-gray-500 py-10">
                     <p>No posts yet. Be the first to share something!</p>
                 </div>
             ) : (
-                <div className="space-y-4">
-                {posts.map(post => <PostCard key={post.id} post={post} />)}
+                <div className="space-y-6">
+                    {posts.map(post => <PostCard key={post.id} post={post} />)}
                 </div>
             )}
         </div>
@@ -551,5 +526,3 @@ export default function CommunityPage() {
     </div>
   );
 }
-
-    
