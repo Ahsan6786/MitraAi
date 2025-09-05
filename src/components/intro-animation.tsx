@@ -64,12 +64,41 @@ export default function IntroAnimation({ onFinish }: IntroAnimationProps) {
                     from { opacity: 0; }
                     to { opacity: 1; }
                 }
+                 @keyframes slow-fade-in-up {
+                    from { opacity: 0; transform: translateY(20px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
             `}</style>
 
             <div className={cn(
-                "fixed inset-0 z-[100] flex flex-col items-center justify-center bg-background transition-opacity duration-1000",
+                "fixed inset-0 z-[100] flex flex-col items-center justify-center bg-background transition-opacity duration-1000 overflow-hidden",
                 animationState === 'entering' ? 'opacity-100' : 'opacity-0'
             )}>
+                {/* Mountain Reflection Background */}
+                <div 
+                    className="absolute bottom-0 left-0 w-full h-1/2 text-foreground/5"
+                    style={{ animation: 'slow-fade-in-up 2s ease-out 1s forwards', opacity: 0 }}
+                >
+                    <svg
+                        className="w-full h-full"
+                        preserveAspectRatio="none"
+                        viewBox="0 0 1440 320"
+                        xmlns="http://www.w3.org/2000/svg"
+                    >
+                        <defs>
+                            <linearGradient id="mountainGradient" x1="0.5" y1="0" x2="0.5" y2="1">
+                                <stop offset="0%" stopOpacity="0.5" stopColor="currentColor" />
+                                <stop offset="100%" stopOpacity="0" stopColor="currentColor" />
+                            </linearGradient>
+                        </defs>
+                        <path
+                            fill="url(#mountainGradient)"
+                            d="M0,224L48,208C96,192,192,160,288,165.3C384,171,480,213,576,208C672,203,768,149,864,117.3C960,85,1056,75,1152,90.7C1248,107,1344,149,1392,170.7L1440,192L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"
+                        ></path>
+                    </svg>
+                </div>
+
+
                 {/* Assembling Logo */}
                 <div className="relative w-24 h-24 text-primary">
                     <div className="absolute inset-0" style={{ animation: 'fly-in-left 1.5s cubic-bezier(0.25, 1, 0.5, 1) forwards' }}>
