@@ -528,12 +528,17 @@ export default function CommunityPage() {
         <div className="flex items-center gap-2">
             <Button asChild variant="ghost" className="relative text-white hover:bg-[#233648] hover:text-white">
                 <Link href="/friends">
-                    <UsersIcon className="w-5 h-5" />
+                    <UserPlus className="w-5 h-5" />
                     {friendRequestCount > 0 && (
                         <Badge className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center bg-primary text-primary-foreground">
                           {friendRequestCount}
                         </Badge>
                     )}
+                </Link>
+            </Button>
+            <Button asChild variant="ghost" className="text-white hover:bg-[#233648] hover:text-white">
+                <Link href="/groups">
+                    <UsersIcon className="w-5 h-5" />
                 </Link>
             </Button>
             <GenZToggle />

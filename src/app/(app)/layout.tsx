@@ -213,31 +213,13 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
                  <SidebarMenuItem>
-                  <SidebarMenuButton asChild isActive={pathname === '/community'}>
+                  <SidebarMenuButton asChild isActive={pathname.startsWith('/community') || pathname.startsWith('/groups') || pathname.startsWith('/friends')}>
                     <Link href="/community" onClick={handleLinkClick} className="flex items-center justify-between w-full">
                        <div className="flex items-center gap-2">
                         <Users />
                         <span>Community</span>
                       </div>
                       <Trophy className="w-4 h-4 text-amber-500" />
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild isActive={pathname.startsWith('/groups')}>
-                    <Link href="/groups" onClick={handleLinkClick}>
-                      <Users />
-                      <span>Groups</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                 <SidebarMenuItem>
-                  <SidebarMenuButton asChild isActive={pathname === '/friends'}>
-                    <Link href="/friends" onClick={handleLinkClick} className="flex items-center justify-between w-full">
-                       <div className="flex items-center gap-2">
-                        <UserPlus />
-                        <span>Friends</span>
-                      </div>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
