@@ -1,3 +1,4 @@
+
 rules_version = '2';
 
 service cloud.firestore {
@@ -24,7 +25,7 @@ service cloud.firestore {
     // USERS (for profile data like companionName)
     match /users/{userId} {
       // Users can read and write their own profile document.
-      allow read, update: if request.auth != null && request.auth.uid == userId;
+      allow read, write: if request.auth != null && request.auth.uid == userId;
       // Any authenticated user can read public profile data (displayName, email) for friend requests.
       allow get: if request.auth != null;
       
@@ -43,7 +44,7 @@ service cloud.firestore {
       // FRIENDS SUBCOLLECTION
       match /friends/{friendId} {
          // Users can read their own friends list.
-        allow read: if request.auth != null && request.auth.uid == userId;
+        allow read, list: if request.auth != null && request.auth.uid == userId;
         // Any logged-in user can check if they are friends with another user
         allow get: if request.auth != null && (request.auth.uid == userId || request.auth.uid == friendId);
         // This rule allows the batch write to happen when a request is accepted.
@@ -94,7 +95,7 @@ service cloud.firestore {
 
     // POSTS
     // Authenticated users can read/create. Owners or admin can delete.
-    // Any user can update the commentCount.
+    // Any user can update the commentCount, likeCount, and likedBy fields.
     match /posts/{postId} {
       allow read, create: if request.auth != null;
       allow update: if request.auth != null && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['commentCount', 'likeCount', 'likedBy']);
@@ -106,6 +107,21 @@ service cloud.firestore {
         allow update: if request.auth != null && isAdmin(); // Admin can hide comments
         allow delete: if request.auth != null && (isOwner(resource.data) || isAdmin());
       }
+    }
+    
+    // GROUPS
+    // Any member of a group can read it. The creator can edit/delete.
+    // Any authenticated user can create a group.
+    match /groups/{groupId} {
+        allow read: if request.auth != null && request.auth.uid in resource.data.members;
+        allow create: if request.auth != null;
+        allow update, delete: if request.auth != null && request.auth.uid == resource.data.createdBy;
+
+        // MESSAGES SUBCOLLECTION
+        // Any member of the group can read and send messages.
+        match /messages/{messageId} {
+            allow read, create: if request.auth != null && request.auth.uid in get(/databases/$(database)/documents/groups/$(groupId)).data.members;
+        }
     }
   }
 }
