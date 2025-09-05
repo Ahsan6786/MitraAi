@@ -25,7 +25,7 @@ service cloud.firestore {
     // USERS (for profile data like companionName)
     match /users/{userId} {
       // Users can read and write their own profile document.
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read, update: if request.auth != null && request.auth.uid == userId;
       // Any authenticated user can read public profile data (displayName, email) for friend requests.
       allow get: if request.auth != null;
       
@@ -44,7 +44,7 @@ service cloud.firestore {
       // FRIENDS SUBCOLLECTION
       match /friends/{friendId} {
          // Users can read their own friends list.
-        allow read, list: if request.auth != null && request.auth.uid == userId;
+        allow read: if request.auth != null && request.auth.uid == userId;
         // Any logged-in user can check if they are friends with another user
         allow get: if request.auth != null && (request.auth.uid == userId || request.auth.uid == friendId);
         // This rule allows the batch write to happen when a request is accepted.
@@ -110,18 +110,17 @@ service cloud.firestore {
     }
     
     // GROUPS
-    // Any member of a group can read it. The creator can edit/delete.
     // Any authenticated user can create a group.
+    // Only members can read group data.
     match /groups/{groupId} {
-        allow read: if request.auth != null && request.auth.uid in resource.data.members;
-        allow create: if request.auth != null;
-        allow update, delete: if request.auth != null && request.auth.uid == resource.data.createdBy;
+      allow create: if request.auth != null;
+      allow read: if request.auth != null && request.auth.uid in resource.data.members;
 
-        // MESSAGES SUBCOLLECTION
-        // Any member of the group can read and send messages.
-        match /messages/{messageId} {
-            allow read, create: if request.auth != null && request.auth.uid in get(/databases/$(database)/documents/groups/$(groupId)).data.members;
-        }
+      // MESSAGES SUBCOLLECTION
+      // Only group members can read and write messages.
+      match /messages/{messageId} {
+        allow read, create: if request.auth != null && request.auth.uid in get(/databases/$(database)/documents/groups/$(groupId)).data.members;
+      }
     }
   }
 }

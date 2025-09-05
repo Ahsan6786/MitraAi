@@ -9,7 +9,7 @@ import { SidebarTrigger } from '@/components/ui/sidebar';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { GenZToggle } from '@/components/genz-toggle';
 import { Button } from '@/components/ui/button';
-import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { MessageSquarePlus, Users, Loader2, UserPlus, Search } from 'lucide-react';
 import Link from 'next/link';
 import {
@@ -257,12 +257,14 @@ export default function GroupsPage() {
           ) : (
              <div className="grid gap-4 md:grid-cols-2">
               {groups.map(group => (
-                  <Card key={group.id}>
-                    <CardHeader>
-                        <CardTitle>{group.name}</CardTitle>
-                        <CardDescription>{group.memberCount} members</CardDescription>
-                    </CardHeader>
-                  </Card>
+                  <Link href={`/groups/${group.id}`} key={group.id}>
+                    <Card className="hover:bg-muted/50 transition-colors">
+                      <CardHeader>
+                          <CardTitle>{group.name}</CardTitle>
+                          <CardDescription>{group.memberCount} members</CardDescription>
+                      </CardHeader>
+                    </Card>
+                  </Link>
               ))}
             </div>
           )}
