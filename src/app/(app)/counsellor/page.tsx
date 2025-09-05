@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 import { db, auth } from '@/lib/firebase';
 import { doc, getDoc, collection, query, where, onSnapshot, updateDoc, Timestamp } from 'firebase/firestore';
-import { Loader2, UserCheck, CalendarClock, Check, X, Send } from 'lucide-react';
+import { Loader2, UserCheck, CalendarClock, Check, X, Send, User, ShieldQuestion } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { ThemeToggle } from '@/components/theme-toggle';
@@ -28,7 +28,10 @@ import { GenZToggle } from '@/components/genz-toggle';
 
 interface Booking {
     id: string;
-    student_email: string;
+    student_email?: string;
+    student_code?: string;
+    is_anonymous: boolean;
+    issue_type: string;
     appointment_date: string;
     appointment_time: string;
     appointment_status: 'Pending' | 'Confirmed' | 'Rejected' | 'Cancelled';
@@ -119,8 +122,14 @@ function BookingList() {
                             {pendingBookings.map(booking => (
                                 <Card key={booking.id}>
                                     <CardHeader>
-                                        <CardTitle className="text-base">Booking Request</CardTitle>
-                                        <CardDescription>{booking.student_email}</CardDescription>
+                                        <div className="flex justify-between items-center">
+                                            <CardTitle className="text-base flex items-center gap-2">
+                                                {booking.is_anonymous ? <ShieldQuestion /> : <User />}
+                                                Booking Request
+                                            </CardTitle>
+                                            <Badge variant="outline" className="capitalize">{booking.issue_type}</Badge>
+                                        </div>
+                                        <CardDescription>{booking.is_anonymous ? `Anonymous Code: ${booking.student_code}` : booking.student_email}</CardDescription>
                                     </CardHeader>
                                     <CardContent className="text-sm space-y-2">
                                         <p><strong>Date:</strong> {booking.appointment_date}</p>
@@ -147,7 +156,7 @@ function BookingList() {
                                             <CardTitle className="text-base">Appointment</CardTitle>
                                             <Badge variant={booking.appointment_status === 'Confirmed' ? 'secondary' : (booking.appointment_status === 'Cancelled' ? 'outline' : 'destructive')}>{booking.appointment_status}</Badge>
                                         </div>
-                                        <CardDescription>{booking.student_email}</CardDescription>
+                                        <CardDescription>{booking.is_anonymous ? `Anonymous Code: ${booking.student_code}` : booking.student_email}</CardDescription>
                                     </CardHeader>
                                     <CardContent className="text-sm space-y-2">
                                         <p><strong>Date:</strong> {booking.appointment_date}</p>
@@ -171,7 +180,10 @@ function BookingList() {
                     </DialogHeader>
                     <div className="py-4 space-y-4">
                          <div>
-                            <p className="text-sm font-medium">Student: {selectedBooking?.student_email}</p>
+                            <p className="text-sm font-medium">
+                                Student: {selectedBooking?.is_anonymous ? `Anonymous (${selectedBooking.student_code})` : selectedBooking?.student_email}
+                            </p>
+                             <p className="text-sm text-muted-foreground">Issue: {selectedBooking?.issue_type}</p>
                             <p className="text-sm text-muted-foreground">Date & Time: {selectedBooking?.appointment_date} at {selectedBooking?.appointment_time}</p>
                             {selectedBooking?.student_notes && <p className="text-sm text-muted-foreground mt-2 italic">Notes: "{selectedBooking.student_notes}"</p>}
                         </div>

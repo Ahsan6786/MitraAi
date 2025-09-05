@@ -8,7 +8,7 @@ import { collection, query, where, getDocs, addDoc, serverTimestamp } from 'fire
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Loader2, CalendarPlus, Mail, Phone, Calendar as CalendarIcon } from 'lucide-react';
+import { Loader2, CalendarPlus, Mail, Phone, Calendar as CalendarIcon, AlertTriangle } from 'lucide-react';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { ThemeToggle } from '@/components/theme-toggle';
 import {
@@ -27,6 +27,8 @@ import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { GenZToggle } from '@/components/genz-toggle';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 
 interface Counsellor {
   id: string;
@@ -36,12 +38,34 @@ interface Counsellor {
   avatarUrl?: string;
 }
 
+const issueTypes = [
+    "Stress",
+    "Depression",
+    "Academic Pressure",
+    "Relationship Issues",
+    "Sleep Issues",
+    "Other"
+];
+
+// Generates a user-friendly random code
+const generateStudentCode = () => {
+    const adjectives = ["Brave", "Calm", "Wise", "Kind", "Strong", "Happy", "Proud"];
+    const nouns = ["Lion", "Eagle", "River", "Star", "Tree", "Fox", "Wolf"];
+    const adjective = adjectives[Math.floor(Math.random() * adjectives.length)];
+    const noun = nouns[Math.floor(Math.random() * nouns.length)];
+    const number = Math.floor(100 + Math.random() * 900);
+    return `${adjective}${noun}${number}`;
+}
+
+
 function BookingDialog({ counsellor, user, isOpen, onOpenChange }: { counsellor: Counsellor | null, user: any, isOpen: boolean, onOpenChange: (open: boolean) => void }) {
     const [date, setDate] = useState<Date | undefined>(undefined);
     const [hour, setHour] = useState('');
     const [minute, setMinute] = useState('');
     const [ampm, setAmPm] = useState('');
+    const [issueType, setIssueType] = useState('');
     const [notes, setNotes] = useState('');
+    const [isAnonymous, setIsAnonymous] = useState(false);
     const [isBooking, setIsBooking] = useState(false);
     const [isCalendarOpen, setIsCalendarOpen] = useState(false);
     const { toast } = useToast();
@@ -51,22 +75,26 @@ function BookingDialog({ counsellor, user, isOpen, onOpenChange }: { counsellor:
         setHour('');
         setMinute('');
         setAmPm('');
+        setIssueType('');
         setNotes('');
+        setIsAnonymous(false);
     };
 
     const handleBooking = async () => {
-        if (!counsellor || !user || !date || !hour || !minute || !ampm) {
+        if (!counsellor || !user || !date || !hour || !minute || !ampm || !issueType) {
             toast({ title: 'Please fill all required fields.', variant: 'destructive' });
             return;
         }
         setIsBooking(true);
         try {
             const time = `${hour}:${minute} ${ampm}`;
-            
+            const studentCode = isAnonymous ? generateStudentCode() : null;
+
             await addDoc(collection(db, 'bookings'), {
-                student_id: user.uid,
-                student_email: user.email,
-                student_phone: user.phoneNumber || null,
+                student_id: isAnonymous ? null : user.uid,
+                student_email: isAnonymous ? null : user.email,
+                student_phone: isAnonymous ? null : (user.phoneNumber || null),
+                student_code: studentCode,
                 counsellor_id: counsellor.id,
                 counsellor_name: counsellor.name,
                 counsellor_email: counsellor.email,
@@ -74,14 +102,21 @@ function BookingDialog({ counsellor, user, isOpen, onOpenChange }: { counsellor:
                 appointment_date: format(date, 'yyyy-MM-dd'),
                 appointment_time: time,
                 appointment_status: 'Pending',
+                is_anonymous: isAnonymous,
+                issue_type: issueType,
                 meet_link: null,
                 student_notes: notes,
                 counsellor_notes: null,
                 created_at: serverTimestamp(),
                 updated_at: serverTimestamp(),
             });
+            
+            let toastDescription = 'Your request has been sent to the counsellor.';
+            if (isAnonymous && studentCode) {
+                toastDescription += ` Your anonymous code is ${studentCode}. Please save it.`
+            }
 
-            toast({ title: 'Appointment Booked!', description: 'Your request has been sent to the counsellor.' });
+            toast({ title: 'Appointment Booked!', description: toastDescription });
             onOpenChange(false);
             resetForm();
         } catch (error) {
@@ -104,6 +139,24 @@ function BookingDialog({ counsellor, user, isOpen, onOpenChange }: { counsellor:
                     </DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
+                     <div className="flex items-center space-x-2">
+                        <Switch id="anonymous-mode" checked={isAnonymous} onCheckedChange={setIsAnonymous} />
+                        <Label htmlFor="anonymous-mode">Book Anonymously</Label>
+                    </div>
+                    {isAnonymous && (
+                        <div className="flex items-start gap-3 rounded-md border border-amber-500 bg-amber-50 p-3 dark:bg-amber-950/20">
+                            <AlertTriangle className="h-5 w-5 flex-shrink-0 text-amber-600"/>
+                            <p className="text-xs text-amber-800 dark:text-amber-300">
+                                Your name and email will be hidden. You will receive a unique code to track your appointment.
+                            </p>
+                        </div>
+                    )}
+                    <Select onValueChange={setIssueType} value={issueType}>
+                        <SelectTrigger><SelectValue placeholder="Select type of issue" /></SelectTrigger>
+                        <SelectContent>
+                            {issueTypes.map(type => <SelectItem key={type} value={type}>{type}</SelectItem>)}
+                        </SelectContent>
+                    </Select>
                     <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
                         <PopoverTrigger asChild>
                             <Button

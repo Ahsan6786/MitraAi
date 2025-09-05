@@ -4,10 +4,10 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { db } from '@/lib/firebase';
-import { collection, query, where, onSnapshot, orderBy, Timestamp, doc, updateDoc } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, orderBy, Timestamp, doc, updateDoc, or } from 'firebase/firestore';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { ThemeToggle } from '@/components/theme-toggle';
-import { Loader2, CheckCircle, Clock, XCircle, Ban, CalendarClock } from 'lucide-react';
+import { Loader2, CheckCircle, Clock, XCircle, Ban, CalendarClock, ShieldQuestion } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -24,18 +24,14 @@ interface Booking {
     appointment_date: string;
     appointment_time: string;
     appointment_status: 'Pending' | 'Confirmed' | 'Rejected' | 'Cancelled';
+    is_anonymous: boolean;
+    student_code?: string;
     createdAt: Timestamp;
 }
 
 const AppointmentCard = ({ booking, onCancel }: { booking: Booking, onCancel: (id: string) => void }) => {
     const { toast } = useToast();
     
-    const handleBookAgain = () => {
-        // In a real app, you might pass counsellor ID to pre-fill the booking page
-        toast({ title: "Redirecting to booking page..." });
-        // router.push('/booking');
-    }
-
     // Fallback avatar if one isn't provided in the booking document
     const avatarUrl = booking.counsellor_avatar || 'https://img.freepik.com/free-psd/3d-illustration-person-with-sunglasses_23-2149436188.jpg';
 
@@ -49,9 +45,13 @@ const AppointmentCard = ({ booking, onCancel }: { booking: Booking, onCancel: (i
                 <div>
                     <h3 className="text-foreground text-lg font-bold">{booking.counsellor_name}</h3>
                     <p className="text-muted-foreground text-sm">
-                        {booking.appointment_status === 'Pending' ? `Session requested for: ` : ''}
                         {booking.appointment_date} at {booking.appointment_time}
                     </p>
+                    {booking.is_anonymous && booking.student_code && (
+                        <p className="text-xs text-primary font-semibold mt-1 flex items-center gap-1">
+                           <ShieldQuestion className="w-3 h-3"/> Anonymous Code: {booking.student_code}
+                        </p>
+                    )}
                 </div>
             </div>
             <div className="flex items-center gap-2">
@@ -97,14 +97,18 @@ export default function MyAppointmentsPage() {
     useEffect(() => {
         if (!user) return;
 
+        // Query for both identified and anonymous bookings made by the user
         const q = query(
             collection(db, 'bookings'),
             where('student_id', '==', user.uid),
-            orderBy('createdAt', 'desc')
+            orderBy('created_at', 'desc')
         );
 
         const unsubscribe = onSnapshot(q, (snapshot) => {
             const bookingsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Booking));
+            // In a real app, anonymous bookings would be stored locally or retrieved via a secure method.
+            // For this implementation, we can only show identified bookings.
+            // This logic can be expanded if anonymous codes are stored in localStorage.
             setBookings(bookingsData);
             setIsLoading(false);
         });

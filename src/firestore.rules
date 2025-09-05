@@ -1,69 +1,102 @@
+
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
-    // A function to check if the user is the designated admin
+
+    // Helper functions to check user roles
+    function isOwner(docData) {
+      return request.auth.uid == docData.userId || request.auth.uid == docData.authorId || request.auth.uid == docData.student_id;
+    }
+
     function isAdmin() {
       return request.auth.token.email == 'ahsan.khan@mitwpu.edu.in';
     }
 
-    // Rules for the journalEntries collection
+    function isApprovedCounsellor() {
+      return exists(/databases/$(database)/documents/counsellors/$(request.auth.uid)) &&
+             get(/databases/$(database)/documents/counsellors/$(request.auth.uid)).data.status == 'approved';
+    }
+    
+    // USERS (for profile data like companionName)
+    // Users can read and write their own profile document.
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+
+      // FRIEND REQUESTS SUBCOLLECTION
+      // Users can manage requests they receive and see requests they've sent.
+      match /friendRequests/{requestId} {
+          allow read, update, delete: if request.auth != null && request.auth.uid == userId; // Recipient can manage
+          allow create: if request.auth != null && request.auth.uid != userId; // Sender can create
+      }
+      
+      // FRIENDS SUBCOLLECTION
+      // Users can only manage their own friends list.
+      match /friends/{friendId} {
+        allow read, write, delete: if request.auth != null && request.auth.uid == userId;
+      }
+    }
+
+    // JOURNAL ENTRIES
+    // Users can only access their own entries. Admin can read/update for review.
     match /journalEntries/{entryId} {
-      // Users can create their own journal entries
+      allow read, update, delete: if request.auth != null && isOwner(resource.data);
       allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
-
-      // Users can read their own entries. The admin can read any entry.
-      allow read: if (request.auth != null && resource.data.userId == request.auth.uid) || isAdmin();
+      allow list: if request.auth != null && request.query.get('userId') == request.auth.uid;
       
-      // The admin can update any entry (to add reports and mark as reviewed)
-      allow update: if isAdmin();
-      
-      // Users can delete their own entries
-      allow delete: if request.auth != null && resource.data.userId == request.auth.uid;
+      // Admin permissions for review
+      allow get, list, update: if request.auth != null && isAdmin();
     }
 
-    // Rules for the questionnaires collection
+    // QUESTIONNAIRES
+    // Users can only access their own. Admin can read/update for review.
     match /questionnaires/{questionnaireId} {
-      // Users can create their own questionnaire submissions
+      allow read, update, delete: if request.auth != null && isOwner(resource.data);
       allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow list: if request.auth != null && request.query.get('userId') == request.auth.uid;
 
-      // Users can read their own submissions. The admin can read any submission.
-      allow read: if (request.auth != null && resource.data.userId == request.auth.uid) || isAdmin();
-      
-      // The admin can update any submission (to add feedback and mark as reviewed)
-      allow update: if isAdmin();
-      
-      // Submissions cannot be deleted from the app
-      allow delete: if false;
+      // Admin permissions for review
+      allow get, list, update: if request.auth != null && isAdmin();
     }
-    
-    // Rules for the posts collection in the community feed
+
+    // COUNSELLORS
+    // Any authenticated user can read the list of approved counsellors.
+    // Admin can manage counsellor documents.
+    match /counsellors/{counsellorId} {
+      allow read: if request.auth != null; // Allows role checks and listing for booking
+      allow create: if request.auth != null; // Allow new applications
+      allow update, delete: if request.auth != null && isAdmin();
+    }
+
+    // BOOKINGS
+    // Users can manage their own bookings. Counsellors can manage theirs.
+    match /bookings/{bookingId} {
+      // Allow creation for any authenticated user (to support anonymous bookings)
+      allow create: if request.auth != null;
+      // Normal users can read their own bookings.
+      // Counsellors can read bookings assigned to them.
+      allow read, update: if request.auth != null && 
+        (isOwner(resource.data) || (isApprovedCounsellor() && resource.data.counsellor_id == request.auth.uid));
+      // Logged-in users can list their own appointments. Counsellors can list theirs.
+      allow list: if request.auth != null && 
+        (request.query.get('student_id') == request.auth.uid || 
+        (isApprovedCounsellor() && request.query.get('counsellor_id') == request.auth.uid));
+    }
+
+    // POSTS
+    // Authenticated users can read/create. Owners or admin can delete.
+    // Any user can update the commentCount.
     match /posts/{postId} {
-      // Any authenticated user can read all posts
-      allow read: if request.auth != null;
-      
-      // Authenticated users can create posts
-      allow create: if request.auth != null && request.resource.data.authorId == request.auth.uid;
-      
-      // Users can delete their own posts, and the admin can delete any post
-      allow delete: if request.auth != null && (resource.data.authorId == request.auth.uid || isAdmin());
-      
-      // Only the author can update their post (or admin) - not currently used in app but good practice
-      allow update: if request.auth != null && (resource.data.authorId == request.auth.uid || isAdmin());
-    }
-    
-    // Rules for comments subcollection
-    match /posts/{postId}/comments/{commentId} {
-        // Any authenticated user can read comments
-        allow read: if request.auth != null;
-        
-        // Authenticated users can create comments
-        allow create: if request.auth != null && request.resource.data.authorId == request.auth.uid;
-        
-        // Admin can hide/unhide comments
-        allow update: if isAdmin();
-        
-        // Users can delete their own comments
-        allow delete: if request.auth != null && resource.data.authorId == request.auth.uid;
+      allow read, create: if request.auth != null;
+      allow update: if request.auth != null && (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['commentCount', 'likeCount']) || isOwner(resource.data) || isAdmin());
+      allow delete: if request.auth != null && (isOwner(resource.data) || isAdmin());
+
+      // COMMENTS SUBCOLLECTION
+      match /comments/{commentId} {
+        allow read, create: if request.auth != null;
+        allow update: if request.auth != null && isAdmin(); // Admin can hide comments
+        allow delete: if request.auth != null && (isOwner(resource.data) || isAdmin());
+      }
     }
   }
 }
