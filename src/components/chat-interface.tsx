@@ -95,7 +95,7 @@ const CodeBlock = ({ code }: { code: string }) => {
 // Simple Markdown parser component
 const SimpleMarkdown = ({ text }: { text: string }) => {
   const router = useRouter();
-  const parts = text.split(/(\[.*?\]\(nav:.*?_?\))/g);
+  const parts = text.split(/(\[.*?\]\(nav:.*?\))/g);
   
   return (
     <>
@@ -104,15 +104,16 @@ const SimpleMarkdown = ({ text }: { text: string }) => {
         if (navMatch) {
           const [, buttonText, path] = navMatch;
           return (
-            <Button
-              key={`nav-${index}`}
-              onClick={() => router.push(path)}
-              variant="secondary"
-              className="my-2"
-            >
-              {buttonText}
-              <ArrowRight className="w-4 h-4 ml-2" />
-            </Button>
+            <div key={`nav-${index}`} className="my-2">
+                <Button
+                    onClick={() => router.push(path)}
+                    variant="secondary"
+                    className="h-auto py-2 px-4"
+                >
+                    <span>{buttonText}</span>
+                    <ArrowRight className="w-4 h-4 ml-2" />
+                </Button>
+            </div>
           );
         }
         
