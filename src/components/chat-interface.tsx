@@ -17,12 +17,12 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
 import { detectCrisis } from '@/ai/flows/detect-crisis';
 import CrisisAlertModal from '@/components/crisis-alert-modal';
-import { useChatHistory, type Message } from '@/hooks/use-chat-history';
+import { type Message } from '@/hooks/use-chat-history';
 import { SidebarTrigger } from './ui/sidebar';
 import { ThemeToggle } from './theme-toggle';
 import { useTheme } from 'next-themes';
 import { GenZToggle } from './genz-toggle';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
 // Check for SpeechRecognition API
@@ -202,7 +202,7 @@ const MessageBubble = ({ message, senderName }: { message: Message; senderName: 
 
 
 export default function ChatInterface() {
-  const { messages, setMessages } = useChatHistory();
+  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [language, setLanguage] = useState('English');
@@ -224,8 +224,9 @@ export default function ChatInterface() {
   const isGenzMode = theme === 'theme-genz-dark';
   
   useEffect(() => {
-    const fetchCompanionName = async () => {
-        if (user) {
+    if (user) {
+        // Fetch companion name
+        const fetchCompanionName = async () => {
             const userDocRef = doc(db, 'users', user.uid);
             const docSnap = await getDoc(userDocRef);
             if (docSnap.exists() && docSnap.data().companionName) {
@@ -233,9 +234,21 @@ export default function ChatInterface() {
             } else {
                 setCompanionName('Mitra');
             }
-        }
-    };
-    fetchCompanionName();
+        };
+        fetchCompanionName();
+        
+        // Listen for chat history
+        const q = query(collection(db, `users/${user.uid}/chatHistory`), orderBy('createdAt'));
+        const unsubscribe = onSnapshot(q, (querySnapshot) => {
+            const history: Message[] = [];
+            querySnapshot.forEach((doc) => {
+                history.push(doc.data() as Message);
+            });
+            setMessages(history);
+        });
+        
+        return () => unsubscribe();
+    }
   }, [user]);
 
   useEffect(() => {
@@ -255,21 +268,26 @@ export default function ChatInterface() {
       reader.readAsDataURL(file);
     });
   };
+  
+  const saveMessageToDb = async (message: Message) => {
+      if (!user) return;
+      await addDoc(collection(db, `users/${user.uid}/chatHistory`), {
+          ...message,
+          createdAt: serverTimestamp(),
+      });
+  };
 
   const handleSendMessage = async (messageText: string) => {
-    if ((!messageText.trim() && !imageFile) || isLoading) return;
+    if ((!messageText.trim() && !imageFile) || isLoading || !user) return;
 
-    const userMessage: Message = { sender: 'user', text: messageText };
     let imageDataUri: string | undefined;
     
-    // Use a function to update state to get the latest messages
-    const currentMessages = [...messages, userMessage];
-    setMessages(currentMessages);
-
     if (imageFile) {
         imageDataUri = await fileToDataUri(imageFile);
-        userMessage.imageUrl = imageDataUri;
     }
+    
+    const userMessage: Message = { sender: 'user', text: messageText, imageUrl: imageDataUri };
+    await saveMessageToDb(userMessage);
 
     setInput('');
     setImageFile(null);
@@ -283,16 +301,13 @@ export default function ChatInterface() {
         if (crisisResult.isCrisis) {
           setShowCrisisModal(true);
           setIsLoading(false);
-          // Remove the crisis message from history to not affect the AI
-          setMessages(messages);
+          // Note: We're not deleting the crisis message from DB, it's part of the history.
           return;
         }
       } catch (crisisError) {
         console.error("Crisis detection service failed:", crisisError);
-        // Fail-safe: If the crisis check fails, assume a crisis to be safe.
         setShowCrisisModal(true);
         setIsLoading(false);
-        setMessages(messages);
         return;
       }
 
@@ -312,7 +327,7 @@ export default function ChatInterface() {
       });
       
       const aiMessage: Message = { sender: 'ai', text: chatResult.response, imageUrl: chatResult.imageUrl };
-      setMessages((prev) => [...prev, aiMessage]);
+      await saveMessageToDb(aiMessage);
 
       if (isRecording) {
         if (chatResult.response.trim()) {
@@ -328,7 +343,7 @@ export default function ChatInterface() {
     } catch (error) {
       console.error('Error getting AI response:', error);
       const errorMessage: Message = { sender: 'ai', text: 'Sorry, I encountered an error. Please try again.' };
-      setMessages((prev) => [...prev, errorMessage]);
+      await saveMessageToDb(errorMessage);
     } finally {
       setIsLoading(false);
       if (recognitionRef.current) {
@@ -429,7 +444,7 @@ export default function ChatInterface() {
       <main className="flex-1 overflow-hidden">
         <ScrollArea className="h-full" ref={scrollAreaRef}>
           <div className="p-4 md:p-6 space-y-6">
-            {messages.length === 0 ? (
+            {messages.length === 0 && (
                <div className="flex items-start gap-3">
                   <Avatar className="w-10 h-10 border shrink-0">
                     <AvatarFallback className="bg-primary text-primary-foreground">
@@ -438,8 +453,8 @@ export default function ChatInterface() {
                   </Avatar>
                   <MessageBubble message={{sender: 'ai', text: `Hello there! I'm ${companionName}. How are you feeling today? I'm here to listen and support you in any way I can. Feel free to share your thoughts and feelings with me.`}} senderName={companionName} />
               </div>
-            ) : (
-              messages.map((message, index) => (
+            )}
+            {messages.map((message, index) => (
                 <div
                   key={index}
                   className={cn(
@@ -469,7 +484,7 @@ export default function ChatInterface() {
                   )}
                 </div>
               ))
-            )}
+            }
             {isLoading && (
               <div className="flex items-start gap-3 justify-start">
                   <Avatar className="w-10 h-10 border shrink-0">

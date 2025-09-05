@@ -1,7 +1,11 @@
 
 'use client';
 
-import { createContext, useContext, useState, ReactNode, Dispatch, SetStateAction } from 'react';
+import { createContext, useContext, useState, ReactNode, Dispatch, SetStateAction, useEffect } from 'react';
+import { useAuth } from './use-auth';
+import { db } from '@/lib/firebase';
+import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
+
 
 export interface Message {
   sender: 'user' | 'ai';
@@ -18,7 +22,7 @@ const ChatHistoryContext = createContext<ChatHistoryContextType | undefined>(und
 
 export const ChatHistoryProvider = ({ children }: { children: ReactNode }) => {
   const [messages, setMessages] = useState<Message[]>([]);
-
+  
   return (
     <ChatHistoryContext.Provider value={{ messages, setMessages }}>
       {children}
