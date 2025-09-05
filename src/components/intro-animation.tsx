@@ -63,22 +63,22 @@ export default function IntroAnimation({ onFinish }: IntroAnimationProps) {
                 animationState === 'entering' ? 'opacity-100' : 'opacity-0'
             )}>
                 {/* Logo formed by pieces */}
-                <div className="relative w-24 h-24 text-primary">
+                <div className="relative w-24 h-24 text-primary grid grid-cols-2 grid-rows-2 gap-0">
                     {/* Top-left piece of the logo */}
-                    <div className="absolute top-0 left-0 w-12 h-12 overflow-hidden" style={{ animation: 'fly-in-1 2s cubic-bezier(0.25, 1, 0.5, 1) forwards' }}>
-                        <Logo className="absolute -top-1 -left-1 w-24 h-24" />
+                    <div style={{ animation: 'fly-in-1 2s cubic-bezier(0.25, 1, 0.5, 1) forwards' }}>
+                        <Logo className="w-12 h-12" />
                     </div>
                     {/* Top-right piece */}
-                    <div className="absolute top-0 right-0 w-12 h-12 overflow-hidden" style={{ animation: 'fly-in-2 2s cubic-bezier(0.25, 1, 0.5, 1) forwards' }}>
-                        <Logo className="absolute -top-1 -right-11 w-24 h-24" />
+                    <div style={{ animation: 'fly-in-2 2s cubic-bezier(0.25, 1, 0.5, 1) forwards' }}>
+                        <Logo className="w-12 h-12" />
                     </div>
                     {/* Bottom-left piece */}
-                    <div className="absolute bottom-0 left-0 w-12 h-12 overflow-hidden" style={{ animation: 'fly-in-3 2s cubic-bezier(0.25, 1, 0.5, 1) forwards' }}>
-                        <Logo className="absolute -bottom-11 -left-1 w-24 h-24" />
+                    <div style={{ animation: 'fly-in-3 2s cubic-bezier(0.25, 1, 0.5, 1) forwards' }}>
+                        <Logo className="w-12 h-12" />
                     </div>
                     {/* Bottom-right piece */}
-                    <div className="absolute bottom-0 right-0 w-12 h-12 overflow-hidden" style={{ animation: 'fly-in-4 2s cubic-bezier(0.25, 1, 0.5, 1) forwards' }}>
-                        <Logo className="absolute -bottom-11 -right-11 w-24 h-24" />
+                    <div style={{ animation: 'fly-in-4 2s cubic-bezier(0.25, 1, 0.5, 1) forwards' }}>
+                        <Logo className="w-12 h-12" />
                     </div>
                 </div>
 
