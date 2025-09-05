@@ -22,7 +22,7 @@ import { SidebarTrigger } from './ui/sidebar';
 import { ThemeToggle } from './theme-toggle';
 import { useTheme } from 'next-themes';
 import { GenZToggle } from './genz-toggle';
-import { doc, getDoc, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, DocumentData, WithFieldValue } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
 // Check for SpeechRecognition API
@@ -271,10 +271,19 @@ export default function ChatInterface() {
   
   const saveMessageToDb = async (message: Message) => {
       if (!user) return;
-      await addDoc(collection(db, `users/${user.uid}/chatHistory`), {
+      
+      const messageData: WithFieldValue<DocumentData> = {
           ...message,
           createdAt: serverTimestamp(),
-      });
+      };
+      
+      // Firestore does not allow `undefined` fields.
+      // Remove imageUrl if it's not a valid string.
+      if (!messageData.imageUrl) {
+          delete messageData.imageUrl;
+      }
+      
+      await addDoc(collection(db, `users/${user.uid}/chatHistory`), messageData);
   };
 
   const handleSendMessage = async (messageText: string) => {
