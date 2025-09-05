@@ -30,7 +30,7 @@ interface Message {
 interface Group {
   name: string;
   members: string[];
-  admins: string[];
+  admins?: string[]; // Make admins optional to handle old data
   createdBy: string;
 }
 
@@ -56,8 +56,9 @@ function GroupInfoDialog({ group, groupId }: { group: Group, groupId: string }) 
     const [selectedFriends, setSelectedFriends] = useState<string[]>([]);
     const [isLoading, setIsLoading] = useState(false);
 
+    const groupAdmins = group.admins || []; // Safely default to an empty array
     const isSuperAdmin = user?.uid === group.createdBy;
-    const isAdmin = group.admins.includes(user?.uid || '');
+    const isAdmin = groupAdmins.includes(user?.uid || '');
 
     useEffect(() => {
         const fetchMembers = async () => {
@@ -134,7 +135,7 @@ function GroupInfoDialog({ group, groupId }: { group: Group, groupId: string }) 
     const handleToggleAdmin = async (memberId: string) => {
         if (!isSuperAdmin) return;
         const groupRef = doc(db, 'groups', groupId);
-        if (group.admins.includes(memberId)) {
+        if (groupAdmins.includes(memberId)) {
             await updateDoc(groupRef, { admins: arrayRemove(memberId) });
             toast({ title: "Admin status removed." });
         } else {
@@ -168,14 +169,14 @@ function GroupInfoDialog({ group, groupId }: { group: Group, groupId: string }) 
                                 <div className="flex items-center gap-3">
                                     <Avatar className="w-8 h-8"><AvatarFallback>{member.displayName[0]}</AvatarFallback></Avatar>
                                     <span>{member.displayName}</span>
-                                    {group.admins.includes(member.id) && <Badge variant="secondary">Admin</Badge>}
+                                    {groupAdmins.includes(member.id) && <Badge variant="secondary">Admin</Badge>}
                                 </div>
                                 {isAdmin && user?.uid !== member.id && (
                                      <Dialog>
                                         <DialogTrigger asChild><Button variant="ghost" size="icon" className="h-7 w-7"><MoreVertical className="w-4 h-4"/></Button></DialogTrigger>
                                         <DialogContent className="sm:max-w-xs">
                                             <div className="py-2 flex flex-col gap-1">
-                                                {isSuperAdmin && member.id !== group.createdBy && <Button variant="ghost" className="w-full justify-start" onClick={() => handleToggleAdmin(member.id)}>{group.admins.includes(member.id) ? "Dismiss as admin" : "Make admin"}</Button>}
+                                                {isSuperAdmin && member.id !== group.createdBy && <Button variant="ghost" className="w-full justify-start" onClick={() => handleToggleAdmin(member.id)}>{groupAdmins.includes(member.id) ? "Dismiss as admin" : "Make admin"}</Button>}
                                                 <Button variant="destructive" className="w-full justify-start" onClick={() => handleRemoveMember(member.id)}>Remove {member.displayName}</Button>
                                             </div>
                                         </DialogContent>
