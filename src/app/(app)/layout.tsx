@@ -328,6 +328,14 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
                 <SidebarMenuItem>
+                  <SidebarMenuButton asChild isActive={pathname === '/therapy'}>
+                    <Link href="/therapy" onClick={handleLinkClick}>
+                      <Sparkles />
+                      <span>360° VR Therapy</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
                   <SidebarMenuButton asChild isActive={pathname === '/affirmations'}>
                     <Link href="/affirmations" onClick={handleLinkClick}>
                       <Sparkles />
