@@ -22,7 +22,8 @@ import {
   DocumentData,
   WithFieldValue,
   setDoc,
-  getDoc
+  getDoc,
+  runTransaction
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { SidebarTrigger } from '@/components/ui/sidebar';
@@ -66,6 +67,7 @@ interface Post {
   commentCount: number;
   likeCount: number;
   imageUrl?: string;
+  likedBy?: string[];
 }
 
 interface Comment {
@@ -84,10 +86,18 @@ function PostCard({ post }: { post: Post }) {
   const [showComments, setShowComments] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [friendStatus, setFriendStatus] = useState<'not_friends' | 'pending' | 'friends' | 'self'>('not_friends');
+  const [isLiked, setIsLiked] = useState(false);
+  const [likeCount, setLikeCount] = useState(post.likeCount || 0);
   
   const isAuthor = user && user.uid === post.authorId;
   const isOwner = user?.email === OWNER_EMAIL;
   const canDelete = isAuthor || isOwner;
+
+  useEffect(() => {
+    if (user && post.likedBy?.includes(user.uid)) {
+      setIsLiked(true);
+    }
+  }, [user, post.likedBy]);
 
   useEffect(() => {
     if (!user || !post.authorId) return;
@@ -160,6 +170,42 @@ function PostCard({ post }: { post: Post }) {
       toast({ title: "Error", description: "Could not send friend request.", variant: "destructive" });
     }
   };
+  
+  const handleLikePost = async () => {
+    if (!user) {
+      toast({ title: "Please log in to like posts.", variant: "destructive" });
+      return;
+    }
+    const postRef = doc(db, 'posts', post.id);
+    await runTransaction(db, async (transaction) => {
+      const postDoc = await transaction.get(postRef);
+      if (!postDoc.exists()) {
+        throw "Document does not exist!";
+      }
+      const postData = postDoc.data();
+      const likedBy = postData.likedBy || [];
+      const newLikeCount = postData.likeCount || 0;
+
+      if (likedBy.includes(user.uid)) {
+        // Unlike
+        transaction.update(postRef, {
+          likeCount: increment(-1),
+          likedBy: likedBy.filter((id: string) => id !== user.uid)
+        });
+        setIsLiked(false);
+        setLikeCount(newLikeCount - 1);
+      } else {
+        // Like
+        transaction.update(postRef, {
+          likeCount: increment(1),
+          likedBy: [...likedBy, user.uid]
+        });
+        setIsLiked(true);
+        setLikeCount(newLikeCount + 1);
+      }
+    });
+  };
+
 
   return (
     <div className="bg-[#1a2836] p-5 rounded-lg">
@@ -220,7 +266,14 @@ function PostCard({ post }: { post: Post }) {
         )}
         <div className="flex justify-between text-gray-400">
             <div className="flex items-center gap-4">
-                <button className="flex items-center gap-1 hover:text-primary transition-colors"><ThumbsUp className="text-xl"/> {post.likeCount || 0}</button>
+                <button 
+                  onClick={handleLikePost}
+                  className={cn(
+                    "flex items-center gap-1 hover:text-primary transition-colors",
+                    isLiked && "text-primary"
+                  )}>
+                  <ThumbsUp className={cn("text-xl", isLiked && "fill-current")}/> {likeCount}
+                </button>
                 <button className="flex items-center gap-1 hover:text-primary transition-colors" onClick={() => setShowComments(!showComments)}><MessageSquare className="text-xl"/> {post.commentCount || 0}</button>
             </div>
             <button className="hover:text-primary transition-colors"><Bookmark className="text-xl"/></button>
@@ -360,6 +413,7 @@ interface PostData {
     createdAt: any;
     commentCount: number;
     likeCount: number;
+    likedBy: string[];
     imageUrl?: string;
 }
 
@@ -372,6 +426,7 @@ export default function CommunityPage() {
   const [postImage, setPostImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isCreatePostOpen, setIsCreatePostOpen] = useState(false);
   const [friendRequestCount, setFriendRequestCount] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -440,6 +495,7 @@ export default function CommunityPage() {
         createdAt: serverTimestamp(),
         commentCount: 0,
         likeCount: 0,
+        likedBy: [],
       };
   
       if (imageUrl) {
@@ -450,6 +506,7 @@ export default function CommunityPage() {
       
       setNewPostContent('');
       removeImage();
+      setIsCreatePostOpen(false);
     } catch (error) {
       console.error('Error creating post:', error);
       toast({ title: "Error", description: "Could not create post.", variant: "destructive" });
@@ -481,56 +538,56 @@ export default function CommunityPage() {
             </Button>
             <GenZToggle />
             <ThemeToggle />
-             <Avatar className="w-10 h-10 border-2 border-primary">
-                <AvatarFallback><User /></AvatarFallback>
-            </Avatar>
         </div>
       </header>
       <main className="flex-1 overflow-auto">
         <div className="max-w-3xl mx-auto py-8 px-4">
             <div className="flex items-center justify-between mb-6">
                 <h1 className="text-white text-3xl font-bold">Community Feed</h1>
-                <Button>
+                <Button onClick={() => setIsCreatePostOpen(!isCreatePostOpen)}>
                     <Plus className="mr-2 h-4 w-4" />
                     Create Post
                 </Button>
             </div>
+            
+            {isCreatePostOpen && (
+              <form onSubmit={handleCreatePost} className="bg-[#1a2836] p-4 rounded-lg mb-6 animate-in fade-in-50">
+                  <div className="flex items-start gap-4">
+                      <Avatar className="w-11 h-11 mt-1">
+                          <AvatarFallback><User /></AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1">
+                          <Textarea 
+                            className="w-full bg-[#233648] text-white placeholder-gray-400 border-none rounded-lg p-3 focus:ring-2 focus:ring-primary resize-none" 
+                            placeholder="What's on your mind?" 
+                            rows={3}
+                            value={newPostContent}
+                            onChange={(e) => setNewPostContent(e.target.value)}
+                            disabled={isSubmitting}
+                          />
+                          {imagePreview && (
+                              <div className="relative w-32 h-32 mt-2 rounded-md overflow-hidden border border-[#233648]">
+                                  <Image src={imagePreview} alt="Image preview" layout="fill" objectFit="cover" />
+                                  <Button variant="destructive" size="icon" className="absolute top-1 right-1 h-6 w-6" onClick={removeImage}>
+                                      <X className="w-4 h-4" />
+                                  </Button>
+                              </div>
+                          )}
+                          <div className="flex justify-between items-center mt-3">
+                              <div className="flex gap-2 text-gray-400">
+                                  <input type="file" accept="image/*" ref={fileInputRef} onChange={handleImageChange} className="hidden" />
+                                  <button type="button" onClick={() => fileInputRef.current?.click()} className="hover:text-primary transition-colors"><ImageIcon/></button>
+                              </div>
+                              <Button type="submit" disabled={isSubmitting || (!newPostContent.trim() && !postImage)}>
+                                  {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                  Post
+                              </Button>
+                          </div>
+                      </div>
+                  </div>
+              </form>
+            )}
 
-            <form onSubmit={handleCreatePost} className="bg-[#1a2836] p-4 rounded-lg mb-6">
-                <div className="flex items-start gap-4">
-                    <Avatar className="w-11 h-11 mt-1">
-                        <AvatarFallback><User /></AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1">
-                        <Textarea 
-                          className="w-full bg-[#233648] text-white placeholder-gray-400 border-none rounded-lg p-3 focus:ring-2 focus:ring-primary resize-none" 
-                          placeholder="What's on your mind?" 
-                          rows={3}
-                          value={newPostContent}
-                          onChange={(e) => setNewPostContent(e.target.value)}
-                          disabled={isSubmitting}
-                        />
-                        {imagePreview && (
-                            <div className="relative w-32 h-32 mt-2 rounded-md overflow-hidden border border-[#233648]">
-                                <Image src={imagePreview} alt="Image preview" layout="fill" objectFit="cover" />
-                                <Button variant="destructive" size="icon" className="absolute top-1 right-1 h-6 w-6" onClick={removeImage}>
-                                    <X className="w-4 h-4" />
-                                </Button>
-                            </div>
-                        )}
-                        <div className="flex justify-between items-center mt-3">
-                            <div className="flex gap-2 text-gray-400">
-                                <input type="file" accept="image/*" ref={fileInputRef} onChange={handleImageChange} className="hidden" />
-                                <button type="button" onClick={() => fileInputRef.current?.click()} className="hover:text-primary transition-colors"><ImageIcon/></button>
-                            </div>
-                            <Button type="submit" disabled={isSubmitting || (!newPostContent.trim() && !postImage)}>
-                                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                Post
-                            </Button>
-                        </div>
-                    </div>
-                </div>
-            </form>
 
             {isLoading ? (
                 <div className="flex justify-center py-10">
