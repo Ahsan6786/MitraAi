@@ -4,7 +4,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { db } from '@/lib/firebase';
-import { collection, query, where, onSnapshot, orderBy, Timestamp, doc, updateDoc, or } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, orderBy, Timestamp, doc, updateDoc, getDocs, documentId } from 'firebase/firestore';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Loader2, CheckCircle, Clock, XCircle, Ban, CalendarClock, ShieldQuestion } from 'lucide-react';
@@ -97,23 +97,54 @@ export default function MyAppointmentsPage() {
     useEffect(() => {
         if (!user) return;
 
-        // Query for bookings made by the user, ordered by creation date
-        const q = query(
-            collection(db, 'bookings'),
-            where('student_id', '==', user.uid),
-            orderBy('createdAt', 'desc')
-        );
+        const fetchBookings = async () => {
+            setIsLoading(true);
+            try {
+                // Fetch user-specific bookings
+                const userBookingsQuery = query(
+                    collection(db, 'bookings'),
+                    where('student_id', '==', user.uid)
+                );
+                
+                // Fetch anonymous bookings from local storage
+                const anonymousBookingIds = JSON.parse(localStorage.getItem('anonymousBookingIds') || '[]');
+                let anonymousBookings: Booking[] = [];
+                if (anonymousBookingIds.length > 0) {
+                    const anonymousBookingsQuery = query(
+                        collection(db, 'bookings'),
+                        where(documentId(), 'in', anonymousBookingIds)
+                    );
+                    const anonymousSnapshot = await getDocs(anonymousBookingsQuery);
+                    anonymousBookings = anonymousSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Booking));
+                }
 
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-            const bookingsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Booking));
-            setBookings(bookingsData);
-            setIsLoading(false);
-        }, (error) => {
-            console.error("Firestore snapshot error:", error);
-            setIsLoading(false);
-        });
+                // Listen for real-time updates on user-specific bookings
+                const unsubscribe = onSnapshot(userBookingsQuery, (snapshot) => {
+                    const userBookings = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Booking));
+                    
+                    // Combine and de-duplicate bookings
+                    const allBookings = [...userBookings, ...anonymousBookings];
+                    const uniqueBookings = Array.from(new Map(allBookings.map(item => [item.id, item])).values());
+                    
+                    // Sort bookings by creation date
+                    uniqueBookings.sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis());
 
-        return () => unsubscribe();
+                    setBookings(uniqueBookings);
+                    setIsLoading(false);
+                }, (error) => {
+                    console.error("Firestore snapshot error:", error);
+                    setIsLoading(false);
+                });
+
+                return () => unsubscribe();
+
+            } catch (error) {
+                 console.error("Error fetching bookings:", error);
+                 setIsLoading(false);
+            }
+        };
+
+        fetchBookings();
     }, [user]);
 
     const handleCancelBooking = async (bookingId: string) => {
@@ -214,5 +245,3 @@ export default function MyAppointmentsPage() {
         </div>
     );
 }
-
-    

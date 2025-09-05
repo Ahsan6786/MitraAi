@@ -90,7 +90,7 @@ function BookingDialog({ counsellor, user, isOpen, onOpenChange }: { counsellor:
             const time = `${hour}:${minute} ${ampm}`;
             const studentCode = isAnonymous ? generateStudentCode() : null;
 
-            await addDoc(collection(db, 'bookings'), {
+            const newBooking = {
                 student_id: isAnonymous ? null : user.uid,
                 student_email: isAnonymous ? null : user.email,
                 student_phone: isAnonymous ? null : (user.phoneNumber || null),
@@ -109,11 +109,17 @@ function BookingDialog({ counsellor, user, isOpen, onOpenChange }: { counsellor:
                 counsellor_notes: null,
                 created_at: serverTimestamp(),
                 updated_at: serverTimestamp(),
-            });
+            };
+
+            const docRef = await addDoc(collection(db, 'bookings'), newBooking);
             
             let toastDescription = 'Your request has been sent to the counsellor.';
             if (isAnonymous && studentCode) {
                 toastDescription += ` Your anonymous code is ${studentCode}. Please save it.`
+                // Save anonymous booking ID to local storage
+                const anonymousBookingIds = JSON.parse(localStorage.getItem('anonymousBookingIds') || '[]');
+                anonymousBookingIds.push(docRef.id);
+                localStorage.setItem('anonymousBookingIds', JSON.stringify(anonymousBookingIds));
             }
 
             toast({ title: 'Appointment Booked!', description: toastDescription });
