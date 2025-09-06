@@ -127,6 +127,8 @@ service cloud.firestore {
       match /messages/{messageId} {
         // Only group members can read/write messages
         allow read, create: if request.auth != null && get(/databases/$(database)/documents/groups/$(groupId)).data.members.hasAny([request.auth.uid]);
+        // Only the sender of the message can delete it.
+        allow delete: if request.auth != null && resource.data.senderId == request.auth.uid;
       }
     }
   }
