@@ -30,6 +30,7 @@ import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { formatDistanceToNow } from 'date-fns';
+import { Separator } from '@/components/ui/separator';
 
 interface Message {
   id: string;
@@ -70,7 +71,7 @@ function GroupInfoDialog({ group, groupId }: { group: Group, groupId: string }) 
 
     const groupAdmins = group.admins || []; // Safely default to an empty array
     const isSuperAdmin = user?.uid === group.createdBy;
-    const isAdmin = groupAdmins.includes(user?.uid || '');
+    const isAdmin = groupAdmins.includes(user?.uid || '') || isSuperAdmin;
 
     useEffect(() => {
         const fetchMembers = async () => {
@@ -143,6 +144,32 @@ function GroupInfoDialog({ group, groupId }: { group: Group, groupId: string }) 
         toast({ title: "You have left the group." });
         router.push('/groups');
     };
+    
+    const handleDeleteGroup = async () => {
+        if (!isAdmin) return;
+        setIsLoading(true);
+        try {
+            // Delete all messages in the subcollection first
+            const messagesQuery = query(collection(db, `groups/${groupId}/messages`));
+            const messagesSnapshot = await getDocs(messagesQuery);
+            const batch = writeBatch(db);
+            messagesSnapshot.forEach(doc => {
+                batch.delete(doc.ref);
+            });
+            await batch.commit();
+
+            // Then delete the group document itself
+            await deleteDoc(doc(db, 'groups', groupId));
+
+            toast({ title: "Group Deleted", description: "The group and all its messages have been removed." });
+            router.push('/groups');
+        } catch (error) {
+            console.error("Error deleting group:", error);
+            toast({ title: "Error", description: "Could not delete the group.", variant: "destructive" });
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     const handleToggleAdmin = async (memberId: string) => {
         if (!isSuperAdmin) return;
@@ -181,6 +208,7 @@ function GroupInfoDialog({ group, groupId }: { group: Group, groupId: string }) 
                                 <div className="flex items-center gap-3">
                                     <Avatar className="w-8 h-8"><AvatarFallback>{member.displayName[0]}</AvatarFallback></Avatar>
                                     <span>{member.displayName}</span>
+                                    {group.createdBy === member.id && <Badge variant="secondary">Creator</Badge>}
                                     {groupAdmins.includes(member.id) && <Badge variant="secondary">Admin</Badge>}
                                 </div>
                                 {isAdmin && user?.uid !== member.id && (
@@ -200,32 +228,59 @@ function GroupInfoDialog({ group, groupId }: { group: Group, groupId: string }) 
                 </ScrollArea>
             </div>
             <DialogFooter className="flex-col gap-2">
-                <Dialog open={isAddMembersOpen} onOpenChange={setIsAddMembersOpen}>
-                    <DialogTrigger asChild><Button className="w-full"><UserPlus className="w-4 h-4 mr-2" />Add Members</Button></DialogTrigger>
-                    <DialogContent>
-                        <DialogHeader><DialogTitle>Add Friends to Group</DialogTitle></DialogHeader>
-                        <ScrollArea className="h-64 mt-4">
-                             <div className="space-y-4 pr-4">
-                                {friends.length === 0 && <p className="text-muted-foreground text-sm text-center">All your friends are already in this group.</p>}
-                                {friends.map(friend => (
-                                    <div key={friend.id} className="flex items-center justify-between">
-                                        <Label htmlFor={`friend-${friend.id}`} className="flex items-center gap-3 font-normal cursor-pointer">
-                                            <Avatar><AvatarFallback>{friend.displayName[0]}</AvatarFallback></Avatar>
-                                            <span>{friend.displayName}</span>
-                                        </Label>
-                                        <Checkbox id={`friend-${friend.id}`} checked={selectedFriends.includes(friend.id)} onCheckedChange={() => setSelectedFriends(p => p.includes(friend.id) ? p.filter(id => id !== friend.id) : [...p, friend.id])} />
-                                    </div>
-                                ))}
-                            </div>
-                        </ScrollArea>
-                        <DialogFooter>
-                             <Button variant="outline" onClick={() => setIsAddMembersOpen(false)}>Cancel</Button>
-                             <Button onClick={handleAddMembers} disabled={isLoading || selectedFriends.length === 0}>{isLoading ? <Loader2 className="animate-spin mr-2"/> : null} Add to Group</Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
-
-                {!isAdmin && <Button variant="destructive" className="w-full" onClick={handleLeaveGroup}><LogOut className="w-4 h-4 mr-2"/>Leave Group</Button>}
+                {isAdmin && (
+                     <Dialog open={isAddMembersOpen} onOpenChange={setIsAddMembersOpen}>
+                        <DialogTrigger asChild><Button className="w-full"><UserPlus className="w-4 h-4 mr-2" />Add Members</Button></DialogTrigger>
+                        <DialogContent>
+                            <DialogHeader><DialogTitle>Add Friends to Group</DialogTitle></DialogHeader>
+                            <ScrollArea className="h-64 mt-4">
+                                 <div className="space-y-4 pr-4">
+                                    {friends.length === 0 && <p className="text-muted-foreground text-sm text-center">All your friends are already in this group.</p>}
+                                    {friends.map(friend => (
+                                        <div key={friend.id} className="flex items-center justify-between">
+                                            <Label htmlFor={`friend-${friend.id}`} className="flex items-center gap-3 font-normal cursor-pointer">
+                                                <Avatar><AvatarFallback>{friend.displayName[0]}</AvatarFallback></Avatar>
+                                                <span>{friend.displayName}</span>
+                                            </Label>
+                                            <Checkbox id={`friend-${friend.id}`} checked={selectedFriends.includes(friend.id)} onCheckedChange={() => setSelectedFriends(p => p.includes(friend.id) ? p.filter(id => id !== friend.id) : [...p, friend.id])} />
+                                        </div>
+                                    ))}
+                                </div>
+                            </ScrollArea>
+                            <DialogFooter>
+                                 <Button variant="outline" onClick={() => setIsAddMembersOpen(false)}>Cancel</Button>
+                                 <Button onClick={handleAddMembers} disabled={isLoading || selectedFriends.length === 0}>{isLoading ? <Loader2 className="animate-spin mr-2"/> : null} Add to Group</Button>
+                            </DialogFooter>
+                        </DialogContent>
+                    </Dialog>
+                )}
+                
+                {group.createdBy !== user?.uid && <Button variant="destructive" className="w-full" onClick={handleLeaveGroup}><LogOut className="w-4 h-4 mr-2"/>Leave Group</Button>}
+                
+                {isAdmin && (
+                    <>
+                    <Separator className="my-2"/>
+                    <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                            <Button variant="destructive" className="w-full" disabled={isLoading}>
+                                <Trash2 className="w-4 h-4 mr-2" /> Delete Group
+                            </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>Are you sure you want to delete this group?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    This action cannot be undone. This will permanently delete the group and all of its messages for everyone.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={handleDeleteGroup}>Delete Group</AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                    </>
+                )}
             </DialogFooter>
         </DialogContent>
     )

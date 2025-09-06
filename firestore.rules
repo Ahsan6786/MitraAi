@@ -1,3 +1,4 @@
+
 rules_version = '2';
 
 service cloud.firestore {
@@ -117,17 +118,23 @@ service cloud.firestore {
     }
     
     // GROUPS
-    // Any authenticated user can create a group.
-    // Group members can read, get, and update their group's data.
+    function isGroupMember() {
+      return get(/databases/$(database)/documents/groups/$(groupId)).data.members.hasAny([request.auth.uid]);
+    }
+
+    function isGroupAdmin() {
+        let groupData = get(/databases/$(database)/documents/groups/$(groupId)).data;
+        return request.auth.uid == groupData.createdBy || (groupData.admins != null && request.auth.uid in groupData.admins);
+    }
+
     match /groups/{groupId} {
       allow create: if request.auth != null;
-      allow read, update: if request.auth != null && resource.data.members.hasAny([request.auth.uid]);
+      allow read, update: if request.auth != null && isGroupMember();
+      allow delete: if request.auth != null && isGroupAdmin();
     
       // MESSAGES SUBCOLLECTION
       match /messages/{messageId} {
-        // Only group members can read/write messages
-        allow read, create: if request.auth != null && get(/databases/$(database)/documents/groups/$(groupId)).data.members.hasAny([request.auth.uid]);
-        // Only the sender of the message can delete it.
+        allow read, create: if request.auth != null && isGroupMember();
         allow delete: if request.auth != null && resource.data.senderId == request.auth.uid;
       }
     }
