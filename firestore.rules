@@ -33,37 +33,37 @@ service cloud.firestore {
     // USERS (for profile data like companionName)
     match /users/{userId} {
       // Users can read and write their own profile document.
-      allow read, update: if request.auth.uid == userId;
+      allow read, update: if request.auth != null && request.auth.uid == userId;
       // Any authenticated user can read public profile data (displayName, email) for friend requests.
       allow get: if request.auth != null;
       
       // FRIEND REQUESTS SUBCOLLECTION
       match /friendRequests/{senderId} {
         // Logged-in users can send a request (create a doc in the recipient's subcollection).
-        allow create: if request.auth.uid == senderId;
+        allow create: if request.auth != null && request.auth.uid == senderId;
         // The recipient can read/delete their own requests.
-        allow read, delete: if request.auth.uid == userId;
+        allow read, delete: if request.auth != null && request.auth.uid == userId;
         // Any logged-in user can check if they have a pending request with another user.
-        allow get: if request.auth.uid == userId || request.auth.uid == senderId;
+        allow get: if request.auth != null && (request.auth.uid == userId || request.auth.uid == senderId);
         // Allow a user to list their own friend requests
-        allow list: if request.auth.uid == userId;
+        allow list: if request.auth != null && request.auth.uid == userId;
       }
       
       // FRIENDS SUBCOLLECTION
       match /friends/{friendId} {
          // Users can read their own friends list.
-        allow read: if request.auth.uid == userId;
+        allow read: if request.auth != null && request.auth.uid == userId;
         // Any logged-in user can check if they are friends with another user
-        allow get: if request.auth.uid == userId || request.auth.uid == friendId;
+        allow get: if request.auth != null && (request.auth.uid == userId || request.auth.uid == friendId);
         // This rule allows the batch write to happen when a request is accepted.
         // Also allows a user to delete a friend.
-        allow write, delete: if request.auth.uid == userId || request.auth.uid == friendId;
+        allow write, delete: if request.auth != null && (request.auth.uid == userId || request.auth.uid == friendId);
       }
 
       // CHAT HISTORY SUBCOLLECTION
       match /chatHistory/{messageId} {
         // Users can read and create messages in their own chat history.
-        allow read, create: if request.auth.uid == userId;
+        allow read, create: if request.auth != null && request.auth.uid == userId;
         // Nobody can update or delete messages.
         allow update, delete: if false;
       }
@@ -72,23 +72,23 @@ service cloud.firestore {
     // JOURNAL ENTRIES
     // Users can only access their own entries. Admin can read/update for review.
     match /journalEntries/{entryId} {
-      allow read, update, delete: if isOwner(resource.data);
-      allow create: if request.resource.data.userId == request.auth.uid;
-      allow list: if request.query.get('userId') == request.auth.uid;
+      allow read, update, delete: if request.auth != null && isOwner(resource.data);
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow list: if request.auth != null && request.query.where.get('userId') == request.auth.uid;
       
       // Admin permissions for review
-      allow get, list, update: if isAdmin();
+      allow get, list, update: if request.auth != null && isAdmin();
     }
 
     // QUESTIONNAIRES
     // Users can only access their own. Admin can read/update for review.
     match /questionnaires/{questionnaireId} {
-      allow read, update, delete: if isOwner(resource.data);
-      allow create: if request.resource.data.userId == request.auth.uid;
-      allow list: if request.query.get('userId') == request.auth.uid;
+      allow read, update, delete: if request.auth != null && isOwner(resource.data);
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow list: if request.auth != null && request.query.where.get('userId') == request.auth.uid;
 
       // Admin permissions for review
-      allow get, list, update: if isAdmin();
+      allow get, list, update: if request.auth != null && isAdmin();
     }
 
     // COUNSELLORS
@@ -97,16 +97,16 @@ service cloud.firestore {
     match /counsellors/{counsellorId} {
       allow read: if request.auth != null; // Allows role checks and listing for booking
       allow create: if request.auth != null; // Allow new applications
-      allow update, delete: if isAdmin();
+      allow update, delete: if request.auth != null && isAdmin();
     }
 
     // BOOKINGS
     // Users can manage their own bookings. Counsellors can manage theirs.
     match /bookings/{bookingId} {
-      allow read, update: if isOwner(resource.data) || (isApprovedCounsellor() && resource.data.counsellor_id == request.auth.uid);
+      allow read, update: if request.auth != null && (isOwner(resource.data) || (isApprovedCounsellor() && resource.data.counsellor_id == request.auth.uid));
       // Allow creation for both normal and anonymous bookings
-      allow create: if request.resource.data.student_id == request.auth.uid || request.resource.data.is_anonymous == true;
-      allow list: if request.query.get('student_id') == request.auth.uid || (isApprovedCounsellor() && request.query.get('counsellor_id') == request.auth.uid);
+      allow create: if request.auth != null && (request.resource.data.student_id == request.auth.uid || request.resource.data.is_anonymous == true);
+      allow list: if request.auth != null && (request.query.where.get('student_id') == request.auth.uid || (isApprovedCounsellor() && request.query.where.get('counsellor_id') == request.auth.uid));
     }
 
     // POSTS
@@ -114,35 +114,34 @@ service cloud.firestore {
     // Any user can update the commentCount, likeCount, and likedBy fields.
     match /posts/{postId} {
       allow read, create: if request.auth != null;
-      allow update: if request.resource.data.diff(resource.data).affectedKeys().hasOnly(['commentCount', 'likeCount', 'likedBy']);
-      allow delete: if isOwner(resource.data) || isAdmin();
+      allow update: if request.auth != null && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['commentCount', 'likeCount', 'likedBy']);
+      allow delete: if request.auth != null && (isOwner(resource.data) || isAdmin());
 
       // COMMENTS SUBCOLLECTION
       match /comments/{commentId} {
         allow read, create: if request.auth != null;
-        allow update: if isAdmin(); // Admin can hide comments
-        allow delete: if isOwner(resource.data) || isAdmin();
+        allow update: if request.auth != null && isAdmin(); // Admin can hide comments
+        allow delete: if request.auth != null && (isOwner(resource.data) || isAdmin());
       }
     }
     
     // GROUPS
     // Any authenticated user can create a group.
+    // Group members can read, get, and update their group's data.
     match /groups/{groupId} {
       allow create: if request.auth != null;
-      // Group members can read, get, and update their group's data.
-      // Also handles the case where the document is deleted but a listener is still attached.
-      allow read, update: if (resource == null) || (request.auth != null && resource.data.members.hasAny([request.auth.uid]));
+      allow read, update: if request.auth != null && (resource == null || resource.data.members.hasAny([request.auth.uid]));
       // Allow listing groups where the user is a member
       allow list: if request.auth != null && request.query.where.get('members').get('array-contains') == request.auth.uid;
-      // Only a group admin or creator can delete a group.
-      allow delete: if request.auth != null && isGroupAdmin(resource.data);
+      allow delete: if request.auth != null && isGroupCreator(resource.data);
     
       // MESSAGES SUBCOLLECTION
       match /messages/{messageId} {
         // Only group members can read/write messages
         allow read, create: if request.auth != null && get(/databases/$(database)/documents/groups/$(groupId)).data.members.hasAny([request.auth.uid]);
-        // A message can be deleted by its sender OR by a group admin.
-        allow delete: if request.auth != null && (resource.data.senderId == request.auth.uid || isGroupAdmin(get(/databases/$(database)/documents/groups/$(groupId)).data));
+        // Allow deletion by message sender OR the group's original creator
+        allow delete: if request.auth != null && 
+                       (resource.data.senderId == request.auth.uid || isGroupCreator(get(/databases/$(database)/documents/groups/$(groupId)).data));
       }
     }
   }
