@@ -16,9 +16,9 @@ service cloud.firestore {
       return request.auth.uid == docData.createdBy;
     }
     
-    function isGroupAdmin(groupId) {
-      let groupData = get(/databases/$(database)/documents/groups/$(groupId)).data;
-      return ('admins' in groupData && request.auth.uid in groupData.admins) || request.auth.uid == groupData.createdBy;
+    function isGroupAdmin(docData) {
+      // Check if the 'admins' field exists and if the user is in it, OR if they are the creator.
+      return ('admins' in docData && request.auth.uid in docData.admins) || isGroupCreator(docData);
     }
 
     function isApprovedCounsellor() {
@@ -128,16 +128,21 @@ service cloud.firestore {
     // GROUPS
     match /groups/{groupId} {
       allow create: if request.auth != null;
-      allow read, update: if request.auth != null && resource.data.members.hasAny([request.auth.uid]);
+      // Allow read if user is a member OR if the resource doesn't exist (to prevent errors on delete)
+      allow read: if request.auth != null && (resource == null || resource.data.members.hasAny([request.auth.uid]));
+      allow update: if request.auth != null && resource.data.members.hasAny([request.auth.uid]);
+      // Allow listing groups where the user is a member
       allow list: if request.auth != null && request.query.where.get('members').get('array-contains') == request.auth.uid;
       // Only the group creator can delete the group
       allow delete: if request.auth != null && isGroupCreator(resource.data);
     
       // MESSAGES SUBCOLLECTION
       match /messages/{messageId} {
+        // Only group members can read/write messages
         allow read, create: if request.auth != null && get(/databases/$(database)/documents/groups/$(groupId)).data.members.hasAny([request.auth.uid]);
-        // Allow deletion by the sender OR the group creator
-        allow delete: if request.auth != null && (resource.data.senderId == request.auth.uid || isGroupCreator(get(/databases/$(database)/documents/groups/$(groupId)).data));
+        // A user can delete their own message, or the group creator can delete any message.
+        allow delete: if request.auth != null && 
+                       (resource.data.senderId == request.auth.uid || isGroupCreator(get(/databases/$(database)/documents/groups/$(groupId)).data));
       }
     }
   }
@@ -145,16 +150,27 @@ service cloud.firestore {
 
 service firebase.storage {
   match /b/{bucket}/o {
-    // Allow users to upload their own profile pictures
+    // Profile Pictures:
+    // - Allow authenticated users to write (create, update) to their own folder.
+    // - The user ID in the path must match the authenticated user's ID.
+    // - Limit file size to 5MB.
+    // - Only allow JPEG and PNG image types.
     match /profile-pictures/{userId}/{fileName} {
-      allow read: if true;
-      allow write: if request.auth != null && request.auth.uid == userId;
+      allow read: if true; // Public read access for profile pictures
+      allow write: if request.auth != null 
+                    && request.auth.uid == userId
+                    && request.resource.size < 5 * 1024 * 1024
+                    && request.resource.contentType.matches('image/(jpeg|png)');
     }
 
-    // Allow users to upload images to community posts
+    // Community Images:
+    // - Allow any authenticated user to write.
+    // - Limit file size to 5MB and specific image types.
     match /community/{userId}/{fileName} {
       allow read: if true;
-      allow write: if request.auth != null && request.auth.uid == userId;
+      allow write: if request.auth != null
+                    && request.resource.size < 5 * 1024 * 1024
+                    && request.resource.contentType.matches('image/(jpeg|png|gif)');
     }
   }
 }

@@ -98,7 +98,7 @@ export default function ProfilePage() {
                 city: city.trim(),
                 displayName: displayName.trim(),
                 email: user.email,
-                photoURL: photoURL
+                photoURL: photoURL // Ensure this is always included
             }, { merge: true });
 
             toast({ title: "Profile Updated", description: "Your changes have been successfully saved." });
