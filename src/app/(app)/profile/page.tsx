@@ -69,7 +69,10 @@ export default function ProfilePage() {
 
     const handleUpdateProfile = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!user) return;
+        if (!user || !auth.currentUser) {
+             toast({ title: "Not authenticated", variant: "destructive" });
+            return;
+        }
         if (!displayName.trim()) {
             toast({ title: "Name is required", variant: "destructive" });
             return;
@@ -87,8 +90,8 @@ export default function ProfilePage() {
                 photoURL = await getDownloadURL(snapshot.ref);
             }
 
-            // 2. Update Auth profile
-            await updateProfile(user, { displayName, photoURL });
+            // 2. Update Auth profile using auth.currentUser
+            await updateProfile(auth.currentUser, { displayName, photoURL });
             
             // 3. Update Firestore user data
             const userDocRef = doc(db, 'users', user.uid);
@@ -98,7 +101,7 @@ export default function ProfilePage() {
                 city: city.trim(),
                 displayName: displayName.trim(),
                 email: user.email,
-                photoURL: photoURL // Ensure this is always included
+                photoURL: photoURL // This part was fixed
             }, { merge: true });
 
             toast({ title: "Profile Updated", description: "Your changes have been successfully saved." });
@@ -126,6 +129,10 @@ export default function ProfilePage() {
             <header className="border-b p-3 md:p-4 flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
                     <SidebarTrigger className="md:hidden" />
+                    <Avatar>
+                        <AvatarImage src={user?.photoURL ?? undefined} />
+                        <AvatarFallback>{userAvatarFallback.toUpperCase()}</AvatarFallback>
+                    </Avatar>
                     <div>
                         <h1 className="text-lg md:text-xl font-bold">Your Profile</h1>
                         <p className="text-sm text-muted-foreground">Manage your account settings.</p>
