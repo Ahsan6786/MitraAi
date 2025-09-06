@@ -1,22 +1,24 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { updateProfile } from 'firebase/auth';
-import { auth, db } from '@/lib/firebase';
+import { auth, db, storage } from '@/lib/firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Loader2, User, Bot, MapPin } from 'lucide-react';
+import { Loader2, User, Bot, MapPin, Edit } from 'lucide-react';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { useToast } from '@/hooks/use-toast';
 import { GenZToggle } from '@/components/genz-toggle';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { allIndianStates } from '@/lib/states-data';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 
 export default function ProfilePage() {
@@ -26,12 +28,16 @@ export default function ProfilePage() {
     const [companionName, setCompanionName] = useState('');
     const [state, setState] = useState('');
     const [city, setCity] = useState('');
+    const [photoFile, setPhotoFile] = useState<File | null>(null);
+    const [photoPreview, setPhotoPreview] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isLoadingData, setIsLoadingData] = useState(true);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
         if (user) {
             setDisplayName(user.displayName || '');
+            setPhotoPreview(user.photoURL);
             const fetchProfileData = async () => {
                 const userDocRef = doc(db, 'users', user.uid);
                 const docSnap = await getDoc(userDocRef);
@@ -49,6 +55,18 @@ export default function ProfilePage() {
         }
     }, [user, loading]);
 
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            setPhotoFile(file);
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setPhotoPreview(reader.result as string);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
     const handleUpdateProfile = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!user) return;
@@ -59,20 +77,32 @@ export default function ProfilePage() {
 
         setIsSubmitting(true);
         try {
-            // Update Auth display name
-            await updateProfile(user, { displayName });
+            let photoURL = user.photoURL;
+
+            // 1. Upload new photo if one is selected
+            if (photoFile) {
+                const filePath = `profile-pictures/${user.uid}/${photoFile.name}`;
+                const storageRef = ref(storage, filePath);
+                const snapshot = await uploadBytes(storageRef, photoFile);
+                photoURL = await getDownloadURL(snapshot.ref);
+            }
+
+            // 2. Update Auth profile
+            await updateProfile(user, { displayName, photoURL });
             
-            // Update Firestore user data
+            // 3. Update Firestore user data
             const userDocRef = doc(db, 'users', user.uid);
             await setDoc(userDocRef, { 
                 companionName: companionName.trim(),
                 state: state.trim(),
                 city: city.trim(),
                 displayName: displayName.trim(),
-                email: user.email
+                email: user.email,
+                photoURL: photoURL
             }, { merge: true });
 
             toast({ title: "Profile Updated", description: "Your changes have been successfully saved." });
+            setPhotoFile(null); // Reset file input after successful upload
         } catch (error: any) {
             console.error("Error updating profile:", error);
             toast({ title: "Update Failed", description: error.message, variant: "destructive" });
@@ -88,6 +118,8 @@ export default function ProfilePage() {
             </div>
         );
     }
+
+    const userAvatarFallback = user?.displayName?.[0] || user?.email?.[0] || 'U';
 
     return (
         <div className="h-full flex flex-col">
@@ -115,6 +147,32 @@ export default function ProfilePage() {
                             <CardDescription>Update your personal and companion settings below.</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-6">
+                            <div className="flex flex-col items-center gap-4">
+                                <div className="relative">
+                                    <Avatar className="w-24 h-24 border-2 border-primary/50">
+                                        <AvatarImage src={photoPreview || undefined} />
+                                        <AvatarFallback className="text-3xl">{userAvatarFallback.toUpperCase()}</AvatarFallback>
+                                    </Avatar>
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="icon"
+                                        className="absolute bottom-0 right-0 rounded-full h-8 w-8"
+                                        onClick={() => fileInputRef.current?.click()}
+                                    >
+                                        <Edit className="w-4 h-4"/>
+                                        <span className="sr-only">Change profile picture</span>
+                                    </Button>
+                                    <Input 
+                                        type="file" 
+                                        ref={fileInputRef}
+                                        className="hidden" 
+                                        accept="image/png, image/jpeg"
+                                        onChange={handleFileChange}
+                                    />
+                                </div>
+                            </div>
+
                             <div className="space-y-2">
                                 <Label htmlFor="email">Email</Label>
                                 <Input id="email" type="email" value={user?.email || ''} disabled />
@@ -178,7 +236,7 @@ export default function ProfilePage() {
                                 />
                                 <p className="text-xs text-muted-foreground">Give your AI companion a custom name.</p>
                             </div>
-                             <Button type="submit" disabled={isSubmitting}>
+                             <Button type="submit" disabled={isSubmitting} className="w-full">
                                 {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                 Save Changes
                             </Button>
