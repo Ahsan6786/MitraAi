@@ -22,7 +22,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 
 export default function ProfilePage() {
-    const { user, loading } = useAuth();
+    const { user, loading, reloadUser } = useAuth();
     const { toast } = useToast();
     const [displayName, setDisplayName] = useState('');
     const [companionName, setCompanionName] = useState('');
@@ -69,7 +69,8 @@ export default function ProfilePage() {
 
     const handleUpdateProfile = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!user || !auth.currentUser) {
+        const currentUser = auth.currentUser;
+        if (!currentUser) {
              toast({ title: "Not authenticated", variant: "destructive" });
             return;
         }
@@ -80,32 +81,32 @@ export default function ProfilePage() {
 
         setIsSubmitting(true);
         try {
-            let photoURL = user.photoURL;
+            let photoURL = currentUser.photoURL;
 
-            // 1. Upload new photo if one is selected
             if (photoFile) {
-                const filePath = `profile-pictures/${user.uid}/${photoFile.name}`;
+                const filePath = `profile-pictures/${currentUser.uid}/${photoFile.name}`;
                 const storageRef = ref(storage, filePath);
                 const snapshot = await uploadBytes(storageRef, photoFile);
                 photoURL = await getDownloadURL(snapshot.ref);
             }
 
-            // 2. Update Auth profile using auth.currentUser
-            await updateProfile(auth.currentUser, { displayName, photoURL });
+            await updateProfile(currentUser, { displayName, photoURL });
             
-            // 3. Update Firestore user data
-            const userDocRef = doc(db, 'users', user.uid);
+            const userDocRef = doc(db, 'users', currentUser.uid);
             await setDoc(userDocRef, { 
                 companionName: companionName.trim(),
                 state: state.trim(),
                 city: city.trim(),
                 displayName: displayName.trim(),
-                email: user.email,
-                photoURL: photoURL // This part was fixed
+                email: currentUser.email,
+                photoURL: photoURL
             }, { merge: true });
 
+            // Manually reload the user to get the latest auth state
+            await reloadUser();
+
             toast({ title: "Profile Updated", description: "Your changes have been successfully saved." });
-            setPhotoFile(null); // Reset file input after successful upload
+            setPhotoFile(null);
         } catch (error: any) {
             console.error("Error updating profile:", error);
             toast({ title: "Update Failed", description: error.message, variant: "destructive" });
