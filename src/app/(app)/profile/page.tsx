@@ -104,6 +104,11 @@ export default function ProfilePage() {
 
             // Manually reload the user to get the latest auth state
             await reloadUser();
+            
+            // Directly update the preview state to ensure UI consistency
+            if (photoURL) {
+                setPhotoPreview(photoURL);
+            }
 
             toast({ title: "Profile Updated", description: "Your changes have been successfully saved." });
             setPhotoFile(null);

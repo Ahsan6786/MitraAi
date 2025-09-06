@@ -41,9 +41,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const currentUser = auth.currentUser;
     if (currentUser) {
       await currentUser.reload();
-      // onAuthStateChanged will trigger with the new user data
-      // For immediate feedback, we can optimistically set it, but the listener is safer
-      setUser({ ...currentUser });
+      // After reloading, get the fresh user object and update the state directly
+      // This is more reliable than waiting for onAuthStateChanged to fire
+      setUser(auth.currentUser);
     }
   }, []);
 
