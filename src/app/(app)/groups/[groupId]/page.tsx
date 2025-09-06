@@ -29,6 +29,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
+import { formatDistanceToNow } from 'date-fns';
 
 interface Message {
   id: string;
@@ -365,11 +366,14 @@ export default function GroupChatPage() {
                                 <AvatarFallback>{msg.senderName?.[0] || 'U'}</AvatarFallback>
                             </Avatar>
                         )}
-                        <div className={cn("max-w-[70%]", msg.senderId === user?.uid ? 'items-end' : 'items-start')}>
-                            {msg.senderId !== user?.uid && <p className="text-xs text-muted-foreground mb-1">{msg.senderName}</p>}
+                        <div className={cn("flex flex-col max-w-[70%]", msg.senderId === user?.uid ? 'items-end' : 'items-start')}>
+                           {msg.senderId !== user?.uid && <p className="text-xs text-muted-foreground mb-1">{msg.senderName}</p>}
                             <div className={cn('rounded-xl px-4 py-2 text-sm shadow-sm', msg.senderId === user?.uid ? 'bg-primary text-primary-foreground' : 'bg-muted')}>
                                 {msg.text}
                             </div>
+                             <p className="text-xs text-muted-foreground mt-1">
+                                {msg.createdAt ? formatDistanceToNow(msg.createdAt.toDate(), { addSuffix: true }) : ''}
+                            </p>
                         </div>
                         {msg.senderId === user?.uid && (
                             <Avatar className="w-8 h-8 border">
