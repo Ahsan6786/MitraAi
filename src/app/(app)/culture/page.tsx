@@ -1,6 +1,7 @@
 
 'use client';
 
+import { useState, useEffect } from 'react';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Card, CardContent } from '@/components/ui/card';
@@ -8,6 +9,7 @@ import Link from 'next/link';
 import { statesData, allIndianStates } from '@/lib/states-data';
 import { cn } from '@/lib/utils';
 import { GenZToggle } from '@/components/genz-toggle';
+import CultureIntroAnimation from '@/components/culture-intro-animation';
 
 // Simple hash function to generate a color from a string
 const stringToColor = (str: string) => {
@@ -30,7 +32,7 @@ const stringToColor2 = (str: string) => {
 };
 
 
-export default function CulturePage() {
+function CulturePageContent() {
     const availableStateIds = new Set(statesData.map(s => s.id));
 
     return (
@@ -93,4 +95,32 @@ export default function CulturePage() {
             </main>
         </div>
     );
+}
+
+export default function CulturePage() {
+    const [isClient, setIsClient] = useState(false);
+    const [showIntro, setShowIntro] = useState(true);
+
+    useEffect(() => {
+        setIsClient(true);
+        const hasSeenIntro = sessionStorage.getItem('hasSeenCultureIntro');
+        if (hasSeenIntro) {
+            setShowIntro(false);
+        }
+    }, []);
+
+    const handleIntroFinish = () => {
+        sessionStorage.setItem('hasSeenCultureIntro', 'true');
+        setShowIntro(false);
+    };
+
+    if (!isClient) {
+        return null; // Render nothing on the server to avoid hydration mismatch
+    }
+    
+    if (showIntro) {
+        return <CultureIntroAnimation onFinish={handleIntroFinish} />;
+    }
+
+    return <CulturePageContent />;
 }
