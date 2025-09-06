@@ -83,15 +83,20 @@ export default function ProfilePage() {
         try {
             let photoURL = currentUser.photoURL;
 
+            // Step 1: Upload new photo if one is selected
             if (photoFile) {
                 const filePath = `profile-pictures/${currentUser.uid}/${photoFile.name}`;
                 const storageRef = ref(storage, filePath);
                 const snapshot = await uploadBytes(storageRef, photoFile);
                 photoURL = await getDownloadURL(snapshot.ref);
+                // Immediately update the UI preview state with the final URL
+                setPhotoPreview(photoURL); 
             }
 
+            // Step 2: Update Firebase Auth profile
             await updateProfile(currentUser, { displayName, photoURL });
             
+            // Step 3: Update Firestore document
             const userDocRef = doc(db, 'users', currentUser.uid);
             await setDoc(userDocRef, { 
                 companionName: companionName.trim(),
@@ -99,19 +104,14 @@ export default function ProfilePage() {
                 city: city.trim(),
                 displayName: displayName.trim(),
                 email: currentUser.email,
-                photoURL: photoURL
+                photoURL: photoURL // Ensure this is always set
             }, { merge: true });
 
-            // Manually reload the user to get the latest auth state
+            // Step 4: Force a reload of the auth state to propagate changes app-wide
             await reloadUser();
             
-            // Directly update the preview state to ensure UI consistency
-            if (photoURL) {
-                setPhotoPreview(photoURL);
-            }
-
             toast({ title: "Profile Updated", description: "Your changes have been successfully saved." });
-            setPhotoFile(null);
+            setPhotoFile(null); // Clear the file input after successful upload
         } catch (error: any) {
             console.error("Error updating profile:", error);
             toast({ title: "Update Failed", description: error.message, variant: "destructive" });
