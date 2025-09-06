@@ -4,9 +4,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { db } from '@/lib/firebase';
-import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, doc, getDoc, Timestamp, updateDoc, arrayUnion, arrayRemove, getDocs, writeBatch } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, doc, getDoc, Timestamp, updateDoc, arrayUnion, arrayRemove, getDocs, writeBatch, deleteDoc } from 'firebase/firestore';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Loader2, Send, User, Users, MoreVertical, X, UserPlus, LogOut, Check, Edit } from 'lucide-react';
+import { ArrowLeft, Loader2, Send, User, Users, MoreVertical, X, UserPlus, LogOut, Check, Edit, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -14,6 +14,17 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -224,6 +235,7 @@ export default function GroupChatPage() {
   const params = useParams();
   const router = useRouter();
   const groupId = params.groupId as string;
+  const { toast } = useToast();
   
   const [group, setGroup] = useState<Group | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -290,6 +302,16 @@ export default function GroupChatPage() {
       console.error("Error sending message:", error);
     }
   };
+
+  const handleDeleteMessage = async (messageId: string) => {
+    try {
+        await deleteDoc(doc(db, `groups/${groupId}/messages`, messageId));
+        toast({ title: "Message Deleted" });
+    } catch (error) {
+        console.error("Error deleting message:", error);
+        toast({ title: "Error", description: "Could not delete message.", variant: "destructive" });
+    }
+  };
   
   if (isLoading || !group) {
     return <div className="flex h-full items-center justify-center"><Loader2 className="w-8 h-8 animate-spin" /></div>;
@@ -315,7 +337,29 @@ export default function GroupChatPage() {
          <ScrollArea className="h-full" ref={scrollAreaRef}>
             <div className="p-4 md:p-6 space-y-4">
                 {messages.map(msg => (
-                    <div key={msg.id} className={cn('flex items-start gap-3', msg.senderId === user?.uid ? 'justify-end' : 'justify-start')}>
+                    <div key={msg.id} className={cn('group flex items-start gap-3', msg.senderId === user?.uid ? 'justify-end' : 'justify-start')}>
+                        {msg.senderId === user?.uid && (
+                            <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <Trash2 className="w-4 h-4" />
+                                    </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                    <AlertDialogTitle>Delete Message?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        This will permanently delete your message. This action cannot be undone.
+                                    </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => handleDeleteMessage(msg.id)}>Delete</AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
+                        )}
+
                         {msg.senderId !== user?.uid && (
                             <Avatar className="w-8 h-8 border">
                                 <AvatarFallback>{msg.senderName?.[0] || 'U'}</AvatarFallback>
