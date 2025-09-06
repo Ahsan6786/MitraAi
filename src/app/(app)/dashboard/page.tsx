@@ -6,13 +6,14 @@ import { useAuth } from '@/hooks/use-auth';
 import { db } from '@/lib/firebase';
 import { collection, query, where, onSnapshot, orderBy, Timestamp } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, BarChart, LineChart } from 'lucide-react';
+import { Loader2, BarChart, LineChart, LayoutDashboard } from 'lucide-react';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { Bar, BarChart as RechartsBarChart, Line, LineChart as RechartsLineChart, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, LabelList } from 'recharts';
 import { subDays, format, eachDayOfInterval, startOfDay } from 'date-fns';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { GenZToggle } from '@/components/genz-toggle';
+import SectionIntroAnimation from '@/components/section-intro-animation';
 
 interface JournalEntry {
     id: string;
@@ -42,7 +43,7 @@ const valueToEmoji = (value: number): string => {
     }
 }
 
-export default function DashboardPage() {
+function DashboardPageContent() {
     const { user } = useAuth();
     const [entries, setEntries] = useState<JournalEntry[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -252,4 +253,38 @@ export default function DashboardPage() {
             </main>
         </div>
     );
+}
+
+export default function DashboardPage() {
+    const [isClient, setIsClient] = useState(false);
+    const [showIntro, setShowIntro] = useState(true);
+    const SESSION_KEY = 'hasSeenDashboardIntro';
+
+    useEffect(() => {
+        setIsClient(true);
+        const hasSeen = sessionStorage.getItem(SESSION_KEY);
+        if (hasSeen) {
+            setShowIntro(false);
+        }
+    }, []);
+
+    const handleIntroFinish = () => {
+        sessionStorage.setItem(SESSION_KEY, 'true');
+        setShowIntro(false);
+    };
+
+    if (!isClient) {
+        return null;
+    }
+    
+    if (showIntro) {
+        return <SectionIntroAnimation 
+            onFinish={handleIntroFinish} 
+            icon={<LayoutDashboard className="w-full h-full" />}
+            title="Dashboard"
+            subtitle="Visualize your mood patterns."
+        />;
+    }
+
+    return <DashboardPageContent />;
 }

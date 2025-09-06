@@ -3,7 +3,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
-import { Loader2, Mic, Square, Bot, Languages } from 'lucide-react';
+import { Loader2, Mic, Square, Bot, Languages, Phone } from 'lucide-react';
 import { chatEmpatheticTone } from '@/ai/flows/chat-empathetic-tone';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { textToSpeech } from '@/ai/flows/text-to-speech';
@@ -15,6 +15,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { GenZToggle } from '@/components/genz-toggle';
+import SectionIntroAnimation from '@/components/section-intro-animation';
 
 
 const SpeechRecognition =
@@ -51,7 +52,7 @@ const languages = [
     { value: 'German', label: 'German' },
 ];
 
-export default function TalkPage() {
+function TalkPageContent() {
   const [isLoading, setIsLoading] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [transcript, setTranscript] = useState('');
@@ -281,4 +282,38 @@ export default function TalkPage() {
       </div>
     </>
   );
+}
+
+export default function TalkPage() {
+    const [isClient, setIsClient] = useState(false);
+    const [showIntro, setShowIntro] = useState(true);
+    const SESSION_KEY = 'hasSeenTalkIntro';
+
+    useEffect(() => {
+        setIsClient(true);
+        const hasSeen = sessionStorage.getItem(SESSION_KEY);
+        if (hasSeen) {
+            setShowIntro(false);
+        }
+    }, []);
+
+    const handleIntroFinish = () => {
+        sessionStorage.setItem(SESSION_KEY, 'true');
+        setShowIntro(false);
+    };
+
+    if (!isClient) {
+        return null;
+    }
+    
+    if (showIntro) {
+        return <SectionIntroAnimation 
+            onFinish={handleIntroFinish} 
+            icon={<Phone className="w-full h-full" />}
+            title="Talk to Mitra"
+            subtitle="Have a live voice conversation."
+        />;
+    }
+
+    return <TalkPageContent />;
 }

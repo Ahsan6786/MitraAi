@@ -1,13 +1,15 @@
 
 'use client';
 
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { SidebarTrigger } from '@/components/ui/sidebar';
-import { Users, Heart, BrainCircuit, ShieldCheck, Handshake, FileQuestion } from 'lucide-react';
+import { Users, Heart, BrainCircuit, ShieldCheck, Handshake, FileQuestion, Info } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { GenZToggle } from '@/components/genz-toggle';
+import SectionIntroAnimation from '@/components/section-intro-animation';
 
-export default function AboutPage() {
+function AboutPageContent() {
     return (
         <div className="h-full flex flex-col">
             <header className="border-b p-3 md:p-4 flex items-center justify-between gap-2">
@@ -162,4 +164,39 @@ export default function AboutPage() {
             </main>
         </div>
     );
+}
+
+
+export default function AboutPage() {
+    const [isClient, setIsClient] = useState(false);
+    const [showIntro, setShowIntro] = useState(true);
+    const SESSION_KEY = 'hasSeenAboutIntro';
+
+    useEffect(() => {
+        setIsClient(true);
+        const hasSeen = sessionStorage.getItem(SESSION_KEY);
+        if (hasSeen) {
+            setShowIntro(false);
+        }
+    }, []);
+
+    const handleIntroFinish = () => {
+        sessionStorage.setItem(SESSION_KEY, 'true');
+        setShowIntro(false);
+    };
+
+    if (!isClient) {
+        return null;
+    }
+    
+    if (showIntro) {
+        return <SectionIntroAnimation 
+            onFinish={handleIntroFinish} 
+            icon={<Info className="w-full h-full" />}
+            title="About MitraAI"
+            subtitle="Discover our mission and vision."
+        />;
+    }
+
+    return <AboutPageContent />;
 }

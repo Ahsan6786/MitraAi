@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { GenZToggle } from '@/components/genz-toggle';
@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Sparkles, ArrowLeft, Wind, Waves, Laugh, Frown, Info } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import SectionIntroAnimation from '@/components/section-intro-animation';
 
 type Mood = 'stress' | 'anxiety' | 'sadness' | 'happiness';
 
@@ -51,7 +52,7 @@ const therapyVideos: TherapyVideo[] = [
   },
 ];
 
-export default function TherapyPage() {
+function TherapyPageContent() {
   const [selectedVideo, setSelectedVideo] = useState<TherapyVideo | null>(null);
 
   if (selectedVideo) {
@@ -149,4 +150,38 @@ export default function TherapyPage() {
       </main>
     </div>
   );
+}
+
+export default function TherapyPage() {
+    const [isClient, setIsClient] = useState(false);
+    const [showIntro, setShowIntro] = useState(true);
+    const SESSION_KEY = 'hasSeenTherapyIntro';
+
+    useEffect(() => {
+        setIsClient(true);
+        const hasSeen = sessionStorage.getItem(SESSION_KEY);
+        if (hasSeen) {
+            setShowIntro(false);
+        }
+    }, []);
+
+    const handleIntroFinish = () => {
+        sessionStorage.setItem(SESSION_KEY, 'true');
+        setShowIntro(false);
+    };
+
+    if (!isClient) {
+        return null;
+    }
+    
+    if (showIntro) {
+        return <SectionIntroAnimation 
+            onFinish={handleIntroFinish} 
+            icon={<Sparkles className="w-full h-full" />}
+            title="360° VR Therapy"
+            subtitle="An immersive healing experience."
+        />;
+    }
+
+    return <TherapyPageContent />;
 }

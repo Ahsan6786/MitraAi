@@ -13,7 +13,7 @@ import { Loader2, BookHeart, Trash2, Mic, PenSquare, AlertTriangle, FileText, Ch
 import { useToast } from '@/hooks/use-toast';
 import { predictUserMood } from '@/ai/flows/predict-user-mood';
 import { SidebarTrigger } from '@/components/ui/sidebar';
-import { ThemeToggle } from '@/components/theme-toggle';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { Badge } from '@/components/ui/badge';
 import {
   AlertDialog,
@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import Link from 'next/link';
 import { GenZToggle } from '@/components/genz-toggle';
+import SectionIntroAnimation from '@/components/section-intro-animation';
 
 interface JournalEntry {
   id: string;
@@ -111,7 +112,7 @@ function JournalEntryCard({ entry }: { entry: JournalEntry }) {
     )
 }
 
-export default function JournalPage() {
+function JournalPageContent() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [entry, setEntry] = useState('');
@@ -259,4 +260,38 @@ export default function JournalPage() {
       </main>
     </div>
   );
+}
+
+export default function JournalPage() {
+    const [isClient, setIsClient] = useState(false);
+    const [showIntro, setShowIntro] = useState(true);
+    const SESSION_KEY = 'hasSeenJournalIntro';
+
+    useEffect(() => {
+        setIsClient(true);
+        const hasSeen = sessionStorage.getItem(SESSION_KEY);
+        if (hasSeen) {
+            setShowIntro(false);
+        }
+    }, []);
+
+    const handleIntroFinish = () => {
+        sessionStorage.setItem(SESSION_KEY, 'true');
+        setShowIntro(false);
+    };
+
+    if (!isClient) {
+        return null;
+    }
+    
+    if (showIntro) {
+        return <SectionIntroAnimation 
+            onFinish={handleIntroFinish} 
+            icon={<BookHeart className="w-full h-full" />}
+            title="Your Journal"
+            subtitle="A private space for your thoughts."
+        />;
+    }
+
+    return <JournalPageContent />;
 }

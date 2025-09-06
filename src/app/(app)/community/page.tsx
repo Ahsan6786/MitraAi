@@ -57,6 +57,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
+import SectionIntroAnimation from '@/components/section-intro-animation';
 
 interface Post {
   id: string;
@@ -417,7 +418,7 @@ interface PostData {
     imageUrl?: string;
 }
 
-export default function CommunityPage() {
+function CommunityPageContent() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [posts, setPosts] = useState<Post[]>([]);
@@ -613,4 +614,38 @@ export default function CommunityPage() {
       </main>
     </div>
   );
+}
+
+export default function CommunityPage() {
+    const [isClient, setIsClient] = useState(false);
+    const [showIntro, setShowIntro] = useState(true);
+    const SESSION_KEY = 'hasSeenCommunityIntro';
+
+    useEffect(() => {
+        setIsClient(true);
+        const hasSeen = sessionStorage.getItem(SESSION_KEY);
+        if (hasSeen) {
+            setShowIntro(false);
+        }
+    }, []);
+
+    const handleIntroFinish = () => {
+        sessionStorage.setItem(SESSION_KEY, 'true');
+        setShowIntro(false);
+    };
+
+    if (!isClient) {
+        return null;
+    }
+    
+    if (showIntro) {
+        return <SectionIntroAnimation 
+            onFinish={handleIntroFinish} 
+            icon={<UsersIcon className="w-full h-full" />}
+            title="Community"
+            subtitle="Connect, share, and grow together."
+        />;
+    }
+
+    return <CommunityPageContent />;
 }

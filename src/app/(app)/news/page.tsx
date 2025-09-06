@@ -12,6 +12,7 @@ import { generateAiNews, GenerateAiNewsOutput } from '@/ai/flows/generate-ai-new
 import { generateImage } from '@/ai/flows/generate-image';
 import { useToast } from '@/hooks/use-toast';
 import { GenZToggle } from '@/components/genz-toggle';
+import SectionIntroAnimation from '@/components/section-intro-animation';
 
 interface NewsArticle {
     id: number;
@@ -21,7 +22,7 @@ interface NewsArticle {
 
 const BATCH_SIZE = 3;
 
-export default function NewsPage() {
+function NewsPageContent() {
     const [articles, setArticles] = useState<NewsArticle[]>([]);
     const [isGenerating, setIsGenerating] = useState(true); // Start generating on load
     const [isGeneratingMore, setIsGeneratingMore] = useState(false);
@@ -140,4 +141,38 @@ export default function NewsPage() {
             </main>
         </div>
     );
+}
+
+export default function NewsPage() {
+    const [isClient, setIsClient] = useState(false);
+    const [showIntro, setShowIntro] = useState(true);
+    const SESSION_KEY = 'hasSeenNewsIntro';
+
+    useEffect(() => {
+        setIsClient(true);
+        const hasSeen = sessionStorage.getItem(SESSION_KEY);
+        if (hasSeen) {
+            setShowIntro(false);
+        }
+    }, []);
+
+    const handleIntroFinish = () => {
+        sessionStorage.setItem(SESSION_KEY, 'true');
+        setShowIntro(false);
+    };
+
+    if (!isClient) {
+        return null;
+    }
+    
+    if (showIntro) {
+        return <SectionIntroAnimation 
+            onFinish={handleIntroFinish} 
+            icon={<Newspaper className="w-full h-full" />}
+            title="AI News Feed"
+            subtitle="The latest in AI, generated for you."
+        />;
+    }
+
+    return <NewsPageContent />;
 }

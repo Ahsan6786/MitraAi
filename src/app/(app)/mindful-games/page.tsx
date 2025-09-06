@@ -5,13 +5,14 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Play, Pause, RotateCcw, CheckCircle, Lightbulb, Gamepad2, ArrowLeft, Cat, Dog, Bird, Fish, Rabbit, Turtle, Bug, Snail, X, Circle } from 'lucide-react';
+import { Play, Pause, RotateCcw, CheckCircle, Lightbulb, Gamepad2, ArrowLeft, Cat, Dog, Bird, Fish, Rabbit, Turtle, Bug, Snail, X, Circle, Puzzle } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { cn } from '@/lib/utils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { GenZToggle } from '@/components/genz-toggle';
+import SectionIntroAnimation from '@/components/section-intro-animation';
 
 // --- Mindful Exercises Components ---
 
@@ -531,12 +532,12 @@ function TicTacToeGame() {
 const games = [
     { id: 'guess-the-number', name: 'Guess the Number', component: <GuessTheNumberGame />, description: "I'm thinking of a number between 1 and 100. Can you guess it?" },
     { id: 'memory-match', name: 'Memory Match', component: <MemoryMatchGame />, description: "Test your memory with this classic game. Match pairs of cards to clear the board and improve focus." },
-    { id: 'word-unscramble', name: 'Word Unscramble', component: <WordUnscrambleGame />, description: "Unscramble letters to form words. A fun way to boost your vocabulary and cognitive skills." },
+    { id: 'word-unscramble', name: 'Word Unscramble', component: <WordUnscrambleGame />, description: "Unscramble letters to form a word. A fun way to boost your vocabulary and cognitive skills." },
     { id: 'tic-tac-toe', name: 'Tic-Tac-Toe', component: <TicTacToeGame />, description: "A simple yet engaging game to challenge your strategic thinking. Play against the AI." },
 ];
 
 
-export default function MindfulGamesPage() {
+function MindfulGamesPageContent() {
     const [activeGame, setActiveGame] = useState<string | null>(null);
     const SelectedGameComponent = games.find(g => g.id === activeGame)?.component;
 
@@ -622,7 +623,7 @@ export default function MindfulGamesPage() {
                             <TabsContent value="listening">
                                 <Card className="text-center p-10">
                                     <h3 className="text-2xl font-bold">Mindful Listening</h3>
-                                    <p className="text-muted-foreground mt-2">Coming soon! An exercise to help you focus on the present moment through sound.</p>
+                                    <p className="text-muted-foreground mt-2">An exercise to help you focus on the present moment through sound.</p>
                                 </Card>
                             </TabsContent>
                         </div>
@@ -656,4 +657,38 @@ export default function MindfulGamesPage() {
     </div>
     </>
   );
+}
+
+export default function MindfulGamesPage() {
+    const [isClient, setIsClient] = useState(false);
+    const [showIntro, setShowIntro] = useState(true);
+    const SESSION_KEY = 'hasSeenGamesIntro';
+
+    useEffect(() => {
+        setIsClient(true);
+        const hasSeen = sessionStorage.getItem(SESSION_KEY);
+        if (hasSeen) {
+            setShowIntro(false);
+        }
+    }, []);
+
+    const handleIntroFinish = () => {
+        sessionStorage.setItem(SESSION_KEY, 'true');
+        setShowIntro(false);
+    };
+
+    if (!isClient) {
+        return null;
+    }
+    
+    if (showIntro) {
+        return <SectionIntroAnimation 
+            onFinish={handleIntroFinish} 
+            icon={<Puzzle className="w-full h-full" />}
+            title="Mindful Games"
+            subtitle="Engage your mind and find calm."
+        />;
+    }
+
+    return <MindfulGamesPageContent />;
 }
