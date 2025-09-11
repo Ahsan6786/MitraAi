@@ -3,7 +3,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
-import { Loader2, Mic, Square, Bot, Languages, Phone } from 'lucide-react';
+import { Loader2, Mic, Square, Bot, Languages, Phone, UserPlus } from 'lucide-react';
 import { chatEmpatheticTone } from '@/ai/flows/chat-empathetic-tone';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { textToSpeech } from '@/ai/flows/text-to-speech';
@@ -16,6 +16,12 @@ import { cn } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { GenZToggle } from '@/components/genz-toggle';
 import SectionIntroAnimation from '@/components/section-intro-animation';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 
 
 const SpeechRecognition =
@@ -220,6 +226,18 @@ function TalkPageContent() {
                     ))}
                 </SelectContent>
             </Select>
+            <TooltipProvider>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <Button variant="ghost" size="icon" disabled>
+                            <UserPlus />
+                        </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                        <p>Custom voice is a feature coming soon!</p>
+                    </TooltipContent>
+                </Tooltip>
+            </TooltipProvider>
             <GenZToggle />
             <ThemeToggle />
           </div>
