@@ -29,7 +29,7 @@ import { SOSButton } from './sos-button';
 interface Message {
   sender: 'user' | 'ai';
   text: string;
-  imageUrl?: string;
+  imageUrl?: string | null;
 }
 
 const languages = [
@@ -239,7 +239,13 @@ export default function ChatInterface({ conversationId }: { conversationId?: str
     }
     
     // The message object to be saved
-    const userMessage: Message = { sender: 'user', text: messageText, imageUrl: imageDataUri };
+    const userMessage: Partial<Message> & { sender: 'user' } = { 
+        sender: 'user', 
+        text: messageText,
+    };
+    if (imageDataUri) {
+        userMessage.imageUrl = imageDataUri;
+    }
 
     // If this is a new chat, create the conversation document first
     if (!currentConvoId) {
@@ -285,7 +291,14 @@ export default function ChatInterface({ conversationId }: { conversationId?: str
         companionName,
       });
       
-      const aiMessage: Message = { sender: 'ai', text: chatResult.response, imageUrl: chatResult.imageUrl };
+      const aiMessage: Partial<Message> & { sender: 'ai' } = { 
+        sender: 'ai', 
+        text: chatResult.response 
+      };
+      if (chatResult.imageUrl) {
+        aiMessage.imageUrl = chatResult.imageUrl;
+      }
+      
       const messageColRef = collection(db, `users/${user.uid}/conversations/${currentConvoId}/messages`);
       await addDoc(messageColRef, { ...aiMessage, createdAt: serverTimestamp() });
 
