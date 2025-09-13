@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 import { db } from '@/lib/firebase';
-import { collection, query, where, onSnapshot, orderBy, Timestamp, getDocs, doc, getDoc } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, orderBy, Timestamp, getDocs, doc, getDoc, limit } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, BarChart, LineChart, FileQuestion, ArrowLeft } from 'lucide-react';
 import { Bar, BarChart as RechartsBarChart, Line, LineChart as RechartsLineChart, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
@@ -205,11 +205,12 @@ function UserQuestionnaires({ userId }: { userId: string }) {
     useEffect(() => {
         const q = query(
             collection(db, 'questionnaires'),
-            where('userId', '==', userId),
-            orderBy('createdAt', 'desc')
+            where('userId', '==', userId)
         );
         const unsubscribe = onSnapshot(q, (snapshot) => {
             const subsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as QuestionnaireSubmission));
+            // Sort manually since we removed orderBy from the query
+            subsData.sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis());
             setSubmissions(subsData);
             setIsLoading(false);
         });
