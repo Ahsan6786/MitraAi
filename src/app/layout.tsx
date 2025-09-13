@@ -39,11 +39,20 @@ export default function RootLayout({
           {`
             var Tawk_API = Tawk_API || {};
             Tawk_API.onLoad = function(){
-                Tawk_API.setAttributes({
-                    'bottom': 70
-                }, function(error){
-                    // You can handle any errors here
-                });
+                Tawk_API.customStyle = {
+                    visibility : {
+                        desktop : {
+                            xOffset : '20px',
+                            yOffset : '80px',
+                            position : 'br'
+                        },
+                        mobile : {
+                            xOffset : '10px',
+                            yOffset : '80px',
+                            position : 'br'
+                        }
+                    }
+                };
             };
             var Tawk_LoadStart = new Date();
             (function(){
