@@ -449,7 +449,7 @@ export default function ChatInterface() {
       </header>
       <main className="flex-1 overflow-hidden">
         <ScrollArea className="h-full" ref={scrollAreaRef}>
-          <div className="p-4 md:p-6 space-y-6">
+          <div className="p-4 md:p-6 space-y-6 pb-24">
             {messages.length === 0 && (
                <div className="flex items-start gap-3">
                   <Avatar className="w-10 h-10 border shrink-0">
@@ -516,7 +516,7 @@ export default function ChatInterface() {
           </div>
         </ScrollArea>
       </main>
-      <footer className="px-4 py-3 border-t">
+      <footer className="px-4 py-3 border-t pb-20 md:pb-3">
         {imagePreview && (
             <div className="relative w-24 h-24 mb-2 rounded-md overflow-hidden border">
                 <Image src={imagePreview} alt="Image preview" layout="fill" objectFit="cover" />
