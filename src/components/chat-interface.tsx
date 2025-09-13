@@ -213,7 +213,7 @@ export default function ChatInterface({ conversationId }: { conversationId?: str
     if (scrollViewportRef.current) {
       scrollViewportRef.current.scrollTo({ top: scrollViewportRef.current.scrollHeight, behavior: 'smooth' });
     }
-  }, [messages]);
+  }, [messages, isLoading]);
 
   const fileToDataUri = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
@@ -279,10 +279,13 @@ export default function ChatInterface({ conversationId }: { conversationId?: str
         return;
       }
 
-      const historyForFlow: ChatEmpatheticToneInput['history'] = messages.map(msg => ({
-        role: msg.sender === 'user' ? 'user' : 'model',
-        content: [{ text: msg.text }],
-      }));
+      const historyForFlow: ChatEmpatheticToneInput['history'] = messages
+          .map(msg => ({
+              role: msg.sender === 'user' ? 'user' : 'model',
+              content: [{ text: msg.text, media: msg.imageUrl ? { url: msg.imageUrl } : undefined }],
+          }))
+          .filter(msg => msg.content[0].text || msg.content[0].media); // Filter out empty content
+
 
       const chatResult = await chatEmpatheticTone({ 
         message: messageText, 
@@ -357,7 +360,7 @@ export default function ChatInterface({ conversationId }: { conversationId?: str
       </header>
       <main className="flex-1 overflow-hidden">
         <ScrollArea className="h-full" viewportRef={scrollViewportRef}>
-          <div className="p-4 md:p-6 space-y-6 pb-24">
+          <div className="p-4 md:p-6 space-y-6 pb-40">
             {messages.length === 0 && !isLoading && (
                <div className="flex items-start gap-3">
                   <Avatar className="w-10 h-10 border shrink-0"><AvatarFallback className="bg-primary text-primary-foreground"><Logo className="w-5 h-5"/></AvatarFallback></Avatar>
