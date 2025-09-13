@@ -68,12 +68,6 @@ service cloud.firestore {
         allow update, delete: if false;
       }
     }
-    
-    // CONVERSATIONS (for admin/doctor chat)
-    match /conversations/{userId}/{messages}/{messageId} {
-      // A user can access their own conversation, and the admin can access any.
-      allow read, write: if request.auth != null && (request.auth.uid == userId || isAdmin());
-    }
 
     // JOURNAL ENTRIES
     // Users can only access their own entries. Admin can read/update for review.
@@ -149,6 +143,18 @@ service cloud.firestore {
         // A user can delete their own message, or the group creator can delete any message.
         allow delete: if request.auth != null && 
                        (resource.data.senderId == request.auth.uid || isGroupCreator(get(/databases/$(database)/documents/groups/$(groupId)).data));
+      }
+    }
+    
+    // CONVERSATIONS (Admin/Doctor to User)
+    match /conversations/{userId} {
+      // A user can access their own conversation, and the admin can access any.
+      allow read: if request.auth != null && (request.auth.uid == userId || isAdmin());
+      
+      // Rules for the messages subcollection within a conversation
+      match /messages/{messageId} {
+        // Allow read and write if the user is the owner of the conversation OR if the user is an admin.
+        allow read, write: if request.auth != null && (request.auth.uid == userId || isAdmin());
       }
     }
   }
