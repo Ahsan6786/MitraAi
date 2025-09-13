@@ -31,6 +31,7 @@ import { GenZToggle } from '@/components/genz-toggle';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { cn } from '@/lib/utils';
 import { Sheet } from '@/components/ui/sheet';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 const ADMIN_EMAIL = 'ahsan.khan@mitwpu.edu.in';
 
@@ -400,17 +401,39 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
             <div className="flex-1">
               {children}
             </div>
-             {sidebar && (
-                 <div className="fixed bottom-6 left-4 z-50">
-                    <Button 
-                      onClick={() => sidebar.setOpenMobile(true)}
-                      size="icon"
-                      className="rounded-full shadow-lg h-12 w-12"
-                    >
-                      <Menu className="h-6 w-6"/>
-                      <span className="sr-only">Explore Features</span>
-                    </Button>
-                 </div>
+            {sidebar && (
+                <div className="fixed bottom-6 left-4 z-50">
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button 
+                              onClick={() => sidebar.setOpenMobile(true)}
+                              size="icon"
+                              className="rounded-full shadow-lg h-12 w-12 md:hidden"
+                            >
+                              <Menu className="h-6 w-6"/>
+                              <span className="sr-only">Explore Features</span>
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent side="right">
+                            <p>Explore Features</p>
+                        </TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                             <Button 
+                              onClick={() => sidebar.setOpenMobile(true)}
+                              size="icon"
+                              className="rounded-full shadow-lg h-12 w-12 hidden md:inline-flex"
+                            >
+                              <Menu className="h-6 w-6"/>
+                              <span className="sr-only">Explore Features</span>
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent side="right">
+                            <p>Explore Features</p>
+                        </TooltipContent>
+                    </Tooltip>
+                </div>
             )}
           </div>
         </SidebarInset>
