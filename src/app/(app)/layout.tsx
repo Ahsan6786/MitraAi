@@ -32,6 +32,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { cn } from '@/lib/utils';
 import { Sheet } from '@/components/ui/sheet';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const ADMIN_EMAIL = 'ahsan.khan@mitwpu.edu.in';
 
@@ -43,6 +44,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
   const [showQuestionnaireModal, setShowQuestionnaireModal] = useState(false);
   const [userType, setUserType] = useState<'user' | 'admin' | 'counsellor' | null>(null);
   const [showFeatureHint, setShowFeatureHint] = useState(false);
+  const isMobile = useIsMobile();
 
   const professionalHelpPaths = ['/reports', '/booking', '/my-appointments', '/screening-tools'];
   const isProfessionalHelpActive = professionalHelpPaths.some(p => pathname.startsWith(p));
@@ -61,13 +63,13 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
   // Effect for the feature hint animation
   useEffect(() => {
     const hasSeenHint = sessionStorage.getItem('hasSeenFeatureHint');
-    if (!hasSeenHint) {
+    if (!hasSeenHint && !isMobile) {
         const timer = setTimeout(() => {
             setShowFeatureHint(true);
         }, 2000); // Show after 2 seconds
         return () => clearTimeout(timer);
     }
-  }, []);
+  }, [isMobile]);
 
   const handleHintClick = () => {
     sessionStorage.setItem('hasSeenFeatureHint', 'true');
@@ -437,7 +439,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
                         </TooltipContent>
                     </Tooltip>
 
-                    {showFeatureHint && (
+                    {showFeatureHint && !isMobile && (
                         <div 
                             className="flex items-center gap-2 bg-primary text-primary-foreground rounded-full p-2 pr-4 shadow-lg cursor-pointer animate-in fade-in-50"
                             onClick={handleHintClick}
