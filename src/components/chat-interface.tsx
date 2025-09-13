@@ -516,7 +516,7 @@ export default function ChatInterface() {
           </div>
         </ScrollArea>
       </main>
-      <footer className="absolute bottom-[90px] left-0 w-full bg-background border-t p-2 md:p-3">
+      <footer className="absolute bottom-16 left-0 w-full bg-transparent border-t p-2 md:p-3">
         {imagePreview && (
             <div className="relative w-24 h-24 mb-2 ml-2 rounded-md overflow-hidden border">
                 <Image src={imagePreview} alt="Image preview" layout="fill" objectFit="cover" />
