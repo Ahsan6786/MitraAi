@@ -34,7 +34,7 @@ export type ChatEmpatheticToneInput = z.infer<typeof ChatEmpatheticToneInputSche
 
 const ChatEmpatheticToneOutputSchema = z.object({
   response: z.string().describe('The AI companion’s empathetic response in the specified language.'),
-  imageUrl: z.string().optional().describe('The data URI of a generated image, if requested.'),
+  imageUrl: z.string().optional().nullable().describe('The data URI of a generated image, if requested.'),
 });
 export type ChatEmpatheticToneOutput = z.infer<typeof ChatEmpatheticToneOutputSchema>;
 
@@ -168,7 +168,7 @@ const chatEmpatheticToneFlow = ai.defineFlow(
               },
             }
           );
-          return { response: output!.response, imageUrl: undefined };
+          return { response: output!.response, imageUrl: output!.imageUrl };
         } catch (error: any) {
           attempt++;
           // Only retry on 503 Service Unavailable errors.
