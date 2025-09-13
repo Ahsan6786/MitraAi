@@ -33,7 +33,7 @@ service cloud.firestore {
     // USERS (for profile data like companionName)
     match /users/{userId} {
       // Users can read and write their own profile document.
-      allow read, update: if request.auth != null && request.auth.uid == userId;
+      allow read, write: if request.auth != null && request.auth.uid == userId;
       // Any authenticated user can read public profile data (displayName, email) for friend requests.
       allow get: if request.auth != null;
       
@@ -146,11 +146,15 @@ service cloud.firestore {
       }
     }
     
-    // CONVERSATIONS (Admin/Doctor to User)
+    // CONVERSATIONS
     match /conversations/{userId} {
-      // Rules for the messages subcollection within a conversation
+      // A user can access their own conversation, and the admin can access any.
+      allow read, write: if request.auth != null && (request.auth.uid == userId || isAdmin());
+
+      // MESSAGES SUBCOLLECTION
       match /messages/{messageId} {
-        // Allow read and write if the user is the owner of the conversation OR if the user is an admin.
+        // User can read/write their own messages
+        // Admin can also read/write any message
         allow read, write: if request.auth != null && (request.auth.uid == userId || isAdmin());
       }
     }
