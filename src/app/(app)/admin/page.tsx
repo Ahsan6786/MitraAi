@@ -9,7 +9,7 @@ import { collection, query, where, onSnapshot, Timestamp, doc, updateDoc, orderB
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Mic, PenSquare, ShieldCheck, Sparkles, AlertTriangle, FileQuestion, UserPlus, Mail, Phone, Check, X, Trash2 } from 'lucide-react';
+import { Loader2, Mic, PenSquare, ShieldCheck, Sparkles, AlertTriangle, FileQuestion, UserPlus, Mail, Phone, Check, X, Trash2, Users, ArrowRight } from 'lucide-react';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
@@ -29,6 +29,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { GenZToggle } from '@/components/genz-toggle';
+import Link from 'next/link';
 
 
 const ADMIN_EMAIL = 'ahsan.khan@mitwpu.edu.in';
@@ -66,6 +67,12 @@ interface Counsellor {
     phone: string;
     status: 'pending' | 'approved' | 'rejected';
     createdAt: Timestamp;
+}
+
+interface AppUser {
+    id: string;
+    email: string;
+    displayName?: string;
 }
 
 const questionnaireQuestions = [
@@ -371,6 +378,85 @@ function ManageCounsellors() {
     );
 }
 
+function ManageUsers() {
+    const [users, setUsers] = useState<AppUser[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchUsers = async () => {
+            setIsLoading(true);
+            try {
+                // Fetch users from both collections and merge them
+                const journalUsersQuery = await getDocs(collection(db, 'journalEntries'));
+                const questionnaireUsersQuery = await getDocs(collection(db, 'questionnaires'));
+
+                const userMap = new Map<string, AppUser>();
+
+                journalUsersQuery.forEach(doc => {
+                    const data = doc.data();
+                    if (data.userId && !userMap.has(data.userId)) {
+                        userMap.set(data.userId, { id: data.userId, email: data.userEmail });
+                    }
+                });
+
+                questionnaireUsersQuery.forEach(doc => {
+                    const data = doc.data();
+                    if (data.userId && !userMap.has(data.userId)) {
+                        userMap.set(data.userId, { id: data.userId, email: data.userEmail });
+                    }
+                });
+
+                // Fetch display names
+                const userIds = Array.from(userMap.keys());
+                const userProfilePromises = userIds.map(id => getDoc(doc(db, 'users', id)));
+                const userProfileSnapshots = await Promise.all(userProfilePromises);
+                
+                userProfileSnapshots.forEach(docSnap => {
+                    if (docSnap.exists()) {
+                        const data = docSnap.data();
+                        const user = userMap.get(docSnap.id);
+                        if (user) {
+                            user.displayName = data.displayName;
+                        }
+                    }
+                });
+
+                setUsers(Array.from(userMap.values()));
+            } catch (error) {
+                console.error("Error fetching users:", error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchUsers();
+    }, []);
+
+    if (isLoading) return <div className="flex justify-center items-center h-full"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
+    if (users.length === 0) return <Card className="text-center p-6 md:p-10"><CardTitle>No Users Found</CardTitle><CardDescription className="mt-2">There are no users with journal entries or questionnaire submissions yet.</CardDescription></Card>;
+
+    return (
+        <div className="space-y-4">
+            {users.map(user => (
+                <Card key={user.id}>
+                    <CardContent className="p-4 flex items-center justify-between">
+                        <div>
+                            <p className="font-semibold">{user.displayName || 'No name set'}</p>
+                            <p className="text-sm text-muted-foreground">{user.email}</p>
+                        </div>
+                        <Button asChild variant="outline" size="sm">
+                            <Link href={`/admin/user/${user.id}`}>
+                                View Dashboard
+                                <ArrowRight className="ml-2 h-4 w-4" />
+                            </Link>
+                        </Button>
+                    </CardContent>
+                </Card>
+            ))}
+        </div>
+    );
+}
+
 
 export default function AdminPage() {
     const { user, loading } = useAuth();
@@ -402,13 +488,17 @@ export default function AdminPage() {
                 </div>
             </header>
             <main className="flex-1 overflow-auto p-2 sm:p-4 md:p-6">
-                <Tabs defaultValue="counsellor-requests" className="w-full">
-                    <TabsList className="grid w-full grid-cols-4">
+                <Tabs defaultValue="manage-users" className="w-full">
+                    <TabsList className="grid w-full grid-cols-5">
+                        <TabsTrigger value="manage-users">Manage Users</TabsTrigger>
                         <TabsTrigger value="counsellor-requests">Counsellor Requests</TabsTrigger>
                         <TabsTrigger value="manage-counsellors">Manage Counsellors</TabsTrigger>
                         <TabsTrigger value="questionnaires">Questionnaires</TabsTrigger>
                         <TabsTrigger value="journals">Journal Entries</TabsTrigger>
                     </TabsList>
+                    <TabsContent value="manage-users" className="mt-4">
+                        <ManageUsers />
+                    </TabsContent>
                     <TabsContent value="counsellor-requests" className="mt-4">
                         <CounsellorRequests />
                     </TabsContent>
