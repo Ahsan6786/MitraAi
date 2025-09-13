@@ -117,9 +117,9 @@ export function ChatHistorySidebar({ currentConversationId }: { currentConversat
             <ScrollArea className="flex-1">
                 <div className="space-y-1">
                     {conversations.map(convo => (
-                        <div key={convo.id} className="group relative">
+                        <div key={convo.id} className="group relative rounded-md flex items-center justify-between hover:bg-accent">
                             {editingId === convo.id ? (
-                                <div className="flex items-center gap-1 p-1">
+                                <div className="flex items-center gap-1 p-1 w-full">
                                     <Input 
                                         value={renameValue} 
                                         onChange={e => setRenameValue(e.target.value)}
@@ -129,23 +129,24 @@ export function ChatHistorySidebar({ currentConversationId }: { currentConversat
                                     <Button size="icon" variant="ghost" className="h-8 w-8" onClick={handleCancelRename}><X className="w-4 h-4"/></Button>
                                 </div>
                             ) : (
-                                <Link href={`/chat/${convo.id}`} passHref>
-                                    <Button
-                                        variant="ghost"
-                                        className={cn(
-                                            "w-full justify-start truncate",
-                                            currentConversationId === convo.id && "bg-accent text-accent-foreground"
-                                        )}
-                                        onClick={handleLinkClick}
-                                    >
-                                        <MessageSquare className="mr-2 h-4 w-4 flex-shrink-0" />
-                                        <span className="truncate">{convo.title}</span>
-                                    </Button>
-                                    <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleStartRename(convo); }}><Edit className="w-4 h-4"/></Button>
+                                <>
+                                    <Link href={`/chat/${convo.id}`} passHref legacyBehavior>
+                                        <a
+                                            className={cn(
+                                                "w-full h-full justify-start truncate p-2 flex items-center gap-2 text-sm rounded-md",
+                                                currentConversationId === convo.id && "bg-accent text-accent-foreground"
+                                            )}
+                                            onClick={handleLinkClick}
+                                        >
+                                            <MessageSquare className="mr-2 h-4 w-4 flex-shrink-0" />
+                                            <span className="truncate flex-1">{convo.title}</span>
+                                        </a>
+                                    </Link>
+                                    <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center opacity-0 group-hover:opacity-100 transition-opacity bg-accent">
+                                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleStartRename(convo)}><Edit className="w-4 h-4"/></Button>
                                          <AlertDialog>
                                             <AlertDialogTrigger asChild>
-                                                <Button size="icon" variant="ghost" className="h-7 w-7" onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}><Trash2 className="w-4 h-4"/></Button>
+                                                <Button size="icon" variant="ghost" className="h-7 w-7"><Trash2 className="w-4 h-4"/></Button>
                                             </AlertDialogTrigger>
                                             <AlertDialogContent>
                                                 <AlertDialogHeader>
@@ -161,7 +162,7 @@ export function ChatHistorySidebar({ currentConversationId }: { currentConversat
                                             </AlertDialogContent>
                                         </AlertDialog>
                                     </div>
-                                </Link>
+                                </>
                             )}
                         </div>
                     ))}
