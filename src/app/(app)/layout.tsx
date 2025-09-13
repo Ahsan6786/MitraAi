@@ -31,7 +31,7 @@ import { GenZToggle } from '@/components/genz-toggle';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { cn } from '@/lib/utils';
 import { Sheet } from '@/components/ui/sheet';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 const ADMIN_EMAIL = 'ahsan.khan@mitwpu.edu.in';
@@ -421,35 +421,35 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
             <div className="flex-1">
               {children}
             </div>
-             {sidebar && isMobile && (
-                <div className="fixed bottom-6 left-4 z-50 flex items-center gap-3">
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                             <Button 
-                              onClick={() => sidebar.setOpenMobile(true)}
-                              size="icon"
-                              className="rounded-full shadow-lg h-12 w-12"
-                            >
-                              <Menu className="h-6 w-6"/>
-                              <span className="sr-only">Explore Features</span>
-                            </Button>
-                        </TooltipTrigger>
-                        <TooltipContent side="right">
-                            <p>Explore Features</p>
-                        </TooltipContent>
-                    </Tooltip>
+            <div className="fixed bottom-6 left-4 z-50 flex items-center gap-3">
+              <TooltipProvider>
+                  <Tooltip>
+                      <TooltipTrigger asChild>
+                            <Button 
+                            onClick={() => sidebar?.setOpenMobile(true)}
+                            size="icon"
+                            className="rounded-full shadow-lg h-12 w-12 hidden md:flex"
+                          >
+                            <Menu className="h-6 w-6"/>
+                            <span className="sr-only">Explore Features</span>
+                          </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="right">
+                          <p>Explore Features</p>
+                      </TooltipContent>
+                  </Tooltip>
+              </TooltipProvider>
 
-                    {showFeatureHint && !isMobile && (
-                        <div 
-                            className="flex items-center gap-2 bg-primary text-primary-foreground rounded-full p-2 pr-4 shadow-lg cursor-pointer animate-in fade-in-50"
-                            onClick={handleHintClick}
-                        >
-                            <ArrowRight className="h-5 w-5 animate-point-right" />
-                            <span className="text-sm font-medium">Explore Features</span>
-                        </div>
-                    )}
-                </div>
-            )}
+              {showFeatureHint && !isMobile && (
+                  <div 
+                      className="flex items-center gap-2 bg-primary text-primary-foreground rounded-full p-2 pr-4 shadow-lg cursor-pointer animate-in fade-in-50"
+                      onClick={handleHintClick}
+                  >
+                      <ArrowRight className="h-5 w-5 animate-point-right" />
+                      <span className="text-sm font-medium">Explore Features</span>
+                  </div>
+              )}
+            </div>
           </div>
         </SidebarInset>
       </Sheet>
