@@ -9,7 +9,7 @@ interface IntroAnimationProps {
     onFinish: () => void;
 }
 
-const TOTAL_DURATION = 5000; // 5 seconds total
+const TOTAL_DURATION = 2500; // 2.5 seconds total
 
 export default function IntroAnimation({ onFinish }: IntroAnimationProps) {
     const [animationState, setAnimationState] = useState('entering');
@@ -25,7 +25,7 @@ export default function IntroAnimation({ onFinish }: IntroAnimationProps) {
 
         const finishTimer = setTimeout(() => {
             setAnimationState('exiting');
-        }, TOTAL_DURATION - 1000); // Start fade out 1 second before finish
+        }, TOTAL_DURATION - 500); // Start fade out before finish
 
         const unmountTimer = setTimeout(() => {
             onFinish();
@@ -71,13 +71,13 @@ export default function IntroAnimation({ onFinish }: IntroAnimationProps) {
             `}</style>
 
             <div className={cn(
-                "fixed inset-0 z-[100] flex flex-col items-center justify-center bg-background transition-opacity duration-1000 overflow-hidden",
+                "fixed inset-0 z-[100] flex flex-col items-center justify-center bg-background transition-opacity duration-500 overflow-hidden",
                 animationState === 'entering' ? 'opacity-100' : 'opacity-0'
             )}>
                 {/* Mountain Reflection Background */}
                 <div 
                     className="absolute bottom-0 left-0 w-full h-1/2 text-foreground/5"
-                    style={{ animation: 'slow-fade-in-up 2s ease-out 1s forwards', opacity: 0 }}
+                    style={{ animation: 'slow-fade-in-up 1s ease-out 0.5s forwards', opacity: 0 }}
                 >
                     <svg
                         className="w-full h-full"
@@ -101,21 +101,21 @@ export default function IntroAnimation({ onFinish }: IntroAnimationProps) {
 
                 {/* Assembling Logo */}
                 <div className="relative w-24 h-24 text-primary">
-                    <div className="absolute inset-0" style={{ animation: 'fly-in-left 1.5s cubic-bezier(0.25, 1, 0.5, 1) forwards' }}>
+                    <div className="absolute inset-0" style={{ animation: 'fly-in-left 1s cubic-bezier(0.25, 1, 0.5, 1) forwards' }}>
                         <LogoPart1 className="w-full h-full" />
                     </div>
-                    <div className="absolute inset-0" style={{ animation: 'fly-in-right 1.5s cubic-bezier(0.25, 1, 0.5, 1) forwards' }}>
+                    <div className="absolute inset-0" style={{ animation: 'fly-in-right 1s cubic-bezier(0.25, 1, 0.5, 1) forwards' }}>
                         <LogoPart2 className="w-full h-full" />
                     </div>
-                    <div className="absolute inset-0" style={{ animation: 'fly-in-top 1.5s cubic-bezier(0.25, 1, 0.5, 1) 0.5s forwards', opacity: 0 }}>
+                    <div className="absolute inset-0" style={{ animation: 'fly-in-top 1s cubic-bezier(0.25, 1, 0.5, 1) 0.25s forwards', opacity: 0 }}>
                         <LogoPart3 className="w-full h-full" />
                     </div>
                 </div>
 
                 {/* Text animation */}
-                <div className="mt-8 text-center" style={{ animation: 'fade-in-scale-up 1.5s ease-out 1.5s forwards', opacity: 0 }}>
+                <div className="mt-8 text-center" style={{ animation: 'fade-in-scale-up 1s ease-out 1s forwards', opacity: 0 }}>
                     <h1 className="text-4xl md:text-5xl font-bold tracking-tight">MitraAI</h1>
-                    <p className="text-muted-foreground mt-2 text-lg" style={{ animation: 'fade-in 1.5s ease-out 2.5s forwards', opacity: 0 }}>
+                    <p className="text-muted-foreground mt-2 text-lg" style={{ animation: 'fade-in 1s ease-out 1.5s forwards', opacity: 0 }}>
                         Your Personal Path to Mental Wellness
                     </p>
                 </div>

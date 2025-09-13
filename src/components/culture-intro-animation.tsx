@@ -9,7 +9,7 @@ interface CultureIntroAnimationProps {
     onFinish: () => void;
 }
 
-const TOTAL_DURATION = 5000; // 5 seconds total
+const TOTAL_DURATION = 2500; // 2.5 seconds total
 
 export default function CultureIntroAnimation({ onFinish }: CultureIntroAnimationProps) {
     const [animationState, setAnimationState] = useState('entering');
@@ -17,7 +17,7 @@ export default function CultureIntroAnimation({ onFinish }: CultureIntroAnimatio
      useEffect(() => {
         const finishTimer = setTimeout(() => {
             setAnimationState('exiting');
-        }, TOTAL_DURATION - 1000);
+        }, TOTAL_DURATION - 500);
 
         const unmountTimer = setTimeout(() => {
             onFinish();
@@ -48,21 +48,21 @@ export default function CultureIntroAnimation({ onFinish }: CultureIntroAnimatio
             `}</style>
 
             <div className={cn(
-                "fixed inset-0 z-[100] flex flex-col items-center justify-center bg-background transition-opacity duration-1000 overflow-hidden",
+                "fixed inset-0 z-[100] flex flex-col items-center justify-center bg-background transition-opacity duration-500 overflow-hidden",
                 animationState === 'entering' ? 'opacity-100' : 'opacity-0'
             )}>
                 {/* Animated Lotus Icon */}
                 <div 
                     className="relative w-24 h-24 text-primary"
-                    style={{ animation: 'scale-up 2s cubic-bezier(0.25, 1, 0.5, 1) forwards' }}
+                    style={{ animation: 'scale-up 1.5s cubic-bezier(0.25, 1, 0.5, 1) forwards' }}
                 >
                    <LotusIcon className="w-full h-full" />
                 </div>
 
                 {/* Text animation */}
-                <div className="mt-8 text-center" style={{ animation: 'fade-in-scale-up 1.5s ease-out 1.5s forwards', opacity: 0 }}>
+                <div className="mt-8 text-center" style={{ animation: 'fade-in-scale-up 1s ease-out 1s forwards', opacity: 0 }}>
                     <h1 className="text-4xl md:text-5xl font-bold tracking-tight">Discover Our Culture</h1>
-                    <p className="text-muted-foreground mt-2 text-lg" style={{ animation: 'fade-in 1.5s ease-out 2.5s forwards', opacity: 0 }}>
+                    <p className="text-muted-foreground mt-2 text-lg" style={{ animation: 'fade-in 1s ease-out 1.5s forwards', opacity: 0 }}>
                         A journey into the heart of India's heritage.
                     </p>
                 </div>
