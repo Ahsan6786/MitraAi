@@ -85,26 +85,31 @@ export function ChatHistorySidebar({ currentConversationId }: { currentConversat
     const handleDelete = async (conversationId: string) => {
         if (!user) return;
         try {
-            // Delete all messages in the subcollection first
-            const messagesRef = collection(db, `users/${user.uid}/conversations/${conversationId}/messages`);
-            const messagesSnapshot = await getDocs(messagesRef);
-            const batch = writeBatch(db);
-            messagesSnapshot.forEach(doc => {
-                batch.delete(doc.ref);
-            });
-            await batch.commit();
-
-            // Then delete the conversation document itself
+            // Delete the conversation document itself first for a quick UI update
             await deleteDoc(doc(db, `users/${user.uid}/conversations`, conversationId));
             
             toast({ title: "Conversation Deleted" });
-            
-            // If the deleted chat was the current one, navigate to new chat
+
+            // If the active chat was deleted, navigate to a new chat
             if (currentConversationId === conversationId) {
                 router.push('/chat');
             }
+
+            // Then, in the background, delete all messages in the subcollection
+            const messagesRef = collection(db, `users/${user.uid}/conversations/${conversationId}/messages`);
+            const messagesSnapshot = await getDocs(messagesRef);
+            
+            if (!messagesSnapshot.empty) {
+                const batch = writeBatch(db);
+                messagesSnapshot.forEach(doc => {
+                    batch.delete(doc.ref);
+                });
+                await batch.commit();
+            }
+
         } catch (error) {
-            toast({ title: 'Error deleting conversation', variant: 'destructive' });
+            console.error("Error deleting conversation: ", error);
+            toast({ title: 'Error deleting conversation', description: 'Please try again.', variant: 'destructive' });
         }
     };
 
