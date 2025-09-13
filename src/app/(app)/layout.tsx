@@ -400,6 +400,18 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
             <div className="flex-1">
               {children}
             </div>
+             {sidebar && !sidebar.openMobile && (
+                 <div className="md:hidden fixed bottom-6 left-4 z-50">
+                    <Button 
+                      onClick={() => sidebar.setOpenMobile(true)}
+                      size="icon"
+                      className="rounded-full shadow-lg h-12 w-12"
+                    >
+                      <Menu className="h-6 w-6"/>
+                      <span className="sr-only">Explore Features</span>
+                    </Button>
+                 </div>
+            )}
           </div>
         </SidebarInset>
       </Sheet>
@@ -419,4 +431,3 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     </AuthProvider>
   );
 }
-

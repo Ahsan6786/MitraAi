@@ -4,15 +4,16 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import ChatInterface from '@/components/chat-interface';
-import { ChatHistorySidebar } from '@/components/chat-history-sidebar';
+import { ChatHistorySidebar, ChatHistorySidebarProvider, useChatHistorySidebar } from '@/components/chat-history-sidebar';
 import SectionIntroAnimation from '@/components/section-intro-animation';
 import { MessageSquare } from 'lucide-react';
-import { useSidebar } from '@/components/ui/sidebar';
+import { Button } from '@/components/ui/button';
+
 
 function ChatPageContent() {
     const params = useParams();
     const conversationId = Array.isArray(params.conversationId) ? params.conversationId[0] : undefined;
-    const sidebar = useSidebar();
+    const chatHistorySidebar = useChatHistorySidebar();
 
     return (
         <div className="h-full flex">
@@ -23,15 +24,17 @@ function ChatPageContent() {
             <div className="flex-1 h-full">
                 <ChatInterface conversationId={conversationId} />
             </div>
-             {sidebar && !sidebar.openMobile && (
-                 <div className="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-50">
-                    <button 
-                      onClick={() => sidebar.setOpenMobile(true)}
-                      className="bg-background text-foreground rounded-full shadow-lg px-4 py-2 flex items-center gap-2 border"
+             
+             {/* Mobile-only button to show chats */}
+             {!chatHistorySidebar.isOpen && (
+                 <div className="md:hidden fixed bottom-6 right-4 z-50">
+                    <Button 
+                      onClick={() => chatHistorySidebar.setIsOpen(true)}
+                      className="rounded-full shadow-lg h-12 px-5"
                     >
-                      <MessageSquare className="h-5 w-5"/>
+                      <MessageSquare className="h-5 w-5 mr-2"/>
                       Show Chats
-                    </button>
+                    </Button>
                  </div>
             )}
         </div>
@@ -39,7 +42,7 @@ function ChatPageContent() {
 }
 
 
-export default function ChatPage() {
+function ChatPageWrapper() {
     const [isClient, setIsClient] = useState(false);
     const [showIntro, setShowIntro] = useState(true);
     const SESSION_KEY = 'hasSeenChatIntro';
@@ -72,4 +75,12 @@ export default function ChatPage() {
     }
 
     return <ChatPageContent />;
+}
+
+export default function ChatPage() {
+    return (
+        <ChatHistorySidebarProvider>
+            <ChatPageWrapper />
+        </ChatHistorySidebarProvider>
+    )
 }

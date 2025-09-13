@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, createContext, useContext } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { db } from '@/lib/firebase';
 import { collection, query, orderBy, onSnapshot, doc, updateDoc, deleteDoc, getDocs, writeBatch } from 'firebase/firestore';
@@ -10,7 +10,7 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Plus, MessageSquare, Edit, Trash2, Check, X, Loader2 } from 'lucide-react';
+import { Plus, MessageSquare, Edit, Trash2, Check, X } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -24,8 +24,35 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { useSidebar } from './ui/sidebar';
-import { SheetContent, SheetHeader, SheetTitle } from './ui/sheet';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from './ui/sheet';
+
+// --- Context for Mobile Chat History Sidebar ---
+interface ChatHistorySidebarContextType {
+    isOpen: boolean;
+    setIsOpen: (isOpen: boolean) => void;
+}
+
+const ChatHistorySidebarContext = createContext<ChatHistorySidebarContextType | null>(null);
+
+export function ChatHistorySidebarProvider({ children }: { children: React.ReactNode }) {
+    const [isOpen, setIsOpen] = useState(false);
+    return (
+        <ChatHistorySidebarContext.Provider value={{ isOpen, setIsOpen }}>
+            {children}
+        </ChatHistorySidebarContext.Provider>
+    );
+}
+
+export function useChatHistorySidebar() {
+    const context = useContext(ChatHistorySidebarContext);
+    if (!context) {
+        throw new Error('useChatHistorySidebar must be used within a ChatHistorySidebarProvider');
+    }
+    return context;
+}
+// --- End Context ---
+
 
 interface Conversation {
     id: string;
@@ -36,7 +63,7 @@ function SidebarContent({ currentConversationId }: { currentConversationId?: str
     const { user } = useAuth();
     const router = useRouter();
     const { toast } = useToast();
-    const sidebarControls = useSidebar();
+    const chatHistorySidebar = useChatHistorySidebar();
     const [conversations, setConversations] = useState<Conversation[]>([]);
     const [editingId, setEditingId] = useState<string | null>(null);
     const [renameValue, setRenameValue] = useState('');
@@ -54,14 +81,14 @@ function SidebarContent({ currentConversationId }: { currentConversationId?: str
 
     const handleNewChat = () => {
         router.push('/chat');
-        if (sidebarControls?.openMobile) {
-            sidebarControls.setOpenMobile(false);
+        if (chatHistorySidebar.isOpen) {
+            chatHistorySidebar.setIsOpen(false);
         }
     };
     
     const handleLinkClick = () => {
-        if (sidebarControls?.openMobile) {
-            sidebarControls.setOpenMobile(false);
+        if (chatHistorySidebar.isOpen) {
+            chatHistorySidebar.setIsOpen(false);
         }
     }
 
@@ -86,7 +113,7 @@ function SidebarContent({ currentConversationId }: { currentConversationId?: str
     const handleDelete = async (conversationId: string) => {
         if (!user) return;
         try {
-            // First, delete the conversation document itself.
+            // Delete the conversation document first.
             await deleteDoc(doc(db, `users/${user.uid}/conversations`, conversationId));
             
             toast({ title: "Conversation Deleted" });
@@ -178,16 +205,19 @@ function SidebarContent({ currentConversationId }: { currentConversationId?: str
 }
 
 export function ChatHistorySidebar({ currentConversationId }: { currentConversationId?: string }) {
-    const { isMobile } = useSidebar();
+    const isMobile = useIsMobile();
+    const chatHistorySidebar = useChatHistorySidebar();
     
     if (isMobile) {
         return (
-            <SheetContent side="left" className="p-0 w-80">
-                <SheetHeader className="p-4 border-b">
-                    <SheetTitle>Your Conversations</SheetTitle>
-                </SheetHeader>
-                <SidebarContent currentConversationId={currentConversationId} />
-            </SheetContent>
+            <Sheet open={chatHistorySidebar.isOpen} onOpenChange={chatHistorySidebar.setIsOpen}>
+                <SheetContent side="left" className="p-0 w-80">
+                    <SheetHeader className="p-4 border-b">
+                        <SheetTitle>Your Conversations</SheetTitle>
+                    </SheetHeader>
+                    <SidebarContent currentConversationId={currentConversationId} />
+                </SheetContent>
+            </Sheet>
         )
     }
 
