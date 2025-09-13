@@ -224,16 +224,26 @@ export default function ChatInterface({ conversationId }: { conversationId?: str
   
   const handleSendMessage = async () => {
     if ((!input.trim() && !imageFile) || isLoading || !user) return;
-
+    
+    setIsLoading(true);
     let currentConvoId = conversationId;
     const messageText = input;
+    let imageDataUri: string | undefined;
+
+    // Reset inputs immediately for a better UX
+    setInput('');
+    if (imageFile) {
+        imageDataUri = await fileToDataUri(imageFile);
+        setImageFile(null);
+        setImagePreview(null);
+    }
     
-    // If this is the first message of a new chat, create the conversation first
+    // The message object to be saved
+    const userMessage: Message = { sender: 'user', text: messageText, imageUrl: imageDataUri };
+
+    // If this is a new chat, create the conversation document first
     if (!currentConvoId) {
-        setIsLoading(true); // Show loading state immediately
         const newConversationRef = doc(collection(db, `users/${user.uid}/conversations`));
-        
-        // Generate a title for the new conversation
         const titleResult = await generateChatTitle({ message: messageText });
         
         await setDoc(newConversationRef, {
@@ -241,22 +251,17 @@ export default function ChatInterface({ conversationId }: { conversationId?: str
             createdAt: serverTimestamp(),
         });
         currentConvoId = newConversationRef.id;
-        router.replace(`/chat/${currentConvoId}`); // Navigate to the new chat URL without adding to history
+        
+        // Save the first message to the new conversation
+        await addDoc(collection(db, newConversationRef.path, 'messages'), { ...userMessage, createdAt: serverTimestamp() });
+        
+        // Navigate to the new conversation URL
+        router.replace(`/chat/${currentConvoId}`);
+    } else {
+        // Otherwise, just add the message to the existing conversation
+        const messageColRef = collection(db, `users/${user.uid}/conversations/${currentConvoId}/messages`);
+        await addDoc(messageColRef, { ...userMessage, createdAt: serverTimestamp() });
     }
-
-    let imageDataUri: string | undefined;
-    if (imageFile) {
-        imageDataUri = await fileToDataUri(imageFile);
-    }
-    
-    const userMessage: Message = { sender: 'user', text: messageText, imageUrl: imageDataUri };
-    const messageColRef = collection(db, `users/${user.uid}/conversations/${currentConvoId}/messages`);
-    await addDoc(messageColRef, { ...userMessage, createdAt: serverTimestamp() });
-
-    setInput('');
-    setImageFile(null);
-    setImagePreview(null);
-    setIsLoading(true);
 
     try {
       const crisisResult = await detectCrisis({ message: messageText });
@@ -281,11 +286,13 @@ export default function ChatInterface({ conversationId }: { conversationId?: str
       });
       
       const aiMessage: Message = { sender: 'ai', text: chatResult.response, imageUrl: chatResult.imageUrl };
+      const messageColRef = collection(db, `users/${user.uid}/conversations/${currentConvoId}/messages`);
       await addDoc(messageColRef, { ...aiMessage, createdAt: serverTimestamp() });
 
     } catch (error) {
       console.error('Error getting AI response:', error);
       const errorMessage: Message = { sender: 'ai', text: 'Sorry, I encountered an error. Please try again.' };
+      const messageColRef = collection(db, `users/${user.uid}/conversations/${currentConvoId}/messages`);
       await addDoc(messageColRef, { ...errorMessage, createdAt: serverTimestamp() });
     } finally {
       setIsLoading(false);
