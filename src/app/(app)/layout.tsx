@@ -398,18 +398,6 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
           <div className="flex-1">
             {children}
           </div>
-           {sidebar && (
-             <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50">
-                <Button 
-                  onClick={() => sidebar.setOpenMobile(true)}
-                  className="rounded-full shadow-lg"
-                  size="lg"
-                >
-                  <Menu className="mr-2 h-5 w-5"/>
-                  Explore Features
-                </Button>
-             </div>
-           )}
         </div>
       </SidebarInset>
     </>

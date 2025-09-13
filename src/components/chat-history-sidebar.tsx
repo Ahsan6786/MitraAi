@@ -25,13 +25,14 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { useSidebar } from './ui/sidebar';
+import { SheetContent, SheetHeader, SheetTitle } from './ui/sheet';
 
 interface Conversation {
     id: string;
     title: string;
 }
 
-export function ChatHistorySidebar({ currentConversationId }: { currentConversationId?: string }) {
+function SidebarContent({ currentConversationId }: { currentConversationId?: string }) {
     const { user } = useAuth();
     const router = useRouter();
     const { toast } = useToast();
@@ -85,17 +86,17 @@ export function ChatHistorySidebar({ currentConversationId }: { currentConversat
     const handleDelete = async (conversationId: string) => {
         if (!user) return;
         try {
-            // Delete the conversation document itself first for a quick UI update
+            // First, delete the conversation document itself.
             await deleteDoc(doc(db, `users/${user.uid}/conversations`, conversationId));
             
             toast({ title: "Conversation Deleted" });
 
-            // If the active chat was deleted, navigate to a new chat
+            // If the active chat was deleted, navigate to a new chat.
             if (currentConversationId === conversationId) {
                 router.push('/chat');
             }
 
-            // Then, in the background, delete all messages in the subcollection
+            // In the background, delete all messages in the subcollection.
             const messagesRef = collection(db, `users/${user.uid}/conversations/${conversationId}/messages`);
             const messagesSnapshot = await getDocs(messagesRef);
             
@@ -112,10 +113,10 @@ export function ChatHistorySidebar({ currentConversationId }: { currentConversat
             toast({ title: 'Error deleting conversation', description: 'Please try again.', variant: 'destructive' });
         }
     };
-
+    
     return (
-        <div className="h-full w-64 bg-muted/40 p-2 flex-col hidden md:flex">
-            <Button onClick={handleNewChat} className="mb-2">
+        <div className="h-full p-2 flex flex-col">
+             <Button onClick={handleNewChat} className="mb-2">
                 <Plus className="mr-2 h-4 w-4" />
                 New Chat
             </Button>
@@ -172,6 +173,27 @@ export function ChatHistorySidebar({ currentConversationId }: { currentConversat
                     ))}
                 </div>
             </ScrollArea>
+        </div>
+    )
+}
+
+export function ChatHistorySidebar({ currentConversationId }: { currentConversationId?: string }) {
+    const { isMobile } = useSidebar();
+    
+    if (isMobile) {
+        return (
+            <SheetContent side="left" className="p-0 w-80">
+                <SheetHeader className="p-4 border-b">
+                    <SheetTitle>Your Conversations</SheetTitle>
+                </SheetHeader>
+                <SidebarContent currentConversationId={currentConversationId} />
+            </SheetContent>
+        )
+    }
+
+    return (
+        <div className="h-full w-64 bg-muted/40 flex-col hidden md:flex">
+            <SidebarContent currentConversationId={currentConversationId} />
         </div>
     );
 }
