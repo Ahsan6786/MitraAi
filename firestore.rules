@@ -69,8 +69,10 @@ service cloud.firestore {
         match /messages/{messageId} {
           // A user can read and create messages within their own conversation.
           allow read, create: if request.auth != null && request.auth.uid == userId;
-          // Users cannot update or delete messages.
-          allow update, delete: if false;
+          // Users can delete messages within their own conversation (for cleanup).
+          allow delete: if request.auth != null && request.auth.uid == userId;
+          // Users cannot update messages.
+          allow update: if false;
         }
       }
     }
