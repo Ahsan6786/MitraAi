@@ -532,8 +532,8 @@ export default function ChatInterface() {
           <Input
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Type your message..."
-            className="h-12 pr-24"
+            placeholder="Ask anything..."
+            className="h-12 pr-24 rounded-full"
             disabled={isLoading || isRecording}
             autoComplete="off"
           />
