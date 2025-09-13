@@ -3,7 +3,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
-import { Loader2, Mic, Square, Bot, Languages, Phone, UserPlus } from 'lucide-react';
+import { Loader2, Mic, Square, Bot, Languages, Phone, User } from 'lucide-react';
 import { chatEmpatheticTone } from '@/ai/flows/chat-empathetic-tone';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { textToSpeech } from '@/ai/flows/text-to-speech';
@@ -21,7 +21,10 @@ import {
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@/components/ui/tooltip"
+} from "@/components/ui/tooltip";
+import { useAuth } from '@/hooks/use-auth';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 
 
 const SpeechRecognition =
@@ -58,22 +61,37 @@ const languages = [
     { value: 'German', label: 'German' },
 ];
 
+interface ChatMessage {
+  sender: 'user' | 'ai';
+  text: string;
+}
+
 function TalkPageContent() {
   const [isLoading, setIsLoading] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
-  const [transcript, setTranscript] = useState('');
-  const [aiResponse, setAiResponse] = useState('');
   const [showCrisisModal, setShowCrisisModal] = useState(false);
   const [language, setLanguage] = useState('English');
+  const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
   
   const recognitionRef = useRef<any | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const pauseTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const scrollViewportRef = useRef<HTMLDivElement>(null);
+
   const { toast } = useToast();
+  const { user } = useAuth();
+
+  useEffect(() => {
+    if (scrollViewportRef.current) {
+      scrollViewportRef.current.scrollTo({ top: scrollViewportRef.current.scrollHeight, behavior: 'smooth' });
+    }
+  }, [chatHistory]);
 
   const handleAiResponse = async (messageText: string) => {
     if (!messageText.trim()) return;
+
+    setChatHistory(prev => [...prev, { sender: 'user', text: messageText }]);
     setIsLoading(true);
-    setAiResponse('');
 
     try {
       const crisisResult = await detectCrisis({ message: messageText });
@@ -84,7 +102,7 @@ function TalkPageContent() {
       }
       
       const result = await chatEmpatheticTone({ message: messageText, language: language });
-      setAiResponse(result.response);
+      setChatHistory(prev => [...prev, { sender: 'ai', text: result.response }]);
       
       if (result.response.trim()) {
         const ttsResult = await textToSpeech({ text: result.response });
@@ -96,7 +114,7 @@ function TalkPageContent() {
       }
     } catch (error) {
       console.error('Error getting AI response:', error);
-      setAiResponse('Sorry, I encountered an error. Please try again.');
+      setChatHistory(prev => [...prev, { sender: 'ai', text: 'Sorry, I encountered an error. Please try again.' }]);
     } finally {
       setIsLoading(false);
     }
@@ -105,13 +123,8 @@ function TalkPageContent() {
   const stopRecording = useCallback(() => {
     if (recognitionRef.current) {
       recognitionRef.current.stop();
-      recognitionRef.current = null;
     }
-    setIsRecording(false);
-    if (transcript.trim()) {
-        handleAiResponse(transcript);
-    }
-  }, [transcript, language]); // Added language dependency
+  }, []);
 
   const startRecording = () => {
     if (audioRef.current) {
@@ -120,36 +133,58 @@ function TalkPageContent() {
     }
 
     setIsRecording(true);
-    setTranscript('');
-    setAiResponse('');
-    recognitionRef.current = new SpeechRecognition();
-    recognitionRef.current.continuous = true;
-    recognitionRef.current.interimResults = true;
-    recognitionRef.current.lang = languages.find(l => l.value === language)?.speechCode || 'en-US';
+    const recognition = new SpeechRecognition();
+    recognitionRef.current = recognition;
+    
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = languages.find(l => l.value === language)?.speechCode || 'en-US';
 
-    recognitionRef.current.onresult = (event: any) => {
-      let interimTranscript = '';
+    recognition.onresult = (event: any) => {
+      // Clear the pause timer on new speech
+      if (pauseTimerRef.current) clearTimeout(pauseTimerRef.current);
+
+      let finalTranscript = '';
       for (let i = event.resultIndex; i < event.results.length; ++i) {
-          interimTranscript += event.results[i][0].transcript;
+        if (event.results[i].isFinal) {
+          finalTranscript += event.results[i][0].transcript;
+        }
       }
-      setTranscript(interimTranscript);
+
+      // Set a timer to stop if the user pauses
+      pauseTimerRef.current = setTimeout(() => {
+        stopRecording();
+      }, 1500); // 1.5 seconds pause
     };
     
-    recognitionRef.current.onerror = (event: any) => {
+    recognition.onerror = (event: any) => {
         console.error('Speech recognition error:', event.error);
-        toast({
-            title: "Voice Error",
-            description: "Could not start voice recognition. Please check your microphone permissions.",
-            variant: "destructive",
-        });
+        if (event.error !== 'no-speech') {
+            toast({
+                title: "Voice Error",
+                description: "Could not start voice recognition. Please check your microphone permissions.",
+                variant: "destructive",
+            });
+        }
         setIsRecording(false);
     };
     
-    recognitionRef.current.onend = () => {
+    recognition.onend = () => {
       setIsRecording(false);
+      if (pauseTimerRef.current) clearTimeout(pauseTimerRef.current);
+      // Get final transcript
+      recognition.onresult = (event: any) => {
+          const finalTranscript = Array.from(event.results)
+              .map((result: any) => result[0])
+              .map((result) => result.transcript)
+              .join('');
+          if(finalTranscript) {
+              handleAiResponse(finalTranscript);
+          }
+      }
     }
 
-    recognitionRef.current.start();
+    recognition.start();
   };
 
   const handleMicClick = () => {
@@ -176,13 +211,16 @@ function TalkPageContent() {
       if (audioRef.current) {
         audioRef.current.pause();
       }
+      if (pauseTimerRef.current) {
+        clearTimeout(pauseTimerRef.current);
+      }
     };
   }, []);
   
   const getStatusText = () => {
-      if (isRecording) return "Listening... Tap to stop.";
+      if (isRecording) return "Listening... I'll send when you pause.";
       if (isLoading) return "Mitra is thinking...";
-      if (aiResponse) return "Tap the microphone to reply.";
+      if (chatHistory.length > 0) return "Tap the microphone to reply.";
       return "Tap the microphone to start talking.";
   }
 
@@ -230,7 +268,7 @@ function TalkPageContent() {
                 <Tooltip>
                     <TooltipTrigger asChild>
                         <Button variant="ghost" size="icon" disabled>
-                            <UserPlus />
+                            <User />
                         </Button>
                     </TooltipTrigger>
                     <TooltipContent>
@@ -242,58 +280,51 @@ function TalkPageContent() {
             <ThemeToggle />
           </div>
         </header>
-        <main className="flex-1 flex flex-col items-center justify-center p-4 text-center">
-            <div className="w-full max-w-2xl">
-                <h2 className="text-3xl md:text-4xl font-bold tracking-tight">Talk to your AI companion</h2>
-                <p className="text-muted-foreground text-lg mt-2 mb-12">
-                    Speak your mind and get instant support. Our AI is here to listen and help you navigate your emotions.
-                </p>
-                <div className="flex flex-col items-center justify-center gap-8">
+        <main className="flex-1 flex flex-col items-center justify-between p-4 text-center">
+            <ScrollArea className="w-full max-w-2xl flex-1" viewportRef={scrollViewportRef}>
+                <div className="space-y-4 py-4">
+                    {chatHistory.length === 0 && (
+                        <div className="text-center py-10">
+                            <h2 className="text-3xl md:text-4xl font-bold tracking-tight">Talk to your AI companion</h2>
+                            <p className="text-muted-foreground text-lg mt-2">
+                                Speak your mind and get instant support. Our AI is here to listen and help you navigate your emotions.
+                            </p>
+                        </div>
+                    )}
+                    {chatHistory.map((msg, index) => (
+                        <div key={index} className={cn('flex items-start gap-3', msg.sender === 'user' ? 'justify-end' : 'justify-start')}>
+                            {msg.sender === 'ai' && <Avatar><AvatarFallback><Bot /></AvatarFallback></Avatar>}
+                            <p className={cn('max-w-[80%] rounded-xl px-4 py-3 text-sm shadow-sm text-left', msg.sender === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted')}>
+                                {msg.text}
+                            </p>
+                            {msg.sender === 'user' && <Avatar><AvatarFallback>{user?.email?.[0].toUpperCase() ?? <User />}</AvatarFallback></Avatar>}
+                        </div>
+                    ))}
+                    {isLoading && (
+                        <div className="flex items-start gap-3 justify-start">
+                            <Avatar><AvatarFallback><Bot /></AvatarFallback></Avatar>
+                            <div className="bg-muted rounded-xl px-4 py-3 text-sm shadow-sm flex items-center">
+                                <Loader2 className="w-4 h-4 animate-spin mr-2"/> Thinking...
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </ScrollArea>
+
+            <div className="w-full max-w-2xl py-4">
+                <div className="flex flex-col items-center justify-center gap-4">
                     <Button 
                         className={cn(
-                            "relative rounded-full h-40 w-40 bg-primary text-primary-foreground shadow-lg transition-transform duration-300 ease-in-out hover:scale-105 active:scale-95 focus:outline-none focus:ring-4 focus:ring-primary/50",
+                            "relative rounded-full h-28 w-28 bg-primary text-primary-foreground shadow-lg transition-transform duration-300 ease-in-out hover:scale-105 active:scale-95 focus:outline-none focus:ring-4 focus:ring-primary/50",
                             isRecording && "scale-105"
                         )}
                         onClick={handleMicClick}
                         disabled={isLoading}
                     >
-                        {isRecording ? <Square className="text-7xl" /> : <Mic className="text-7xl" />}
+                        {isRecording ? <Square className="text-5xl" /> : <Mic className="text-5xl" />}
                         {isRecording && <div className="absolute inset-0 rounded-full border-4 border-transparent animate-pulse-border"></div>}
                     </Button>
                     <p className="text-muted-foreground text-base h-5">{getStatusText()}</p>
-                </div>
-
-                <div className={cn("mt-12 text-left transition-opacity duration-500", (transcript || aiResponse || isLoading) ? "opacity-100" : "opacity-0")}>
-                    {transcript && (
-                        <Card className="bg-muted border-none mb-4">
-                            <CardHeader>
-                                <CardTitle className="text-sm font-semibold">You said:</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <p className="text-muted-foreground italic">"{transcript}"</p>
-                            </CardContent>
-                        </Card>
-                    )}
-                    {(aiResponse || isLoading) && (
-                        <Card className="bg-card">
-                            <CardHeader>
-                                <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                                    <Bot className="w-4 h-4 text-primary" />
-                                    Mitra replied:
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                {isLoading ? (
-                                    <div className="flex items-center gap-2 text-muted-foreground">
-                                        <Loader2 className="w-5 h-5 animate-spin" />
-                                        <span>Thinking...</span>
-                                    </div>
-                                ) : (
-                                    <p className="text-foreground">{aiResponse}</p>
-                                )}
-                            </CardContent>
-                        </Card>
-                    )}
                 </div>
             </div>
         </main>
@@ -335,3 +366,5 @@ export default function TalkPage() {
 
     return <TalkPageContent />;
 }
+
+    
