@@ -400,8 +400,8 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
             <div className="flex-1">
               {children}
             </div>
-             {sidebar && !sidebar.openMobile && (
-                 <div className="md:hidden fixed bottom-6 left-4 z-50">
+             {sidebar && (
+                 <div className="fixed bottom-6 left-4 z-50">
                     <Button 
                       onClick={() => sidebar.setOpenMobile(true)}
                       size="icon"
