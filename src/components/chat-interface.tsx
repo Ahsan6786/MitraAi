@@ -225,14 +225,12 @@ export default function ChatInterface({ conversationId }: { conversationId?: str
   };
   
   const handleSendMessage = async () => {
-    if ((!input.trim() && !imageFile) || isLoading || !user) return;
+    if ((!input.trim() && !imageFile) || !user) return;
     
-    setIsLoading(true);
     let currentConvoId = conversationId;
     const messageText = input;
     let imageDataUri: string | undefined;
 
-    // Reset inputs immediately for a better UX
     setInput('');
     if (imageFile) {
         imageDataUri = await fileToDataUri(imageFile);
@@ -240,16 +238,22 @@ export default function ChatInterface({ conversationId }: { conversationId?: str
         setImagePreview(null);
     }
     
-    // The message object to be saved
-    const userMessage: Partial<Message> & { sender: 'user' } = { 
+    const userMessageForUI: Message = { 
         sender: 'user', 
         text: messageText,
+        imageUrl: imageDataUri,
     };
-    if (imageDataUri) {
-        userMessage.imageUrl = imageDataUri;
-    }
 
-    // If this is a new chat, create the conversation document first
+    setMessages(prev => [...prev, userMessageForUI]);
+    setIsLoading(true);
+
+    const historyForFlow: ChatEmpatheticToneInput['history'] = [...messages, userMessageForUI]
+        .map(msg => ({
+            role: msg.sender === 'user' ? 'user' : 'model',
+            content: [{ text: msg.text, media: msg.imageUrl ? { url: msg.imageUrl } : undefined }],
+        }))
+        .filter(msg => msg.content[0].text || msg.content[0].media);
+
     if (!currentConvoId) {
         const newConversationRef = doc(collection(db, `users/${user.uid}/conversations`));
         const titleResult = await generateChatTitle({ message: messageText });
@@ -260,15 +264,18 @@ export default function ChatInterface({ conversationId }: { conversationId?: str
         });
         currentConvoId = newConversationRef.id;
         
-        // Save the first message to the new conversation
-        await addDoc(collection(db, newConversationRef.path, 'messages'), { ...userMessage, createdAt: serverTimestamp() });
-        
-        // Navigate to the new conversation URL
+        const userMessageForDb = { ...userMessageForUI, createdAt: serverTimestamp() };
+        delete userMessageForDb.imageUrl; // Don't save preview URI to DB
+        if (imageDataUri) userMessageForDb.imageUrl = imageDataUri;
+        await addDoc(collection(db, newConversationRef.path, 'messages'), userMessageForDb);
+
         router.replace(`/chat/${currentConvoId}`);
     } else {
-        // Otherwise, just add the message to the existing conversation
+        const userMessageForDb = { ...userMessageForUI, createdAt: serverTimestamp() };
+        delete userMessageForDb.imageUrl;
+        if (imageDataUri) userMessageForDb.imageUrl = imageDataUri;
         const messageColRef = collection(db, `users/${user.uid}/conversations/${currentConvoId}/messages`);
-        await addDoc(messageColRef, { ...userMessage, createdAt: serverTimestamp() });
+        await addDoc(messageColRef, userMessageForDb);
     }
 
     try {
@@ -278,14 +285,6 @@ export default function ChatInterface({ conversationId }: { conversationId?: str
         setIsLoading(false);
         return;
       }
-
-      const historyForFlow: ChatEmpatheticToneInput['history'] = messages
-          .map(msg => ({
-              role: msg.sender === 'user' ? 'user' : 'model',
-              content: [{ text: msg.text, media: msg.imageUrl ? { url: msg.imageUrl } : undefined }],
-          }))
-          .filter(msg => msg.content[0].text || msg.content[0].media); // Filter out empty content
-
 
       const chatResult = await chatEmpatheticTone({ 
         message: messageText, 
@@ -302,7 +301,6 @@ export default function ChatInterface({ conversationId }: { conversationId?: str
       };
 
       if (chatResult.imageUrl) {
-        // Upload the generated image data URI to Storage and get the URL
         const publicUrl = await uploadDataUriToStorage(chatResult.imageUrl, `generated/${user.uid}/${Date.now()}.png`);
         aiMessage.imageUrl = publicUrl;
       }
@@ -358,9 +356,9 @@ export default function ChatInterface({ conversationId }: { conversationId?: str
           <ThemeToggle />
         </div>
       </header>
-      <main className="flex-1 overflow-hidden">
+      <main className="flex-1 overflow-y-auto">
         <ScrollArea className="h-full" viewportRef={scrollViewportRef}>
-          <div className="p-4 md:p-6 space-y-6 pb-40">
+          <div className="p-4 md:p-6 space-y-6">
             {messages.length === 0 && !isLoading && (
                <div className="flex items-start gap-3">
                   <Avatar className="w-10 h-10 border shrink-0"><AvatarFallback className="bg-primary text-primary-foreground"><Logo className="w-5 h-5"/></AvatarFallback></Avatar>
@@ -388,7 +386,7 @@ export default function ChatInterface({ conversationId }: { conversationId?: str
           </div>
         </ScrollArea>
       </main>
-      <footer className="fixed bottom-0 left-0 md:left-64 right-0 shrink-0 bg-background border-t p-2 md:p-3 z-20">
+      <footer className="shrink-0 bg-background border-t p-2 md:p-3 z-20">
         {imagePreview && (
             <div className="relative w-24 h-24 mb-2 ml-2 rounded-md overflow-hidden border">
                 <Image src={imagePreview} alt="Image preview" layout="fill" objectFit="cover" />
