@@ -129,20 +129,19 @@ export function ChatHistorySidebar({ currentConversationId }: { currentConversat
                                     <Button size="icon" variant="ghost" className="h-8 w-8" onClick={handleCancelRename}><X className="w-4 h-4"/></Button>
                                 </div>
                             ) : (
-                                <>
-                                    <Link href={`/chat/${convo.id}`} passHref legacyBehavior>
-                                        <a
-                                            className={cn(
-                                                "w-full h-full justify-start truncate p-2 flex items-center gap-2 text-sm rounded-md",
-                                                currentConversationId === convo.id && "bg-accent text-accent-foreground"
-                                            )}
-                                            onClick={handleLinkClick}
-                                        >
-                                            <MessageSquare className="mr-2 h-4 w-4 flex-shrink-0" />
-                                            <span className="truncate flex-1">{convo.title}</span>
-                                        </a>
+                                <div className="flex items-center w-full">
+                                    <Link
+                                        href={`/chat/${convo.id}`}
+                                        className={cn(
+                                            "w-full h-full justify-start truncate p-2 flex items-center gap-2 text-sm rounded-md",
+                                            currentConversationId === convo.id && "bg-accent text-accent-foreground"
+                                        )}
+                                        onClick={handleLinkClick}
+                                    >
+                                        <MessageSquare className="mr-2 h-4 w-4 flex-shrink-0" />
+                                        <span className="truncate flex-1">{convo.title}</span>
                                     </Link>
-                                    <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center opacity-0 group-hover:opacity-100 transition-opacity bg-accent">
+                                    <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity bg-accent">
                                         <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleStartRename(convo)}><Edit className="w-4 h-4"/></Button>
                                          <AlertDialog>
                                             <AlertDialogTrigger asChild>
@@ -162,7 +161,7 @@ export function ChatHistorySidebar({ currentConversationId }: { currentConversat
                                             </AlertDialogContent>
                                         </AlertDialog>
                                     </div>
-                                </>
+                                </div>
                             )}
                         </div>
                     ))}
