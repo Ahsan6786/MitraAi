@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
@@ -245,6 +246,8 @@ export default function ChatInterface({ conversationId }: { conversationId?: str
     };
     if (imageDataUri) {
         userMessage.imageUrl = imageDataUri;
+    } else {
+        delete userMessage.imageUrl;
     }
 
     // If this is a new chat, create the conversation document first
@@ -297,6 +300,8 @@ export default function ChatInterface({ conversationId }: { conversationId?: str
       };
       if (chatResult.imageUrl) {
         aiMessage.imageUrl = chatResult.imageUrl;
+      } else {
+        delete aiMessage.imageUrl;
       }
       
       const messageColRef = collection(db, `users/${user.uid}/conversations/${currentConvoId}/messages`);
@@ -334,7 +339,7 @@ export default function ChatInterface({ conversationId }: { conversationId?: str
   };
 
   return (
-    <div className="w-full h-full flex flex-col z-10 pb-[70px] md:pb-0">
+    <div className="w-full h-full flex flex-col z-10">
       <CrisisAlertModal isOpen={showCrisisModal} onClose={() => setShowCrisisModal(false)} />
       <header className="border-b p-3 md:p-4 flex items-center justify-between gap-2 shrink-0">
         <div className="flex items-center gap-2">
@@ -352,7 +357,7 @@ export default function ChatInterface({ conversationId }: { conversationId?: str
       </header>
       <main className="flex-1 overflow-hidden">
         <ScrollArea className="h-full" viewportRef={scrollViewportRef}>
-          <div className="p-4 md:p-6 space-y-6">
+          <div className="p-4 md:p-6 space-y-6 pb-24">
             {messages.length === 0 && !isLoading && (
                <div className="flex items-start gap-3">
                   <Avatar className="w-10 h-10 border shrink-0"><AvatarFallback className="bg-primary text-primary-foreground"><Logo className="w-5 h-5"/></AvatarFallback></Avatar>
@@ -380,7 +385,7 @@ export default function ChatInterface({ conversationId }: { conversationId?: str
           </div>
         </ScrollArea>
       </main>
-      <footer className="shrink-0 bg-background border-t p-2 md:p-3">
+      <footer className="fixed bottom-0 left-0 md:left-64 right-0 shrink-0 bg-background border-t p-2 md:p-3 z-20">
         {imagePreview && (
             <div className="relative w-24 h-24 mb-2 ml-2 rounded-md overflow-hidden border">
                 <Image src={imagePreview} alt="Image preview" layout="fill" objectFit="cover" />
