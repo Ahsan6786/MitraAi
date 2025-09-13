@@ -249,6 +249,7 @@ export default function ChatInterface() {
   }, [user]);
 
   useEffect(() => {
+    // This is the auto-scroll logic
     if (scrollViewportRef.current) {
       scrollViewportRef.current.scrollTo({
         top: scrollViewportRef.current.scrollHeight,
@@ -429,7 +430,7 @@ export default function ChatInterface() {
   };
 
   return (
-    <div className="w-full h-full flex flex-col z-10">
+    <div className="w-full h-full flex flex-col z-10 pb-[70px]">
       <CrisisAlertModal
         isOpen={showCrisisModal}
         onClose={() => setShowCrisisModal(false)}
@@ -570,3 +571,5 @@ export default function ChatInterface() {
     </div>
   );
 }
+
+    
