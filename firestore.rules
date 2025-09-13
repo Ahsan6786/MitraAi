@@ -145,6 +145,15 @@ service cloud.firestore {
                        (resource.data.senderId == request.auth.uid || isGroupCreator(get(/databases/$(database)/documents/groups/$(groupId)).data));
       }
     }
+    
+    // CONVERSATIONS (Admin/Doctor to User)
+    match /conversations/{userId} {
+      // Rules for the messages subcollection within a conversation
+      match /messages/{messageId} {
+        // Allow read and write if the user is the owner of the conversation OR if the user is an admin.
+        allow read, write: if request.auth != null && (request.auth.uid == userId || isAdmin());
+      }
+    }
   }
 }
 
