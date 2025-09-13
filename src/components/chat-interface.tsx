@@ -209,7 +209,7 @@ export default function ChatInterface() {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [companionName, setCompanionName] = useState('Mitra');
   
-  const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const scrollViewportRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -249,9 +249,9 @@ export default function ChatInterface() {
   }, [user]);
 
   useEffect(() => {
-    if (scrollAreaRef.current) {
-      scrollAreaRef.current.scrollTo({
-        top: scrollAreaRef.current.scrollHeight,
+    if (scrollViewportRef.current) {
+      scrollViewportRef.current.scrollTo({
+        top: scrollViewportRef.current.scrollHeight,
         behavior: 'smooth',
       });
     }
@@ -429,7 +429,7 @@ export default function ChatInterface() {
   };
 
   return (
-    <div className="w-full h-full flex flex-col z-10 pb-[90px]">
+    <div className="w-full h-full flex flex-col z-10 pb-20">
       <CrisisAlertModal
         isOpen={showCrisisModal}
         onClose={() => setShowCrisisModal(false)}
@@ -447,8 +447,8 @@ export default function ChatInterface() {
           <ThemeToggle />
         </div>
       </header>
-      <main className="flex-1 overflow-hidden relative">
-        <ScrollArea className="absolute inset-0 pb-16" ref={scrollAreaRef}>
+      <main className="flex-1 overflow-hidden">
+        <ScrollArea className="h-full" viewportRef={scrollViewportRef}>
           <div className="p-4 md:p-6 space-y-6">
             {messages.length === 0 && (
                <div className="flex items-start gap-3">
@@ -516,7 +516,7 @@ export default function ChatInterface() {
           </div>
         </ScrollArea>
       </main>
-      <footer className="absolute bottom-16 left-0 w-full bg-transparent border-t p-2 md:p-3">
+      <footer className="shrink-0 bg-background border-t p-2 md:p-3">
         {imagePreview && (
             <div className="relative w-24 h-24 mb-2 ml-2 rounded-md overflow-hidden border">
                 <Image src={imagePreview} alt="Image preview" layout="fill" objectFit="cover" />
