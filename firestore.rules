@@ -60,12 +60,18 @@ service cloud.firestore {
         allow write, delete: if request.auth != null && (request.auth.uid == userId || request.auth.uid == friendId);
       }
 
-      // CHAT HISTORY SUBCOLLECTION
-      match /chatHistory/{messageId} {
-        // Users can read and create messages in their own chat history.
-        allow read, create: if request.auth != null && request.auth.uid == userId;
-        // Nobody can update or delete messages.
-        allow update, delete: if false;
+      // NEW: CONVERSATIONS SUBCOLLECTION (MitraGPT Chats)
+      match /conversations/{conversationId} {
+        // A user can manage their own conversations (list, get, create, update for rename, delete).
+        allow read, create, update, delete: if request.auth != null && request.auth.uid == userId;
+        
+        // MESSAGES SUB-SUBCOLLECTION
+        match /messages/{messageId} {
+          // A user can read and create messages within their own conversation.
+          allow read, create: if request.auth != null && request.auth.uid == userId;
+          // Users cannot update or delete messages.
+          allow update, delete: if false;
+        }
       }
     }
 
