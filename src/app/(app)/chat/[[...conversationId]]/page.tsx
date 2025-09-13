@@ -13,7 +13,6 @@ import { Button } from '@/components/ui/button';
 function ChatPageContent() {
     const params = useParams();
     const conversationId = Array.isArray(params.conversationId) ? params.conversationId[0] : undefined;
-    const chatHistorySidebar = useChatHistorySidebar();
 
     return (
         <div className="h-full flex">
@@ -24,19 +23,6 @@ function ChatPageContent() {
             <div className="flex-1 h-full">
                 <ChatInterface conversationId={conversationId} />
             </div>
-             
-             {/* Mobile-only button to show chats */}
-             {!chatHistorySidebar.isOpen && (
-                 <div className="md:hidden fixed bottom-6 right-4 z-50">
-                    <Button 
-                      onClick={() => chatHistorySidebar.setIsOpen(true)}
-                      className="rounded-full shadow-lg h-12 px-5"
-                    >
-                      <MessageSquare className="h-5 w-5 mr-2"/>
-                      Show Chats
-                    </Button>
-                 </div>
-            )}
         </div>
     );
 }

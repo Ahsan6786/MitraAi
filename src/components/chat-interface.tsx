@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
-import { Languages, Loader2, Send, User, Paperclip, X, Copy, Check, Download, ArrowRight, Bot } from 'lucide-react';
+import { Languages, Loader2, Send, User, Paperclip, X, Copy, Check, Download, ArrowRight, Bot, MessageSquare } from 'lucide-react';
 import { chatEmpatheticTone, ChatEmpatheticToneInput } from '@/ai/flows/chat-empathetic-tone';
 import { generateChatTitle } from '@/ai/flows/generate-chat-title';
 import { Logo } from '@/components/icons';
@@ -26,12 +26,11 @@ import { GenZToggle } from './genz-toggle';
 import { doc, getDoc, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, DocumentData, WithFieldValue, setDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { SOSButton } from './sos-button';
-import { uploadDataUriToStorage } from '@/lib/storage-helpers';
+import { useChatHistorySidebar } from './chat-history-sidebar';
 
 interface Message {
   sender: 'user' | 'ai';
   text: string;
-  imageUrl?: string | null;
 }
 
 const languages = [
@@ -142,14 +141,6 @@ const MessageBubble = ({ message, senderName }: { message: Message; senderName: 
     return (
       <div className="flex flex-col gap-1 items-start w-full">
         <span className="text-muted-foreground text-sm font-medium">{senderName}</span>
-        {message.imageUrl && (
-            <div className="relative w-full max-w-sm aspect-auto rounded-md overflow-hidden group/image mb-2">
-                <Image src={message.imageUrl} alt="Image in chat" width={400} height={400} className="object-cover h-auto w-full" />
-                <a href={message.imageUrl} download="mitra-ai-generated-image.png" className="absolute bottom-2 right-2 opacity-0 group-hover/image:opacity-100 transition-opacity">
-                    <Button variant="secondary" size="icon" className="h-8 w-8"><Download className="h-4 h-4" /><span className="sr-only">Download Image</span></Button>
-                </a>
-            </div>
-        )}
         {message.text && (
             <div className={cn('text-base font-normal leading-normal rounded-lg px-4 py-3 max-w-md shadow-sm', message.sender === 'user' ? 'bg-primary text-primary-foreground rounded-tr-none' : 'bg-muted text-foreground rounded-tl-none')}>
                 <MessageContent text={message.text} />
@@ -175,6 +166,7 @@ export default function ChatInterface({ conversationId }: { conversationId?: str
   const { toast } = useToast();
   const { user } = useAuth();
   const { theme } = useTheme();
+  const chatHistorySidebar = useChatHistorySidebar();
 
   const isGenzMode = theme === 'theme-genz-dark';
   
@@ -202,6 +194,10 @@ export default function ChatInterface({ conversationId }: { conversationId?: str
                 history.push(doc.data() as Message);
             });
             setMessages(history);
+        }, (error) => {
+            console.error("Error fetching messages:", error);
+            // This finally block is important to stop loading indicator on error
+            setIsLoading(false);
         });
         return () => unsubscribe();
     } else {
@@ -225,23 +221,16 @@ export default function ChatInterface({ conversationId }: { conversationId?: str
   };
   
   const handleSendMessage = async () => {
-    if ((!input.trim() && !imageFile) || !user) return;
+    if ((!input.trim()) || !user) return;
     
     let currentConvoId = conversationId;
     const messageText = input;
-    let imageDataUri: string | undefined;
 
     setInput('');
-    if (imageFile) {
-        imageDataUri = await fileToDataUri(imageFile);
-        setImageFile(null);
-        setImagePreview(null);
-    }
     
     const userMessageForUI: Message = { 
         sender: 'user', 
         text: messageText,
-        imageUrl: imageDataUri,
     };
 
     setMessages(prev => [...prev, userMessageForUI]);
@@ -250,9 +239,9 @@ export default function ChatInterface({ conversationId }: { conversationId?: str
     const historyForFlow: ChatEmpatheticToneInput['history'] = [...messages, userMessageForUI]
         .map(msg => ({
             role: msg.sender === 'user' ? 'user' : 'model',
-            content: [{ text: msg.text, media: msg.imageUrl ? { url: msg.imageUrl } : undefined }],
+            content: [{ text: msg.text }],
         }))
-        .filter(msg => msg.content[0].text || msg.content[0].media);
+        .filter(msg => msg.content[0].text);
 
     if (!currentConvoId) {
         const newConversationRef = doc(collection(db, `users/${user.uid}/conversations`));
@@ -269,7 +258,6 @@ export default function ChatInterface({ conversationId }: { conversationId?: str
             text: messageText, 
             createdAt: serverTimestamp() 
         };
-        if (imageDataUri) userMessageForDb.imageUrl = imageDataUri;
         await addDoc(collection(db, newConversationRef.path, 'messages'), userMessageForDb);
 
         router.replace(`/chat/${currentConvoId}`);
@@ -279,7 +267,6 @@ export default function ChatInterface({ conversationId }: { conversationId?: str
             text: messageText, 
             createdAt: serverTimestamp() 
         };
-        if (imageDataUri) userMessageForDb.imageUrl = imageDataUri;
         const messageColRef = collection(db, `users/${user.uid}/conversations/${currentConvoId}/messages`);
         await addDoc(messageColRef, userMessageForDb);
     }
@@ -296,7 +283,6 @@ export default function ChatInterface({ conversationId }: { conversationId?: str
         message: messageText, 
         language,
         isGenzMode,
-        imageDataUri,
         history: historyForFlow,
         companionName,
       });
@@ -314,7 +300,7 @@ export default function ChatInterface({ conversationId }: { conversationId?: str
       const errorMessage: Message = { sender: 'ai', text: 'Sorry, I encountered an error. Please try again.' };
       const messageColRef = collection(db, `users/${user.uid}/conversations/${currentConvoId}/messages`);
       await addDoc(messageColRef, { ...errorMessage, createdAt: serverTimestamp() });
-      toast({ title: "An error occurred", description: error.message, variant: "destructive" });
+      toast({ title: "The AI model is temporarily unavailable. Please try again in a moment.", variant: "destructive" });
     } finally {
       setIsLoading(false);
     }
@@ -323,22 +309,6 @@ export default function ChatInterface({ conversationId }: { conversationId?: str
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     handleSendMessage();
-  };
-
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setImageFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => { setImagePreview(reader.result as string); };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const removeImage = () => {
-    setImageFile(null);
-    setImagePreview(null);
-    if (fileInputRef.current) { fileInputRef.current.value = ''; }
   };
 
   return (
@@ -389,28 +359,28 @@ export default function ChatInterface({ conversationId }: { conversationId?: str
         </ScrollArea>
       </main>
       <footer className="shrink-0 bg-background border-t p-2 md:p-3 z-20">
-        {imagePreview && (
-            <div className="relative w-24 h-24 mb-2 ml-2 rounded-md overflow-hidden border">
-                <Image src={imagePreview} alt="Image preview" layout="fill" objectFit="cover" />
-                <Button variant="destructive" size="icon" className="absolute top-1 right-1 h-6 w-6" onClick={removeImage}><X className="w-4 h-4" /></Button>
-            </div>
-        )}
         <form onSubmit={handleFormSubmit} className="relative">
-          <Input value={input} onChange={(e) => setInput(e.target.value)} placeholder="Ask anything..." className="h-12 pr-24 rounded-full" disabled={isLoading} autoComplete="off" />
+          <Input value={input} onChange={(e) => setInput(e.target.value)} placeholder="Ask anything..." className="h-12 pr-12 rounded-full" disabled={isLoading} autoComplete="off" />
           <div className="absolute inset-y-0 right-0 flex items-center pr-2">
-              <input type="file" accept="image/*" ref={fileInputRef} onChange={handleImageChange} className="hidden" />
-              <Button type="button" variant="ghost" size="icon" onClick={() => fileInputRef.current?.click()} disabled={isLoading}><Paperclip className="w-5 h-5" /></Button>
-              <Button type="submit" className="ml-2 h-8 px-4" disabled={isLoading || (!input.trim() && !imageFile)}><Send className="w-4 h-4"/></Button>
+              <Button type="submit" className="ml-2 h-8 px-4" disabled={isLoading || (!input.trim())}><Send className="w-4 h-4"/></Button>
           </div>
         </form>
          <div className="flex items-center justify-between mt-2 px-2">
-             <div className="flex items-center space-x-4">
+             <div className="flex items-center space-x-2">
                 <Select value={language} onValueChange={setLanguage}>
                     <SelectTrigger className="w-auto h-8 text-xs"><Languages className="w-3 h-3 mr-1.5"/><SelectValue placeholder="Language" /></SelectTrigger>
                     <SelectContent>
                         {languages.map(lang => (<SelectItem key={lang.value} value={lang.value}>{lang.label}</SelectItem>))}
                     </SelectContent>
                 </Select>
+                 <Button 
+                    variant="outline"
+                    onClick={() => chatHistorySidebar.setIsOpen(true)}
+                    className="md:hidden h-8 text-xs"
+                >
+                    <MessageSquare className="w-3 h-3 mr-1.5"/>
+                    Show Chats
+                </Button>
             </div>
          </div>
       </footer>
