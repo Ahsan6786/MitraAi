@@ -1,19 +1,26 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { db } from '@/lib/firebase';
-import { collection, query, where, onSnapshot, orderBy, Timestamp } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, orderBy, Timestamp, addDoc, serverTimestamp } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { SidebarTrigger } from '@/components/ui/sidebar';
-import { ThemeToggle } from '@/components/theme-toggle';
-import { Loader2, FileText, Download, PenSquare, FileQuestion } from 'lucide-react';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
+import { Loader2, FileText, Download, PenSquare, FileQuestion, MessageSquare, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { Logo } from '@/components/icons';
 import { GenZToggle } from '@/components/genz-toggle';
+import { Input } from '@/components/ui/input';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { cn } from '@/lib/utils';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+
+
+const ADMIN_UID = 'ADMIN'; // A special UID for the admin/doctor
 
 interface JournalReport {
     id: string;
@@ -35,6 +42,13 @@ interface QuestionnaireReport {
 }
 
 type Report = JournalReport | QuestionnaireReport;
+
+interface Message {
+    id: string;
+    text: string;
+    senderId: string;
+    createdAt: Timestamp;
+}
 
 const ReportCard = ({ report }: { report: Report }) => {
     const [isDownloading, setIsDownloading] = useState(false);
@@ -167,6 +181,75 @@ const ReportCard = ({ report }: { report: Report }) => {
     );
 };
 
+function UserMessages() {
+    const { user } = useAuth();
+    const [messages, setMessages] = useState<Message[]>([]);
+    const [newMessage, setNewMessage] = useState('');
+    const [isLoading, setIsLoading] = useState(true);
+    const scrollAreaRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        if (!user) return;
+        const q = query(collection(db, `conversations/${user.uid}/messages`), orderBy('createdAt', 'asc'));
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            setMessages(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Message)));
+            setIsLoading(false);
+        });
+        return () => unsubscribe();
+    }, [user]);
+
+    useEffect(() => {
+        if (scrollAreaRef.current) {
+            scrollAreaRef.current.scrollTo({ top: scrollAreaRef.current.scrollHeight, behavior: 'smooth' });
+        }
+    }, [messages]);
+
+    const handleSendMessage = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!newMessage.trim() || !user) return;
+
+        await addDoc(collection(db, `conversations/${user.uid}/messages`), {
+            text: newMessage,
+            senderId: user.uid,
+            senderName: user.displayName || user.email,
+            createdAt: serverTimestamp(),
+        });
+        setNewMessage('');
+    };
+
+    return (
+        <Card className="bg-[#1A1E24] text-white border-gray-700 mt-8">
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2"><MessageSquare />Messages from Your Doctor</CardTitle>
+                <CardDescription className="text-gray-400">Communicate directly with your doctor.</CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-col h-[60vh]">
+                <ScrollArea className="flex-1 pr-4" ref={scrollAreaRef}>
+                    <div className="space-y-4">
+                        {isLoading && <Loader2 className="mx-auto w-6 h-6 animate-spin" />}
+                        {messages.map(msg => (
+                            <div key={msg.id} className={cn('flex items-start gap-3', msg.senderId !== ADMIN_UID ? 'justify-end' : 'justify-start')}>
+                                {msg.senderId === ADMIN_UID && <Avatar className="w-8 h-8 border"><AvatarFallback>A</AvatarFallback></Avatar>}
+                                <div className={cn("flex flex-col max-w-[70%]", msg.senderId !== ADMIN_UID ? 'items-end' : 'items-start')}>
+                                    <div className={cn('rounded-xl px-4 py-2 text-sm shadow-sm', msg.senderId !== ADMIN_UID ? 'bg-primary text-primary-foreground' : 'bg-black/20')}>
+                                        {msg.text}
+                                    </div>
+                                </div>
+                                {msg.senderId !== ADMIN_UID && <Avatar className="w-8 h-8 border"><AvatarFallback>{user?.displayName?.[0] || 'U'}</AvatarFallback></Avatar>}
+                            </div>
+                        ))}
+                         {messages.length === 0 && !isLoading && <p className="text-center text-gray-500">No messages yet. The doctor will message you here.</p>}
+                    </div>
+                </ScrollArea>
+                 <form onSubmit={handleSendMessage} className="flex items-center gap-2 pt-4 border-t border-gray-700">
+                    <Input value={newMessage} onChange={(e) => setNewMessage(e.target.value)} placeholder="Type your reply..." className="bg-black/20 border-gray-600 text-white" />
+                    <Button type="submit" size="icon"><Send className="w-4 h-4" /></Button>
+                </form>
+            </CardContent>
+        </Card>
+    );
+}
+
 export default function ReportsPage() {
     const { user } = useAuth();
     const [reports, setReports] = useState<Report[]>([]);
@@ -257,6 +340,7 @@ export default function ReportsPage() {
                             ))}
                         </div>
                     )}
+                    <UserMessages />
                 </div>
             </main>
         </div>

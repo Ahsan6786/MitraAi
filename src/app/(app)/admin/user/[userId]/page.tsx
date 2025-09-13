@@ -1,13 +1,13 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 import { db } from '@/lib/firebase';
-import { collection, query, where, onSnapshot, orderBy, Timestamp, getDocs, doc, getDoc, limit } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, orderBy, Timestamp, getDocs, doc, getDoc, limit, addDoc, serverTimestamp } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, BarChart, LineChart, FileQuestion, ArrowLeft, PenSquare, Mic } from 'lucide-react';
+import { Loader2, BarChart, LineChart, FileQuestion, ArrowLeft, PenSquare, Mic, Send, MessageSquare } from 'lucide-react';
 import { Bar, BarChart as RechartsBarChart, Line, LineChart as RechartsLineChart, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { subDays, format, eachDayOfInterval, startOfDay } from 'date-fns';
 import { ThemeToggle } from '@/components/theme-toggle';
@@ -17,8 +17,14 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Input } from '@/components/ui/input';
+import { cn } from '@/lib/utils';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+
 
 const ADMIN_EMAIL = 'ahsan.khan@mitwpu.edu.in';
+const ADMIN_UID = 'ADMIN'; // A special UID for the admin/doctor
 
 interface JournalEntry {
     id: string;
@@ -44,6 +50,13 @@ interface QuestionnaireSubmission {
 interface UserProfile {
     displayName?: string;
     email: string;
+}
+
+interface Message {
+    id: string;
+    text: string;
+    senderId: string;
+    createdAt: Timestamp;
 }
 
 // A simple mapping for mood to a numerical value for the line chart
@@ -261,7 +274,6 @@ function UserJournalEntries({ userId }: { userId: string }) {
     );
 }
 
-
 function UserQuestionnaires({ userId }: { userId: string }) {
     const [submissions, setSubmissions] = useState<QuestionnaireSubmission[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -314,6 +326,73 @@ function UserQuestionnaires({ userId }: { userId: string }) {
     );
 }
 
+function UserMessages({ userId, userProfile }: { userId: string, userProfile: UserProfile | null }) {
+    const [messages, setMessages] = useState<Message[]>([]);
+    const [newMessage, setNewMessage] = useState('');
+    const [isLoading, setIsLoading] = useState(true);
+    const scrollAreaRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const q = query(collection(db, `conversations/${userId}/messages`), orderBy('createdAt', 'asc'));
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            setMessages(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Message)));
+            setIsLoading(false);
+        });
+        return () => unsubscribe();
+    }, [userId]);
+
+    useEffect(() => {
+        if (scrollAreaRef.current) {
+            scrollAreaRef.current.scrollTo({ top: scrollAreaRef.current.scrollHeight, behavior: 'smooth' });
+        }
+    }, [messages]);
+
+    const handleSendMessage = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!newMessage.trim()) return;
+
+        await addDoc(collection(db, `conversations/${userId}/messages`), {
+            text: newMessage,
+            senderId: ADMIN_UID,
+            senderName: 'Admin',
+            createdAt: serverTimestamp(),
+        });
+        setNewMessage('');
+    };
+
+    return (
+        <Card className="flex flex-col h-[70vh]">
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2"><MessageSquare />Direct Messages</CardTitle>
+                <CardDescription>Communicate directly with {userProfile?.displayName || userProfile?.email}.</CardDescription>
+            </CardHeader>
+            <CardContent className="flex-1 overflow-hidden">
+                <ScrollArea className="h-full" ref={scrollAreaRef}>
+                    <div className="p-4 space-y-4">
+                        {isLoading && <Loader2 className="mx-auto w-6 h-6 animate-spin" />}
+                        {messages.map(msg => (
+                            <div key={msg.id} className={cn('flex items-start gap-3', msg.senderId === ADMIN_UID ? 'justify-end' : 'justify-start')}>
+                                {msg.senderId !== ADMIN_UID && <Avatar className="w-8 h-8 border"><AvatarFallback>{userProfile?.displayName?.[0] || 'U'}</AvatarFallback></Avatar>}
+                                <div className={cn("flex flex-col max-w-[70%]", msg.senderId === ADMIN_UID ? 'items-end' : 'items-start')}>
+                                    <div className={cn('rounded-xl px-4 py-2 text-sm shadow-sm', msg.senderId === ADMIN_UID ? 'bg-primary text-primary-foreground' : 'bg-muted')}>
+                                        {msg.text}
+                                    </div>
+                                </div>
+                                {msg.senderId === ADMIN_UID && <Avatar className="w-8 h-8 border"><AvatarFallback>A</AvatarFallback></Avatar>}
+                            </div>
+                        ))}
+                    </div>
+                </ScrollArea>
+            </CardContent>
+            <CardContent>
+                <form onSubmit={handleSendMessage} className="flex items-center gap-2">
+                    <Input value={newMessage} onChange={(e) => setNewMessage(e.target.value)} placeholder="Type a message..." />
+                    <Button type="submit" size="icon"><Send className="w-4 h-4" /></Button>
+                </form>
+            </CardContent>
+        </Card>
+    );
+}
 
 export default function UserDetailPage() {
     const { user: adminUser, loading: adminLoading } = useAuth();
@@ -373,10 +452,11 @@ export default function UserDetailPage() {
             </header>
             <main className="flex-1 overflow-auto p-2 sm:p-4 md:p-6">
                 <Tabs defaultValue="mood-analysis" className="w-full">
-                    <TabsList className="grid w-full grid-cols-3">
+                    <TabsList className="grid w-full grid-cols-4">
                         <TabsTrigger value="mood-analysis">Mood Analysis</TabsTrigger>
                         <TabsTrigger value="journal-entries">Journal Entries</TabsTrigger>
                         <TabsTrigger value="questionnaires">Questionnaires</TabsTrigger>
+                        <TabsTrigger value="messages">Messages</TabsTrigger>
                     </TabsList>
                     <TabsContent value="mood-analysis" className="mt-4">
                         <UserMoodDashboard userId={userId} />
@@ -386,6 +466,9 @@ export default function UserDetailPage() {
                     </TabsContent>
                     <TabsContent value="questionnaires" className="mt-4">
                         <UserQuestionnaires userId={userId} />
+                    </TabsContent>
+                    <TabsContent value="messages" className="mt-4">
+                        <UserMessages userId={userId} userProfile={userProfile} />
                     </TabsContent>
                 </Tabs>
             </main>
