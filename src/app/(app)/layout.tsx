@@ -421,7 +421,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
             <div className="flex-1">
               {children}
             </div>
-             {sidebar && (
+             {sidebar && isMobile && (
                 <div className="fixed bottom-6 left-4 z-50 flex items-center gap-3">
                     <Tooltip>
                         <TooltipTrigger asChild>
