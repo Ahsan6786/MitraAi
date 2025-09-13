@@ -76,6 +76,7 @@ function TalkPageContent() {
   const recognitionRef = useRef<any | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const pauseTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const finalTranscriptRef = useRef<string>("");
   const scrollViewportRef = useRef<HTMLDivElement>(null);
 
   const { toast } = useToast();
@@ -88,7 +89,10 @@ function TalkPageContent() {
   }, [chatHistory]);
 
   const handleAiResponse = async (messageText: string) => {
-    if (!messageText.trim()) return;
+    if (!messageText.trim()) {
+        setIsLoading(false);
+        return;
+    };
 
     setChatHistory(prev => [...prev, { sender: 'user', text: messageText }]);
     setIsLoading(true);
@@ -119,10 +123,11 @@ function TalkPageContent() {
       setIsLoading(false);
     }
   };
-
+  
   const stopRecording = useCallback(() => {
     if (recognitionRef.current) {
       recognitionRef.current.stop();
+      // onend will handle the rest
     }
   }, []);
 
@@ -133,6 +138,7 @@ function TalkPageContent() {
     }
 
     setIsRecording(true);
+    finalTranscriptRef.current = ""; // Reset transcript
     const recognition = new SpeechRecognition();
     recognitionRef.current = recognition;
     
@@ -141,28 +147,30 @@ function TalkPageContent() {
     recognition.lang = languages.find(l => l.value === language)?.speechCode || 'en-US';
 
     recognition.onresult = (event: any) => {
-      // Clear the pause timer on new speech
       if (pauseTimerRef.current) clearTimeout(pauseTimerRef.current);
 
-      let finalTranscript = '';
+      let interimTranscript = '';
+      let currentFinalTranscript = '';
       for (let i = event.resultIndex; i < event.results.length; ++i) {
         if (event.results[i].isFinal) {
-          finalTranscript += event.results[i][0].transcript;
+          currentFinalTranscript += event.results[i][0].transcript;
+        } else {
+          interimTranscript += event.results[i][0].transcript;
         }
       }
+      finalTranscriptRef.current = currentFinalTranscript;
 
-      // Set a timer to stop if the user pauses
       pauseTimerRef.current = setTimeout(() => {
         stopRecording();
-      }, 1500); // 1.5 seconds pause
+      }, 1500);
     };
     
     recognition.onerror = (event: any) => {
         console.error('Speech recognition error:', event.error);
-        if (event.error !== 'no-speech') {
+        if (event.error !== 'no-speech' && event.error !== 'aborted') {
             toast({
                 title: "Voice Error",
-                description: "Could not start voice recognition. Please check your microphone permissions.",
+                description: `Could not start voice recognition: ${event.error}`,
                 variant: "destructive",
             });
         }
@@ -172,15 +180,12 @@ function TalkPageContent() {
     recognition.onend = () => {
       setIsRecording(false);
       if (pauseTimerRef.current) clearTimeout(pauseTimerRef.current);
-      // Get final transcript
-      recognition.onresult = (event: any) => {
-          const finalTranscript = Array.from(event.results)
-              .map((result: any) => result[0])
-              .map((result) => result.transcript)
-              .join('');
-          if(finalTranscript) {
-              handleAiResponse(finalTranscript);
-          }
+      recognitionRef.current = null;
+      
+      // Use the final transcript we've been building
+      const finalTranscript = finalTranscriptRef.current;
+      if(finalTranscript) {
+          handleAiResponse(finalTranscript);
       }
     }
 
@@ -206,7 +211,7 @@ function TalkPageContent() {
   useEffect(() => {
     return () => {
       if (recognitionRef.current) {
-        recognitionRef.current.stop();
+        recognitionRef.current.abort();
       }
       if (audioRef.current) {
         audioRef.current.pause();
