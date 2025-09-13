@@ -16,6 +16,7 @@ import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { GenZToggle } from '@/components/genz-toggle';
+import { SOSButton } from '@/components/sos-button';
 
 const SpeechRecognition =
   (typeof window !== 'undefined' && (window.SpeechRecognition || window.webkitSpeechRecognition));
@@ -223,6 +224,7 @@ export default function LiveMoodPage() {
                             <SelectItem value="Hinglish">Hinglish</SelectItem>
                         </SelectContent>
                     </Select>
+                    <SOSButton />
                     <GenZToggle />
                     <ThemeToggle />
                 </div>

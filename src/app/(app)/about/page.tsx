@@ -8,6 +8,7 @@ import { Users, Heart, BrainCircuit, ShieldCheck, Handshake, FileQuestion, Info 
 import { ThemeToggle } from '@/components/theme-toggle';
 import { GenZToggle } from '@/components/genz-toggle';
 import SectionIntroAnimation from '@/components/section-intro-animation';
+import { SOSButton } from '@/components/sos-button';
 
 function AboutPageContent() {
     return (
@@ -23,6 +24,7 @@ function AboutPageContent() {
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
+                    <SOSButton />
                     <GenZToggle />
                     <ThemeToggle />
                 </div>

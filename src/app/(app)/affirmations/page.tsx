@@ -13,6 +13,7 @@ import { ThemeToggle } from '@/components/theme-toggle';
 import { generateAffirmation } from '@/ai/flows/generate-affirmation';
 import { useToast } from '@/hooks/use-toast';
 import { GenZToggle } from '@/components/genz-toggle';
+import { SOSButton } from '@/components/sos-button';
 
 interface LastEntry {
     mood: string;
@@ -91,6 +92,7 @@ export default function AffirmationsPage() {
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
+                    <SOSButton />
                     <GenZToggle />
                     <ThemeToggle />
                 </div>

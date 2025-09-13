@@ -9,6 +9,7 @@ import { screeningToolsData } from '@/lib/screening-tools';
 import Link from 'next/link';
 import { ArrowRight, FileQuestion } from 'lucide-react';
 import { GenZToggle } from '@/components/genz-toggle';
+import { SOSButton } from '@/components/sos-button';
 
 export default function ScreeningToolsPage() {
     return (
@@ -24,6 +25,7 @@ export default function ScreeningToolsPage() {
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
+                    <SOSButton />
                     <GenZToggle />
                     <ThemeToggle />
                 </div>

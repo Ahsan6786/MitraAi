@@ -18,6 +18,7 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { SOSButton } from '@/components/sos-button';
 
 
 const ADMIN_UID = 'ADMIN'; // A special UID for the admin/doctor
@@ -307,6 +308,7 @@ export default function ReportsPage() {
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
+                    <SOSButton />
                     <GenZToggle />
                     <ThemeToggle />
                 </div>

@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Sparkles, ArrowLeft, Wind, Waves, Laugh, Frown, Info } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import SectionIntroAnimation from '@/components/section-intro-animation';
+import { SOSButton } from '@/components/sos-button';
 
 type Mood = 'stress' | 'anxiety' | 'sadness' | 'happiness';
 
@@ -69,6 +70,7 @@ function TherapyPageContent() {
                 </div>
             </div>
              <div className="flex items-center gap-2">
+                <SOSButton />
                 <GenZToggle />
                 <ThemeToggle />
             </div>
@@ -102,6 +104,7 @@ function TherapyPageContent() {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <SOSButton />
           <GenZToggle />
           <ThemeToggle />
         </div>

@@ -27,6 +27,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { SOSButton } from '@/components/sos-button';
 
 interface Friend {
   id: string;
@@ -221,6 +222,7 @@ export default function GroupsPage() {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <SOSButton />
           <GenZToggle />
           <ThemeToggle />
         </div>

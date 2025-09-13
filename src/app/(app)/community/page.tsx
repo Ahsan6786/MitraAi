@@ -58,6 +58,7 @@ import {
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
 import SectionIntroAnimation from '@/components/section-intro-animation';
+import { SOSButton } from '@/components/sos-button';
 
 interface Post {
   id: string;
@@ -544,6 +545,7 @@ function CommunityPageContent() {
                     <span className="text-sm font-medium">Groups</span>
                 </Link>
             </Button>
+            <SOSButton />
             <GenZToggle />
             <ThemeToggle />
         </div>

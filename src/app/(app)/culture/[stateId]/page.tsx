@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { statesData } from '@/lib/states-data';
 import { Button } from '@/components/ui/button';
 import { GenZToggle } from '@/components/genz-toggle';
+import { SOSButton } from '@/components/sos-button';
 
 export default function StateCulturePage() {
     const params = useParams();
@@ -37,6 +38,7 @@ export default function StateCulturePage() {
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
+                    <SOSButton />
                     <GenZToggle />
                     <ThemeToggle />
                 </div>

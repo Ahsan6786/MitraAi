@@ -29,6 +29,7 @@ import {
 import Link from 'next/link';
 import { GenZToggle } from '@/components/genz-toggle';
 import SectionIntroAnimation from '@/components/section-intro-animation';
+import { SOSButton } from '@/components/sos-button';
 
 interface JournalEntry {
   id: string;
@@ -185,6 +186,7 @@ function JournalPageContent() {
             </div>
         </div>
         <div className="flex items-center gap-2">
+            <SOSButton />
             <GenZToggle />
             <ThemeToggle />
         </div>

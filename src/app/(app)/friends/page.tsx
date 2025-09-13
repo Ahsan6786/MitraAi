@@ -14,6 +14,7 @@ import { ThemeToggle } from '@/components/theme-toggle';
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { GenZToggle } from '@/components/genz-toggle';
+import { SOSButton } from '@/components/sos-button';
 
 interface FriendRequest {
   id: string;
@@ -156,6 +157,7 @@ export default function FriendsPage() {
           </div>
         </div>
         <div className="flex items-center gap-2">
+            <SOSButton />
             <GenZToggle />
             <ThemeToggle />
         </div>

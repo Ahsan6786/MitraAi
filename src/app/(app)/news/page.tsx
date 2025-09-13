@@ -13,6 +13,7 @@ import { generateImage } from '@/ai/flows/generate-image';
 import { useToast } from '@/hooks/use-toast';
 import { GenZToggle } from '@/components/genz-toggle';
 import SectionIntroAnimation from '@/components/section-intro-animation';
+import { SOSButton } from '@/components/sos-button';
 
 interface NewsArticle {
     id: number;
@@ -85,6 +86,7 @@ function NewsPageContent() {
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
+                    <SOSButton />
                     <GenZToggle />
                     <ThemeToggle />
                 </div>

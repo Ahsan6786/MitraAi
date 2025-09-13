@@ -15,6 +15,7 @@ import { predictChatMood } from '@/ai/flows/predict-chat-mood';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { GenZToggle } from '@/components/genz-toggle';
+import { SOSButton } from '@/components/sos-button';
 
 interface Message {
   id: number;
@@ -108,6 +109,7 @@ export default function MoodChatPage() {
           </div>
         </div>
         <div className="flex items-center gap-2">
+            <SOSButton />
             <GenZToggle />
             <ThemeToggle />
         </div>

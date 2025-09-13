@@ -21,6 +21,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { SOSButton } from '@/components/sos-button';
 
 
 const ADMIN_EMAIL = 'ahsan.khan@mitwpu.edu.in';
@@ -446,6 +447,7 @@ export default function UserDetailPage() {
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
+                    <SOSButton />
                     <GenZToggle />
                     <ThemeToggle />
                 </div>

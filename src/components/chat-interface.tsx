@@ -26,6 +26,7 @@ import { useTheme } from 'next-themes';
 import { GenZToggle } from './genz-toggle';
 import { doc, getDoc, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, DocumentData, WithFieldValue } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { SOSButton } from './sos-button';
 
 // Check for SpeechRecognition API
 const SpeechRecognition =
@@ -444,6 +445,7 @@ export default function ChatInterface() {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <SOSButton />
           <GenZToggle />
           <ThemeToggle />
         </div>
@@ -571,5 +573,3 @@ export default function ChatInterface() {
     </div>
   );
 }
-
-    

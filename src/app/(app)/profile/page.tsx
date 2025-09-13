@@ -19,6 +19,7 @@ import { GenZToggle } from '@/components/genz-toggle';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { allIndianStates } from '@/lib/states-data';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { SOSButton } from '@/components/sos-button';
 
 
 export default function ProfilePage() {
@@ -145,6 +146,7 @@ export default function ProfilePage() {
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
+                    <SOSButton />
                     <GenZToggle />
                     <ThemeToggle />
                 </div>

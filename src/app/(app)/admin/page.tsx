@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { GenZToggle } from '@/components/genz-toggle';
 import Link from 'next/link';
+import { SOSButton } from '@/components/sos-button';
 
 
 const ADMIN_EMAIL = 'ahsan.khan@mitwpu.edu.in';
@@ -317,6 +318,7 @@ export default function AdminPage() {
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
+                    <SOSButton />
                     <GenZToggle />
                     <ThemeToggle />
                 </div>

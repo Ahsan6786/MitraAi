@@ -10,6 +10,7 @@ import { statesData, allIndianStates } from '@/lib/states-data';
 import { cn } from '@/lib/utils';
 import { GenZToggle } from '@/components/genz-toggle';
 import CultureIntroAnimation from '@/components/culture-intro-animation';
+import { SOSButton } from '@/components/sos-button';
 
 // Simple hash function to generate a color from a string
 const stringToColor = (str: string) => {
@@ -46,6 +47,7 @@ function CulturePageContent() {
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
+                    <SOSButton />
                     <GenZToggle />
                     <ThemeToggle />
                 </div>

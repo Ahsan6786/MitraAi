@@ -29,6 +29,7 @@ import { format } from 'date-fns';
 import { GenZToggle } from '@/components/genz-toggle';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { SOSButton } from '@/components/sos-button';
 
 interface Counsellor {
   id: string;
@@ -271,6 +272,7 @@ export default function BookingPage() {
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
+                    <SOSButton />
                     <GenZToggle />
                     <ThemeToggle />
                 </div>
