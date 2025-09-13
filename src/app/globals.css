@@ -303,4 +303,12 @@ body {
   }
 }
 
-    
+@layer utilities {
+  @keyframes point-right {
+    0%, 100% { transform: translateX(0); }
+    50% { transform: translateX(8px); }
+  }
+  .animate-point-right {
+    animation: point-right 1.5s ease-in-out infinite;
+  }
+}

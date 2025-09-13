@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { BookHeart, MessageSquare, MicVocal, ShieldCheck, LogOut, FileText, Puzzle, Phone, LayoutDashboard, Info, HeartPulse, Sparkles, Trophy, Newspaper, User, Users, Star, Camera, UserCheck, CalendarPlus, CalendarClock, Menu, LandPlot, Smile, ChevronDown, Stethoscope, PenSquare, UserPlus } from 'lucide-react';
+import { BookHeart, MessageSquare, MicVocal, ShieldCheck, LogOut, FileText, Puzzle, Phone, LayoutDashboard, Info, HeartPulse, Sparkles, Trophy, Newspaper, User, Users, Star, Camera, UserCheck, CalendarPlus, CalendarClock, Menu, LandPlot, Smile, ChevronDown, Stethoscope, PenSquare, UserPlus, ArrowRight } from 'lucide-react';
 import {
   SidebarProvider,
   Sidebar,
@@ -42,6 +42,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
   const sidebar = useSidebar();
   const [showQuestionnaireModal, setShowQuestionnaireModal] = useState(false);
   const [userType, setUserType] = useState<'user' | 'admin' | 'counsellor' | null>(null);
+  const [showFeatureHint, setShowFeatureHint] = useState(false);
 
   const professionalHelpPaths = ['/reports', '/booking', '/my-appointments', '/screening-tools'];
   const isProfessionalHelpActive = professionalHelpPaths.some(p => pathname.startsWith(p));
@@ -56,6 +57,23 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
     setIsProfessionalHelpOpen(isProfessionalHelpActive);
     setIsEmotionsDiaryOpen(isEmotionsDiaryActive);
   }, [isProfessionalHelpActive, isEmotionsDiaryActive]);
+
+  // Effect for the feature hint animation
+  useEffect(() => {
+    const hasSeenHint = sessionStorage.getItem('hasSeenFeatureHint');
+    if (!hasSeenHint) {
+        const timer = setTimeout(() => {
+            setShowFeatureHint(true);
+        }, 2000); // Show after 2 seconds
+        return () => clearTimeout(timer);
+    }
+  }, []);
+
+  const handleHintClick = () => {
+    sessionStorage.setItem('hasSeenFeatureHint', 'true');
+    setShowFeatureHint(false);
+    sidebar?.setOpenMobile(true);
+  };
 
 
   useEffect(() => {
@@ -401,29 +419,14 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
             <div className="flex-1">
               {children}
             </div>
-            {sidebar && (
-                <div className="fixed bottom-6 left-4 z-50">
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                            <Button 
-                              onClick={() => sidebar.setOpenMobile(true)}
-                              size="icon"
-                              className="rounded-full shadow-lg h-12 w-12 md:hidden"
-                            >
-                              <Menu className="h-6 w-6"/>
-                              <span className="sr-only">Explore Features</span>
-                            </Button>
-                        </TooltipTrigger>
-                        <TooltipContent side="right">
-                            <p>Explore Features</p>
-                        </TooltipContent>
-                    </Tooltip>
+             {sidebar && (
+                <div className="fixed bottom-6 left-4 z-50 flex items-center gap-3">
                     <Tooltip>
                         <TooltipTrigger asChild>
                              <Button 
                               onClick={() => sidebar.setOpenMobile(true)}
                               size="icon"
-                              className="rounded-full shadow-lg h-12 w-12 hidden md:inline-flex"
+                              className="rounded-full shadow-lg h-12 w-12"
                             >
                               <Menu className="h-6 w-6"/>
                               <span className="sr-only">Explore Features</span>
@@ -433,6 +436,16 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
                             <p>Explore Features</p>
                         </TooltipContent>
                     </Tooltip>
+
+                    {showFeatureHint && (
+                        <div 
+                            className="flex items-center gap-2 bg-primary text-primary-foreground rounded-full p-2 pr-4 shadow-lg cursor-pointer animate-in fade-in-50"
+                            onClick={handleHintClick}
+                        >
+                            <ArrowRight className="h-5 w-5 animate-point-right" />
+                            <span className="text-sm font-medium">Explore Features</span>
+                        </div>
+                    )}
                 </div>
             )}
           </div>
