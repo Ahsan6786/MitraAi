@@ -1,11 +1,12 @@
 
 'use client';
 
-import { createContext, useContext, useState, ReactNode, Dispatch, SetStateAction, useEffect } from 'react';
-import { useAuth } from './use-auth';
-import { db } from '@/lib/firebase';
-import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
+// This hook is no longer the primary source of truth for chat history, 
+// as history is now managed by Firestore and scoped to conversations.
+// It can be removed or kept for other potential uses. For now, we'll keep it
+// but recognize that the ChatInterface component now fetches its own data.
 
+import { createContext, useContext, useState, ReactNode, Dispatch, SetStateAction } from 'react';
 
 export interface Message {
   sender: 'user' | 'ai';
