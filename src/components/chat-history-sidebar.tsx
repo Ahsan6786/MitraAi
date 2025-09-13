@@ -142,10 +142,10 @@ export function ChatHistorySidebar({ currentConversationId }: { currentConversat
                                         <span className="truncate">{convo.title}</span>
                                     </Button>
                                     <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={(e) => { e.preventDefault(); handleStartRename(convo); }}><Edit className="w-4 h-4"/></Button>
+                                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleStartRename(convo); }}><Edit className="w-4 h-4"/></Button>
                                          <AlertDialog>
                                             <AlertDialogTrigger asChild>
-                                                <Button size="icon" variant="ghost" className="h-7 w-7" onClick={(e) => e.preventDefault()}><Trash2 className="w-4 h-4"/></Button>
+                                                <Button size="icon" variant="ghost" className="h-7 w-7" onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}><Trash2 className="w-4 h-4"/></Button>
                                             </AlertDialogTrigger>
                                             <AlertDialogContent>
                                                 <AlertDialogHeader>
