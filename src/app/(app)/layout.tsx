@@ -30,6 +30,7 @@ import { ChatHistoryProvider } from '@/hooks/use-chat-history';
 import { GenZToggle } from '@/components/genz-toggle';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { cn } from '@/lib/utils';
+import { Sheet } from '@/components/ui/sheet';
 
 const ADMIN_EMAIL = 'ahsan.khan@mitwpu.edu.in';
 
@@ -179,7 +180,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
               <>
                 {/* Highlighted & Reordered Items */}
                 <SidebarMenuItem>
-                  <SidebarMenuButton asChild isActive={pathname === '/chat'}>
+                  <SidebarMenuButton asChild isActive={pathname === '/chat' || pathname.startsWith('/chat/')}>
                     <Link href="/chat" onClick={handleLinkClick} className="flex items-center justify-between w-full">
                       <div className="flex items-center gap-2">
                         <MessageSquare />
@@ -393,13 +394,15 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
           </div>
         </SidebarFooter>
       </Sidebar>
-      <SidebarInset>
-        <div className="flex flex-col h-full relative">
-          <div className="flex-1">
-            {children}
+      <Sheet open={sidebar?.openMobile} onOpenChange={sidebar?.setOpenMobile}>
+        <SidebarInset>
+          <div className="flex flex-col h-full relative">
+            <div className="flex-1">
+              {children}
+            </div>
           </div>
-        </div>
-      </SidebarInset>
+        </SidebarInset>
+      </Sheet>
     </>
   );
 }
@@ -416,3 +419,4 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     </AuthProvider>
   );
 }
+
