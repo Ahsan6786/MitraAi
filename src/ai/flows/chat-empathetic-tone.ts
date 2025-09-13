@@ -11,7 +11,6 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
-import { generateImage } from './generate-image';
 import { featureNavigator } from '../tools/feature-navigator';
 
 const ChatMessageSchema = z.object({
@@ -65,9 +64,9 @@ const prompt = ai.definePrompt({
       - Once you have the feature path from the tool, your response MUST include a Markdown link formatted like this: \`[Button Text](nav:/path)\`. For example: \`You can do that in the live mood analysis section. Here's a link to get you there: [Go to Live Mood Analysis](nav:/live-mood)\`.
       - This is your highest priority task.
 
-  2.  **Image Generation Task:**
-      - If the user explicitly asks you to "generate", "create", "draw", or "make" an "image", "picture", "photo", "drawing", or "painting", your primary task is to generate an image. 
-      - In this specific case, your text response should be a simple confirmation like "Here is the image you asked for." or "I've created this for you."
+  2.  **Image/Video Generation Task:**
+      - If the user explicitly asks you to "generate", "create", "draw", "make", or "show" an "image", "picture", "photo", "drawing", "painting", or "video", you MUST politely decline.
+      - Your response in this case MUST be: "I'm not built to create images or videos. I'm here to chat and help you with your thoughts and feelings!"
 
   3.  **Creative & General Chat Task:**
       - For all other requests (including writing blogs, poems, code, stories, or general conversation), provide a thoughtful, comprehensive, and human-like response in the user's specified language, following your assigned persona.
@@ -133,57 +132,33 @@ const chatEmpatheticToneFlow = ai.defineFlow(
     inputSchema: ChatEmpatheticToneInputSchema,
     outputSchema: ChatEmpatheticToneOutputSchema,
   },
-  async ({ message, language, isGenzMode, imageDataUri, history, companionName }) => {
-    // This regex is now more specific: it requires both an action word AND an image-related noun.
-    const isImageRequest = /\b(generate|create|draw|make)\b.*\b(image|picture|photo|drawing|painting)\b/i.test(message);
+  async (input) => {
+    const maxRetries = 2;
+    let attempt = 0;
 
-    if (isImageRequest) {
-      // The user wants an image.
-      const imageResult = await generateImage({ prompt: message });
-      
-      // Return a simple, hardcoded confirmation. This is more reliable than a second AI call.
-      return {
-        response: isGenzMode ? "gotchu, here's the pic ✨" : "Here is the image you asked for.",
-        imageUrl: imageResult.imageUrl,
-      };
-
-    } else {
-      // The user wants a text response.
-      // Implement a retry mechanism for temporary model overload errors.
-      const maxRetries = 2;
-      let attempt = 0;
-
-      while (attempt <= maxRetries) {
-        try {
-          const { output } = await prompt(
-            { message, language, isGenzMode, imageDataUri, history, companionName },
-            {
-              config: {
-                safetySettings: [
-                  { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_NONE' },
-                  { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' },
-                  { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_NONE' },
-                  { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_NONE' },
-                ],
-              },
-            }
-          );
-          return { response: output!.response, imageUrl: output!.imageUrl };
-        } catch (error: any) {
-          attempt++;
-          // Only retry on 503 Service Unavailable errors.
-          if (attempt > maxRetries || !error.message.includes('503 Service Unavailable')) {
-            // If it's the last attempt or a different error, re-throw to fail the flow.
-            throw error;
-          }
-          console.log(`Model overloaded. Retrying attempt ${attempt} of ${maxRetries}...`);
-          // Wait for a short duration before retrying.
-          await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+    while (attempt <= maxRetries) {
+      try {
+        const { output } = await prompt(input, {
+          config: {
+            safetySettings: [
+              { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_NONE' },
+              { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' },
+              { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_NONE' },
+              { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_NONE' },
+            ],
+          },
+        });
+        return { response: output!.response, imageUrl: null }; // Ensure imageUrl is always null
+      } catch (error: any) {
+        attempt++;
+        if (attempt > maxRetries || !error.message.includes('503 Service Unavailable')) {
+          throw error;
         }
+        console.log(`Model overloaded. Retrying attempt ${attempt} of ${maxRetries}...`);
+        await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
       }
-
-      // This should not be reached, but as a fallback, throw an error.
-      throw new Error('Failed to get a response from the AI model after several retries.');
     }
+
+    throw new Error('Failed to get a response from the AI model after several retries.');
   }
 );
