@@ -447,9 +447,9 @@ export default function ChatInterface() {
           <ThemeToggle />
         </div>
       </header>
-      <main className="flex-1 overflow-hidden">
-        <ScrollArea className="h-full" ref={scrollAreaRef}>
-          <div className="p-4 md:p-6 space-y-6 pb-24">
+      <main className="flex-1 overflow-hidden relative">
+        <ScrollArea className="absolute inset-0" ref={scrollAreaRef}>
+          <div className="p-4 md:p-6 space-y-6 pb-40">
             {messages.length === 0 && (
                <div className="flex items-start gap-3">
                   <Avatar className="w-10 h-10 border shrink-0">
@@ -516,9 +516,9 @@ export default function ChatInterface() {
           </div>
         </ScrollArea>
       </main>
-      <footer className="px-4 py-3 border-t pb-20 md:pb-3">
+      <footer className="absolute bottom-0 left-0 w-full bg-background border-t p-2 md:p-3 mb-[68px] md:mb-0">
         {imagePreview && (
-            <div className="relative w-24 h-24 mb-2 rounded-md overflow-hidden border">
+            <div className="relative w-24 h-24 mb-2 ml-2 rounded-md overflow-hidden border">
                 <Image src={imagePreview} alt="Image preview" layout="fill" objectFit="cover" />
                 <Button variant="destructive" size="icon" className="absolute top-1 right-1 h-6 w-6" onClick={removeImage}>
                     <X className="w-4 h-4" />
@@ -551,7 +551,7 @@ export default function ChatInterface() {
               </Button>
           </div>
         </form>
-         <div className="flex items-center justify-between mt-2">
+         <div className="flex items-center justify-between mt-2 px-2">
              <div className="flex items-center space-x-4">
                 <Select value={language} onValueChange={setLanguage}>
                     <SelectTrigger className="w-auto h-8 text-xs">
