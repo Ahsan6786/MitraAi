@@ -109,7 +109,7 @@ export default function ProfilePage() {
                 city: city.trim(),
                 displayName: displayName.trim(),
                 email: currentUser.email,
-                photoURL: photoURL, // Ensure this is always set
+                photoURL: photoURL || null, // Ensure this is always set, use null if no photo
                 emergencyContactName: emergencyContactName.trim(),
                 emergencyContactPhone: emergencyContactPhone.trim(),
             }, { merge: true });
