@@ -11,7 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Loader2, User, Bot, MapPin, Edit } from 'lucide-react';
+import { Loader2, User, Bot, MapPin, Edit, Phone } from 'lucide-react';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { useToast } from '@/hooks/use-toast';
@@ -29,6 +29,8 @@ export default function ProfilePage() {
     const [companionName, setCompanionName] = useState('');
     const [state, setState] = useState('');
     const [city, setCity] = useState('');
+    const [emergencyContactName, setEmergencyContactName] = useState('');
+    const [emergencyContactPhone, setEmergencyContactPhone] = useState('');
     const [photoFile, setPhotoFile] = useState<File | null>(null);
     const [photoPreview, setPhotoPreview] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -47,6 +49,8 @@ export default function ProfilePage() {
                     setCompanionName(data.companionName || '');
                     setState(data.state || '');
                     setCity(data.city || '');
+                    setEmergencyContactName(data.emergencyContactName || '');
+                    setEmergencyContactPhone(data.emergencyContactPhone || '');
                 }
                 setIsLoadingData(false);
             };
@@ -105,7 +109,9 @@ export default function ProfilePage() {
                 city: city.trim(),
                 displayName: displayName.trim(),
                 email: currentUser.email,
-                photoURL: photoURL // Ensure this is always set
+                photoURL: photoURL, // Ensure this is always set
+                emergencyContactName: emergencyContactName.trim(),
+                emergencyContactPhone: emergencyContactPhone.trim(),
             }, { merge: true });
 
             // Step 4: Force a reload of the auth state to propagate changes app-wide
@@ -236,21 +242,58 @@ export default function ProfilePage() {
                                     />
                                 </div>
                             </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="companionName" className="flex items-center gap-2">
-                                    <Bot className="w-4 h-4" />
-                                    AI Companion Name
-                                </Label>
-                                <Input
-                                    id="companionName"
-                                    type="text"
-                                    value={companionName}
-                                    onChange={(e) => setCompanionName(e.target.value)}
-                                    placeholder="e.g., Mitra"
-                                    disabled={isSubmitting}
-                                />
-                                <p className="text-xs text-muted-foreground">Give your AI companion a custom name.</p>
-                            </div>
+                             <Card className="p-4 bg-muted/50">
+                                <div className="space-y-4">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="companionName" className="flex items-center gap-2">
+                                            <Bot className="w-4 h-4" />
+                                            AI Companion Name
+                                        </Label>
+                                        <Input
+                                            id="companionName"
+                                            type="text"
+                                            value={companionName}
+                                            onChange={(e) => setCompanionName(e.target.value)}
+                                            placeholder="e.g., Mitra"
+                                            disabled={isSubmitting}
+                                        />
+                                        <p className="text-xs text-muted-foreground">Give your AI companion a custom name.</p>
+                                    </div>
+                                </div>
+                            </Card>
+                             <Card className="p-4 bg-destructive/10 border-destructive/20">
+                                <div className="space-y-4">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="emergencyContactName" className="flex items-center gap-2 text-destructive">
+                                            <Phone className="w-4 h-4" />
+                                            Emergency Contact Name
+                                        </Label>
+                                        <Input
+                                            id="emergencyContactName"
+                                            type="text"
+                                            value={emergencyContactName}
+                                            onChange={(e) => setEmergencyContactName(e.target.value)}
+                                            placeholder="e.g., Jane Doe"
+                                            disabled={isSubmitting}
+                                        />
+                                    </div>
+                                     <div className="space-y-2">
+                                        <Label htmlFor="emergencyContactPhone" className="flex items-center gap-2 text-destructive">
+                                             <Phone className="w-4 h-4" />
+                                            Emergency Contact Phone
+                                        </Label>
+                                        <Input
+                                            id="emergencyContactPhone"
+                                            type="tel"
+                                            value={emergencyContactPhone}
+                                            onChange={(e) => setEmergencyContactPhone(e.target.value)}
+                                            placeholder="+91 12345 67890"
+                                            disabled={isSubmitting}
+                                        />
+                                    </div>
+                                    <p className="text-xs text-destructive/80">This contact will be shown as an option in the SOS modal.</p>
+                                </div>
+                            </Card>
                              <Button type="submit" disabled={isSubmitting} className="w-full">
                                 {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                 Save Changes
