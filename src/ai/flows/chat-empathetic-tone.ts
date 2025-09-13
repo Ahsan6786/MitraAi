@@ -33,7 +33,6 @@ export type ChatEmpatheticToneInput = z.infer<typeof ChatEmpatheticToneInputSche
 
 const ChatEmpatheticToneOutputSchema = z.object({
   response: z.string().describe('The AI companion’s empathetic response in the specified language.'),
-  imageUrl: z.string().optional().nullable().describe('The data URI of a generated image, if requested.'),
 });
 export type ChatEmpatheticToneOutput = z.infer<typeof ChatEmpatheticToneOutputSchema>;
 
@@ -148,7 +147,7 @@ const chatEmpatheticToneFlow = ai.defineFlow(
             ],
           },
         });
-        return { response: output!.response, imageUrl: null }; // Ensure imageUrl is always null
+        return { response: output!.response };
       } catch (error: any) {
         attempt++;
         if (attempt > maxRetries || !error.message.includes('503 Service Unavailable')) {
@@ -159,6 +158,6 @@ const chatEmpatheticToneFlow = ai.defineFlow(
       }
     }
 
-    throw new Error('Failed to get a response from the AI model after several retries.');
+    throw new Error('The AI model is temporarily unavailable. Please try again in a moment.');
   }
 );

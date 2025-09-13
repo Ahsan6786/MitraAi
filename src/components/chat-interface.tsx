@@ -264,15 +264,21 @@ export default function ChatInterface({ conversationId }: { conversationId?: str
         });
         currentConvoId = newConversationRef.id;
         
-        const userMessageForDb = { ...userMessageForUI, createdAt: serverTimestamp() };
-        delete userMessageForDb.imageUrl; // Don't save preview URI to DB
+        const userMessageForDb: Partial<Message> & { sender: 'user', createdAt: any } = { 
+            sender: 'user', 
+            text: messageText, 
+            createdAt: serverTimestamp() 
+        };
         if (imageDataUri) userMessageForDb.imageUrl = imageDataUri;
         await addDoc(collection(db, newConversationRef.path, 'messages'), userMessageForDb);
 
         router.replace(`/chat/${currentConvoId}`);
     } else {
-        const userMessageForDb = { ...userMessageForUI, createdAt: serverTimestamp() };
-        delete userMessageForDb.imageUrl;
+        const userMessageForDb: Partial<Message> & { sender: 'user', createdAt: any } = { 
+            sender: 'user', 
+            text: messageText, 
+            createdAt: serverTimestamp() 
+        };
         if (imageDataUri) userMessageForDb.imageUrl = imageDataUri;
         const messageColRef = collection(db, `users/${user.uid}/conversations/${currentConvoId}/messages`);
         await addDoc(messageColRef, userMessageForDb);
@@ -299,20 +305,16 @@ export default function ChatInterface({ conversationId }: { conversationId?: str
         sender: 'ai', 
         text: chatResult.response 
       };
-
-      if (chatResult.imageUrl) {
-        const publicUrl = await uploadDataUriToStorage(chatResult.imageUrl, `generated/${user.uid}/${Date.now()}.png`);
-        aiMessage.imageUrl = publicUrl;
-      }
       
       const messageColRef = collection(db, `users/${user.uid}/conversations/${currentConvoId}/messages`);
       await addDoc(messageColRef, { ...aiMessage, createdAt: serverTimestamp() });
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error getting AI response:', error);
       const errorMessage: Message = { sender: 'ai', text: 'Sorry, I encountered an error. Please try again.' };
       const messageColRef = collection(db, `users/${user.uid}/conversations/${currentConvoId}/messages`);
       await addDoc(messageColRef, { ...errorMessage, createdAt: serverTimestamp() });
+      toast({ title: "An error occurred", description: error.message, variant: "destructive" });
     } finally {
       setIsLoading(false);
     }
