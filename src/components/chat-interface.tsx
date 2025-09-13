@@ -429,7 +429,7 @@ export default function ChatInterface() {
   };
 
   return (
-    <div className="w-full h-full flex flex-col z-10 pb-20">
+    <div className="w-full h-full flex flex-col z-10">
       <CrisisAlertModal
         isOpen={showCrisisModal}
         onClose={() => setShowCrisisModal(false)}
