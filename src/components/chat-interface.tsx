@@ -359,13 +359,14 @@ export default function ChatInterface({ conversationId }: { conversationId?: str
         </ScrollArea>
       </main>
       <footer className="shrink-0 bg-background border-t p-2 md:p-3 z-20">
-        <form onSubmit={handleFormSubmit} className="relative">
+        <form onSubmit={handleFormSubmit} className="relative flex items-center gap-2">
+          <Avatar className="w-10 h-10 border shrink-0 hidden md:flex"><AvatarFallback>{user?.email ? user.email[0].toUpperCase() : <User className="w-5 h-5" />}</AvatarFallback></Avatar>
           <Input value={input} onChange={(e) => setInput(e.target.value)} placeholder="Ask anything..." className="h-12 pr-12 rounded-full" disabled={isLoading} autoComplete="off" />
           <div className="absolute inset-y-0 right-0 flex items-center pr-2">
               <Button type="submit" className="ml-2 h-8 px-4" disabled={isLoading || (!input.trim())}><Send className="w-4 h-4"/></Button>
           </div>
         </form>
-         <div className="flex items-center justify-between mt-2 px-2">
+         <div className="flex items-center justify-between mt-2 px-2 md:pl-14">
              <div className="flex items-center space-x-2">
                 <Select value={language} onValueChange={setLanguage}>
                     <SelectTrigger className="w-auto h-8 text-xs"><Languages className="w-3 h-3 mr-1.5"/><SelectValue placeholder="Language" /></SelectTrigger>
