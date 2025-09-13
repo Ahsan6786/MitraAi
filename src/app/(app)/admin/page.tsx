@@ -94,92 +94,6 @@ const questionnaireQuestions = [
 ];
 
 
-function JournalReviews() {
-    const [entries, setEntries] = useState<JournalEntry[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
-    const [reports, setReports] = useState<Record<string, string>>({});
-    const [isSubmitting, setIsSubmitting] = useState<Record<string, boolean>>({});
-    const [isGenerating, setIsGenerating] = useState<Record<string, boolean>>({});
-    const { toast } = useToast();
-
-    useEffect(() => {
-        const q = query(
-            collection(db, 'journalEntries'),
-            where('reviewed', '==', false)
-        );
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-            const entriesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as JournalEntry));
-            entriesData.sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis());
-            setEntries(entriesData);
-            setIsLoading(false);
-        }, (error) => {
-            console.error("Error fetching journal entries:", error);
-            setIsLoading(false);
-        });
-        return () => unsubscribe();
-    }, []);
-    
-    const handleReportChange = (id: string, value: string) => setReports(p => ({ ...p, [id]: value }));
-    const handleGenerateReport = async (entry: JournalEntry) => {
-        setIsGenerating(p => ({...p, [entry.id]: true}));
-        try {
-            const result = await generateDoctorReport({ entry: entry.content || entry.transcription || '', mood: entry.mood });
-            handleReportChange(entry.id, result.report);
-        } catch (error) {
-            toast({ title: "Generation Failed", variant: "destructive" });
-        } finally {
-            setIsGenerating(p => ({...p, [entry.id]: false}));
-        }
-    };
-    const handleSubmitReview = async (id: string) => {
-        if (!reports[id]?.trim()) {
-            toast({ title: "Empty Report", variant: "destructive" });
-            return;
-        }
-        setIsSubmitting(p => ({...p, [id]: true}));
-        try {
-            await updateDoc(doc(db, 'journalEntries', id), { reviewed: true, doctorReport: reports[id] });
-            toast({ title: "Review Submitted" });
-        } catch (error) {
-            toast({ title: "Submission Failed", variant: "destructive" });
-        } finally {
-            setIsSubmitting(p => ({...p, [id]: false}));
-        }
-    };
-
-     if (isLoading) return <div className="flex justify-center items-center h-full"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
-     if (entries.length === 0) return <Card className="text-center p-6 md:p-10"><CardTitle>All Caught Up!</CardTitle><CardDescription className="mt-2">No new journal entries to review.</CardDescription></Card>;
-
-     return (
-        <Accordion type="single" collapsible className="w-full space-y-4">
-            {entries.map(entry => (
-                <AccordionItem value={entry.id} key={entry.id} className="border rounded-lg bg-card">
-                    <AccordionTrigger className="p-4 hover:no-underline text-left">
-                        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 w-full">
-                            <div className="flex items-center gap-4"><AlertTriangle className="w-5 h-5 text-yellow-500" />{entry.type === 'text' ? <PenSquare className="w-5 h-5 text-primary" /> : <Mic className="w-5 h-5 text-primary" />}</div>
-                            <div className="flex-1"><div className="font-semibold text-sm sm:text-base truncate">{entry.userEmail}</div><div className="text-xs sm:text-sm text-muted-foreground">{entry.createdAt.toDate().toLocaleString()}</div></div>
-                            <Badge variant="outline" className="capitalize mt-1 sm:mt-0">{entry.mood}</Badge>
-                        </div>
-                    </AccordionTrigger>
-                    <AccordionContent className="p-4 border-t">
-                        <div className="space-y-4">
-                            <div><h4 className="font-semibold text-sm mb-1">User's Entry:</h4><p className="text-sm text-muted-foreground italic p-3 bg-muted rounded-md whitespace-pre-wrap">"{entry.content || entry.transcription}"</p></div>
-                            <div className="space-y-2">
-                                <h4 className="font-semibold text-sm">Doctor's Report:</h4>
-                                <Textarea placeholder="Write your feedback here..." rows={5} value={reports[entry.id] || ''} onChange={(e) => handleReportChange(entry.id, e.target.value)} disabled={isSubmitting[entry.id] || isGenerating[entry.id]} />
-                                <div className="flex flex-col sm:flex-row gap-2">
-                                    <Button onClick={() => handleSubmitReview(entry.id)} disabled={isSubmitting[entry.id] || isGenerating[entry.id]} className="w-full sm:w-auto">{isSubmitting[entry.id] && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}Submit Review</Button>
-                                    <Button variant="outline" onClick={() => handleGenerateReport(entry)} disabled={isSubmitting[entry.id] || isGenerating[entry.id]} className="w-full sm:w-auto">{isGenerating[entry.id] ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Sparkles className="mr-2 h-4 w-4"/>}Generate Draft</Button>
-                                </div>
-                            </div>
-                        </div>
-                    </AccordionContent>
-                </AccordionItem>
-            ))}
-        </Accordion>
-    );
-}
-
 function QuestionnaireReviews() {
     const [submissions, setSubmissions] = useState<QuestionnaireSubmission[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -489,12 +403,11 @@ export default function AdminPage() {
             </header>
             <main className="flex-1 overflow-auto p-2 sm:p-4 md:p-6">
                 <Tabs defaultValue="manage-users" className="w-full">
-                    <TabsList className="grid w-full grid-cols-5">
+                    <TabsList className="grid w-full grid-cols-4">
                         <TabsTrigger value="manage-users">Manage Users</TabsTrigger>
                         <TabsTrigger value="counsellor-requests">Counsellor Requests</TabsTrigger>
                         <TabsTrigger value="manage-counsellors">Manage Counsellors</TabsTrigger>
                         <TabsTrigger value="questionnaires">Questionnaires</TabsTrigger>
-                        <TabsTrigger value="journals">Journal Entries</TabsTrigger>
                     </TabsList>
                     <TabsContent value="manage-users" className="mt-4">
                         <ManageUsers />
@@ -507,9 +420,6 @@ export default function AdminPage() {
                     </TabsContent>
                     <TabsContent value="questionnaires" className="mt-4">
                         <QuestionnaireReviews />
-                    </TabsContent>
-                    <TabsContent value="journals" className="mt-4">
-                        <JournalReviews />
                     </TabsContent>
                 </Tabs>
             </main>

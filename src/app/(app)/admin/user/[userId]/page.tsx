@@ -7,7 +7,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { db } from '@/lib/firebase';
 import { collection, query, where, onSnapshot, orderBy, Timestamp, getDocs, doc, getDoc, limit } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, BarChart, LineChart, FileQuestion, ArrowLeft } from 'lucide-react';
+import { Loader2, BarChart, LineChart, FileQuestion, ArrowLeft, PenSquare, Mic } from 'lucide-react';
 import { Bar, BarChart as RechartsBarChart, Line, LineChart as RechartsLineChart, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { subDays, format, eachDayOfInterval, startOfDay } from 'date-fns';
 import { ThemeToggle } from '@/components/theme-toggle';
@@ -24,6 +24,11 @@ interface JournalEntry {
     id: string;
     createdAt: Timestamp;
     mood: string;
+    type: 'text' | 'voice';
+    content?: string;
+    transcription?: string;
+    reviewed: boolean;
+    doctorReport?: string;
 }
 
 interface QuestionnaireSubmission {
@@ -198,6 +203,65 @@ function UserMoodDashboard({ userId }: { userId: string }) {
     );
 }
 
+function UserJournalEntries({ userId }: { userId: string }) {
+    const [entries, setEntries] = useState<JournalEntry[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        const q = query(
+            collection(db, 'journalEntries'),
+            where('userId', '==', userId),
+            orderBy('createdAt', 'desc')
+        );
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const entriesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as JournalEntry));
+            setEntries(entriesData);
+            setIsLoading(false);
+        });
+        return () => unsubscribe();
+    }, [userId]);
+
+    if (isLoading) {
+        return <div className="flex justify-center items-center h-64"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
+    }
+    if (entries.length === 0) {
+        return <Card className="text-center p-6 md:p-10"><CardTitle>No Journal Entries</CardTitle><CardDescription className="mt-2">This user has not created any journal entries.</CardDescription></Card>;
+    }
+
+    return (
+        <div className="space-y-4">
+            {entries.map(entry => (
+                <Card key={entry.id}>
+                    <CardHeader>
+                        <div className="flex justify-between items-start">
+                            <div className="flex items-center gap-3">
+                                {entry.type === 'text' ? <PenSquare className="w-5 h-5 text-primary" /> : <Mic className="w-5 h-5 text-primary" />}
+                                <div>
+                                    <CardTitle className="text-base">{entry.createdAt.toDate().toLocaleDateString()}</CardTitle>
+                                    <CardDescription>{entry.createdAt.toDate().toLocaleTimeString()}</CardDescription>
+                                </div>
+                            </div>
+                            <Badge variant="outline" className="capitalize">{entry.mood}</Badge>
+                        </div>
+                    </CardHeader>
+                    <CardContent>
+                        <p className="text-sm text-muted-foreground italic p-3 bg-muted rounded-md whitespace-pre-wrap">
+                            "{entry.content || entry.transcription}"
+                        </p>
+                        {entry.reviewed && entry.doctorReport && (
+                             <div className="mt-4">
+                                <h4 className="font-semibold text-sm mb-1">Doctor's Report:</h4>
+                                <p className="text-sm text-muted-foreground p-3 bg-muted/50 border rounded-md whitespace-pre-wrap">{entry.doctorReport}</p>
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
+            ))}
+        </div>
+    );
+}
+
+
 function UserQuestionnaires({ userId }: { userId: string }) {
     const [submissions, setSubmissions] = useState<QuestionnaireSubmission[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -309,12 +373,16 @@ export default function UserDetailPage() {
             </header>
             <main className="flex-1 overflow-auto p-2 sm:p-4 md:p-6">
                 <Tabs defaultValue="mood-analysis" className="w-full">
-                    <TabsList className="grid w-full grid-cols-2">
+                    <TabsList className="grid w-full grid-cols-3">
                         <TabsTrigger value="mood-analysis">Mood Analysis</TabsTrigger>
+                        <TabsTrigger value="journal-entries">Journal Entries</TabsTrigger>
                         <TabsTrigger value="questionnaires">Questionnaires</TabsTrigger>
                     </TabsList>
                     <TabsContent value="mood-analysis" className="mt-4">
                         <UserMoodDashboard userId={userId} />
+                    </TabsContent>
+                    <TabsContent value="journal-entries" className="mt-4">
+                        <UserJournalEntries userId={userId} />
                     </TabsContent>
                     <TabsContent value="questionnaires" className="mt-4">
                         <UserQuestionnaires userId={userId} />
