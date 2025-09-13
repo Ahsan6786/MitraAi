@@ -94,86 +94,6 @@ const questionnaireQuestions = [
 ];
 
 
-function QuestionnaireReviews() {
-    const [submissions, setSubmissions] = useState<QuestionnaireSubmission[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
-    const [feedbacks, setFeedbacks] = useState<Record<string, string>>({});
-    const [isSubmitting, setIsSubmitting] = useState<Record<string, boolean>>({});
-    const { toast } = useToast();
-
-    useEffect(() => {
-        const q = query(
-            collection(db, 'questionnaires'),
-            where('reviewed', '==', false),
-            orderBy('createdAt', 'desc')
-        );
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-            const subsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as QuestionnaireSubmission));
-            setSubmissions(subsData);
-            setIsLoading(false);
-        }, (error) => {
-            console.error("Error fetching questionnaires:", error);
-            setIsLoading(false);
-        });
-        return () => unsubscribe();
-    }, []);
-    
-    const handleFeedbackChange = (id: string, value: string) => setFeedbacks(p => ({ ...p, [id]: value }));
-    const handleSubmitFeedback = async (id: string) => {
-        if (!feedbacks[id]?.trim()) {
-            toast({ title: "Empty Feedback", variant: "destructive" });
-            return;
-        }
-        setIsSubmitting(p => ({...p, [id]: true}));
-        try {
-            await updateDoc(doc(db, 'questionnaires', id), { reviewed: true, doctorFeedback: feedbacks[id] });
-            toast({ title: "Feedback Submitted" });
-        } catch (error) {
-            toast({ title: "Submission Failed", variant: "destructive" });
-        } finally {
-            setIsSubmitting(p => ({...p, [id]: false}));
-        }
-    };
-
-    if (isLoading) return <div className="flex justify-center items-center h-full"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
-    if (submissions.length === 0) return <Card className="text-center p-6 md:p-10"><CardTitle>All Caught Up!</CardTitle><CardDescription className="mt-2">No new questionnaires to review.</CardDescription></Card>;
-
-    return (
-        <Accordion type="single" collapsible className="w-full space-y-4">
-            {submissions.map(sub => (
-                <AccordionItem value={sub.id} key={sub.id} className="border rounded-lg bg-card">
-                    <AccordionTrigger className="p-4 hover:no-underline text-left">
-                        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 w-full">
-                            <div className="flex items-center gap-4"><AlertTriangle className="w-5 h-5 text-yellow-500" /><FileQuestion className="w-5 h-5 text-primary" /></div>
-                            <div className="flex-1">
-                                <div className="font-semibold text-sm sm:text-base truncate">{sub.userEmail}</div>
-                                <div className="text-xs sm:text-sm text-muted-foreground">{sub.testName} - {sub.createdAt.toDate().toLocaleString()}</div>
-                            </div>
-                            <Badge variant="destructive" className="capitalize mt-1 sm:mt-0">{sub.result.level}</Badge>
-                        </div>
-                    </AccordionTrigger>
-                    <AccordionContent className="p-4 border-t">
-                        <div className="space-y-4">
-                            <div><h4 className="font-semibold text-sm mb-1">Initial Assessment:</h4><p className="text-sm text-muted-foreground p-3 bg-muted rounded-md"><strong>{sub.result.level}:</strong> {sub.result.recommendation}</p></div>
-                             <div>
-                                <h4 className="font-semibold text-sm mb-1">User's Answers:</h4>
-                                <ul className="text-sm text-muted-foreground list-decimal list-inside p-3 bg-muted rounded-md space-y-1">
-                                    {questionnaireQuestions.map(q => <li key={q.id}><strong>{sub.answers[q.id]}</strong>: {q.text}</li>)}
-                                </ul>
-                            </div>
-                            <div className="space-y-2">
-                                <h4 className="font-semibold text-sm">Doctor's Feedback:</h4>
-                                <Textarea placeholder="Write your professional feedback and recommendations..." rows={5} value={feedbacks[sub.id] || ''} onChange={(e) => handleFeedbackChange(sub.id, e.target.value)} disabled={isSubmitting[sub.id]} />
-                                <div className="flex"><Button onClick={() => handleSubmitFeedback(sub.id)} disabled={isSubmitting[sub.id]}>{isSubmitting[sub.id] && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}Submit Feedback</Button></div>
-                            </div>
-                        </div>
-                    </AccordionContent>
-                </AccordionItem>
-            ))}
-        </Accordion>
-    );
-}
-
 function CounsellorRequests() {
     const [requests, setRequests] = useState<Counsellor[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -403,11 +323,10 @@ export default function AdminPage() {
             </header>
             <main className="flex-1 overflow-auto p-2 sm:p-4 md:p-6">
                 <Tabs defaultValue="manage-users" className="w-full">
-                    <TabsList className="grid w-full grid-cols-4">
+                    <TabsList className="grid w-full grid-cols-3">
                         <TabsTrigger value="manage-users">Manage Users</TabsTrigger>
                         <TabsTrigger value="counsellor-requests">Counsellor Requests</TabsTrigger>
                         <TabsTrigger value="manage-counsellors">Manage Counsellors</TabsTrigger>
-                        <TabsTrigger value="questionnaires">Questionnaires</TabsTrigger>
                     </TabsList>
                     <TabsContent value="manage-users" className="mt-4">
                         <ManageUsers />
@@ -417,9 +336,6 @@ export default function AdminPage() {
                     </TabsContent>
                      <TabsContent value="manage-counsellors" className="mt-4">
                         <ManageCounsellors />
-                    </TabsContent>
-                    <TabsContent value="questionnaires" className="mt-4">
-                        <QuestionnaireReviews />
                     </TabsContent>
                 </Tabs>
             </main>
