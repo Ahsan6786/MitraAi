@@ -26,6 +26,7 @@ import { GenZToggle } from './genz-toggle';
 import { doc, getDoc, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, DocumentData, WithFieldValue, setDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { SOSButton } from './sos-button';
+import { uploadDataUriToStorage } from '@/lib/storage-helpers';
 
 interface Message {
   sender: 'user' | 'ai';
@@ -246,8 +247,6 @@ export default function ChatInterface({ conversationId }: { conversationId?: str
     };
     if (imageDataUri) {
         userMessage.imageUrl = imageDataUri;
-    } else {
-        delete userMessage.imageUrl;
     }
 
     // If this is a new chat, create the conversation document first
@@ -298,10 +297,11 @@ export default function ChatInterface({ conversationId }: { conversationId?: str
         sender: 'ai', 
         text: chatResult.response 
       };
+
       if (chatResult.imageUrl) {
-        aiMessage.imageUrl = chatResult.imageUrl;
-      } else {
-        delete aiMessage.imageUrl;
+        // Upload the generated image data URI to Storage and get the URL
+        const publicUrl = await uploadDataUriToStorage(chatResult.imageUrl, `generated/${user.uid}/${Date.now()}.png`);
+        aiMessage.imageUrl = publicUrl;
       }
       
       const messageColRef = collection(db, `users/${user.uid}/conversations/${currentConvoId}/messages`);
