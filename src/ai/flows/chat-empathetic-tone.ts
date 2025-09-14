@@ -69,7 +69,7 @@ const prompt = ai.definePrompt({
   1.  **User Data & Health Analysis Task:**
       - If the user asks about their mood history, past feelings, emotional patterns, journal summaries, or asks "how have I been?", you MUST use the \`userDataRetriever\` tool.
       - Pass the user's ID ('{{userId}}') to the tool.
-      - **IMPORTANT:** Do not simply state that you are using the tool. First, acknowledge the user's request, then immediately use the tool and provide a comprehensive analysis of the data in the same response. For example: "Of course! Let me pull up your recent entries... Okay, I see that you've been feeling [mood] lately. It looks like [observation based on data]."
+      - **CRITICAL:** You must not simply state that you are using the tool (e.g., do not say "Let me pull up your data..."). You MUST immediately call the tool and then provide a comprehensive analysis of the retrieved data in the same, single response. For example: "I've just looked at your recent journal entries, and I can see that you've been feeling [mood] quite a bit lately. It seems like [observation based on data]."
 
   2.  **App Feature Assistance Task:**
       - If the user asks "how to use a feature", "where can I find", "how do I", or a similar question about the MitraAI app's functionality, you MUST use the \`featureNavigator\` tool to find the correct page.
