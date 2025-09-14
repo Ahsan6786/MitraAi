@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
-import { Languages, Loader2, Send, User, Paperclip, X, Copy, Check, Download, ArrowRight, Bot } from 'lucide-react';
+import { Languages, Loader2, Send, User, Paperclip, X, Copy, Check, Download, ArrowRight, Bot, ArrowDown } from 'lucide-react';
 import { chatEmpatheticTone, ChatEmpatheticToneInput } from '@/ai/flows/chat-empathetic-tone';
 import { generateChatTitle } from '@/ai/flows/generate-chat-title';
 import { Logo } from '@/components/icons';
@@ -158,6 +158,7 @@ export default function ChatInterface({ conversationId }: { conversationId?: str
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [companionName, setCompanionName] = useState('Mitra');
+  const [showScrollToBottom, setShowScrollToBottom] = useState(false);
   
   const scrollViewportRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -195,28 +196,30 @@ export default function ChatInterface({ conversationId }: { conversationId?: str
             setMessages(history);
         }, (error) => {
             console.error("Error fetching messages:", error);
-            // This finally block is important to stop loading indicator on error
             setIsLoading(false);
         });
         return () => unsubscribe();
     } else {
-        setMessages([]); // Clear messages for a new chat
+        setMessages([]);
     }
   }, [user, conversationId]);
 
-  useEffect(() => {
+  const scrollToBottom = () => {
     if (scrollViewportRef.current) {
-      scrollViewportRef.current.scrollTo({ top: scrollViewportRef.current.scrollHeight, behavior: 'smooth' });
+        scrollViewportRef.current.scrollTo({ top: scrollViewportRef.current.scrollHeight, behavior: 'smooth' });
+    }
+  };
+
+  useEffect(() => {
+    if (!isLoading) {
+        scrollToBottom();
     }
   }, [messages, isLoading]);
 
-  const fileToDataUri = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const target = e.currentTarget;
+    const isScrolledUp = target.scrollHeight - target.scrollTop - target.clientHeight > 200;
+    setShowScrollToBottom(isScrolledUp);
   };
   
   const handleSendMessage = async () => {
@@ -328,34 +331,46 @@ export default function ChatInterface({ conversationId }: { conversationId?: str
         </div>
       </header>
       
-      <ScrollArea className="flex-1" viewportRef={scrollViewportRef}>
-        <div className="p-4 md:p-6 space-y-6">
-          {messages.length === 0 && !isLoading && (
-             <div className="flex items-start gap-3">
-                <Avatar className="w-10 h-10 border shrink-0"><AvatarFallback className="bg-primary text-primary-foreground"><Logo className="w-5 h-5"/></AvatarFallback></Avatar>
-                <MessageBubble message={{sender: 'ai', text: `Hello there! I'm ${companionName}. How are you feeling today?`}} senderName={companionName} />
-            </div>
-          )}
-          {messages.map((message, index) => (
-              <div key={index} className={cn('flex items-start gap-3', message.sender === 'user' ? 'justify-end' : 'justify-start')}>
-                {message.sender === 'ai' && <Avatar className="w-10 h-10 border shrink-0"><AvatarFallback className="bg-primary text-primary-foreground"><Logo className="w-5 h-5"/></AvatarFallback></Avatar>}
-                <div className={cn('flex flex-col gap-1', message.sender === 'user' ? 'items-end' : 'items-start')}>
-                   <MessageBubble message={message} senderName={message.sender === 'user' ? (user?.displayName || 'You') : companionName} />
+      <div className="flex-1 relative overflow-hidden">
+        <ScrollArea className="h-full" viewportRef={scrollViewportRef} onScroll={handleScroll}>
+            <div className="p-4 md:p-6 space-y-6">
+            {messages.length === 0 && !isLoading && (
+                <div className="flex items-start gap-3">
+                    <Avatar className="w-10 h-10 border shrink-0"><AvatarFallback className="bg-primary text-primary-foreground"><Logo className="w-5 h-5"/></AvatarFallback></Avatar>
+                    <MessageBubble message={{sender: 'ai', text: `Hello there! I'm ${companionName}. How are you feeling today?`}} senderName={companionName} />
                 </div>
-                {message.sender === 'user' && <Avatar className="w-10 h-10 border shrink-0"><AvatarFallback>{user?.email ? user.email[0].toUpperCase() : <User className="w-5 h-5" />}</AvatarFallback></Avatar>}
-              </div>
-            ))}
-          {isLoading && (
-            <div className="flex items-start gap-3 justify-start">
-                <Avatar className="w-10 h-10 border shrink-0"><AvatarFallback className="bg-primary text-primary-foreground"><Logo className="w-5 h-5"/></AvatarFallback></Avatar>
-                <div className="flex flex-col gap-1 items-start">
-                  <span className="text-muted-foreground text-sm font-medium">{companionName}</span>
-                  <div className="bg-muted text-foreground rounded-lg rounded-tl-none px-4 py-3 flex items-center text-base"><Loader2 className="w-5 h-5 animate-spin mr-2"/> Thinking...</div>
+            )}
+            {messages.map((message, index) => (
+                <div key={index} className={cn('flex items-start gap-3', message.sender === 'user' ? 'justify-end' : 'justify-start')}>
+                    {message.sender === 'ai' && <Avatar className="w-10 h-10 border shrink-0"><AvatarFallback className="bg-primary text-primary-foreground"><Logo className="w-5 h-5"/></AvatarFallback></Avatar>}
+                    <div className={cn('flex flex-col gap-1', message.sender === 'user' ? 'items-end' : 'items-start')}>
+                    <MessageBubble message={message} senderName={message.sender === 'user' ? (user?.displayName || 'You') : companionName} />
+                    </div>
+                    {message.sender === 'user' && <Avatar className="w-10 h-10 border shrink-0"><AvatarFallback>{user?.email ? user.email[0].toUpperCase() : <User className="w-5 h-5" />}</AvatarFallback></Avatar>}
                 </div>
+                ))}
+            {isLoading && (
+                <div className="flex items-start gap-3 justify-start">
+                    <Avatar className="w-10 h-10 border shrink-0"><AvatarFallback className="bg-primary text-primary-foreground"><Logo className="w-5 h-5"/></AvatarFallback></Avatar>
+                    <div className="flex flex-col gap-1 items-start">
+                    <span className="text-muted-foreground text-sm font-medium">{companionName}</span>
+                    <div className="bg-muted text-foreground rounded-lg rounded-tl-none px-4 py-3 flex items-center text-base"><Loader2 className="w-5 h-5 animate-spin mr-2"/> Thinking...</div>
+                    </div>
+                </div>
+            )}
             </div>
-          )}
-        </div>
-      </ScrollArea>
+        </ScrollArea>
+        {showScrollToBottom && (
+            <Button 
+                onClick={scrollToBottom}
+                variant="outline"
+                size="icon"
+                className="absolute bottom-4 right-4 z-10 rounded-full shadow-lg bg-background/80 backdrop-blur-sm animate-in fade-in-50"
+            >
+                <ArrowDown className="w-5 h-5"/>
+            </Button>
+        )}
+      </div>
 
       <footer className="shrink-0 bg-background border-t p-2 md:p-3 z-20">
         <form onSubmit={handleFormSubmit} className="relative flex items-center gap-2">
