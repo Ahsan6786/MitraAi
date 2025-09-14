@@ -454,7 +454,7 @@ export default function UserDetailPage() {
             </header>
             <main className="flex-1 overflow-auto p-2 sm:p-4 md:p-6">
                 <Tabs defaultValue="mood-analysis" className="w-full">
-                    <TabsList className="grid w-full grid-cols-4">
+                    <TabsList className="grid w-full grid-cols-2 md:grid-cols-4">
                         <TabsTrigger value="mood-analysis">Mood Analysis</TabsTrigger>
                         <TabsTrigger value="journal-entries">Journal Entries</TabsTrigger>
                         <TabsTrigger value="questionnaires">Questionnaires</TabsTrigger>
