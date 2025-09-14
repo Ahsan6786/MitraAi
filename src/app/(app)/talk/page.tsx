@@ -185,8 +185,8 @@ function TalkPageContent() {
     };
     
     recognition.onerror = (event: any) => {
-        console.error('Speech recognition error:', event.error);
         if (event.error !== 'no-speech' && event.error !== 'aborted') {
+            console.error('Speech recognition error:', event.error);
             toast({
                 title: "Voice Error",
                 description: `Could not start voice recognition: ${event.error}`,
@@ -390,3 +390,5 @@ export default function TalkPage() {
 
     return <TalkPageContent />;
 }
+
+    
