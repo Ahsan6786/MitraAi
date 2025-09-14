@@ -1,7 +1,7 @@
 
 'use client';
 
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { FileQuestion, ArrowRight } from 'lucide-react';
 import { screeningToolsData } from '@/lib/screening-tools';
@@ -9,22 +9,24 @@ import { useRouter } from 'next/navigation';
 
 interface StartQuestionnaireModalProps {
   isOpen: boolean;
-  onClose: () => void; // Kept for consistency, but will not be used for closing
+  onClose: () => void;
+  onConfirm: () => void;
 }
 
-export default function StartQuestionnaireModal({ isOpen, onClose }: StartQuestionnaireModalProps) {
+export default function StartQuestionnaireModal({ isOpen, onClose, onConfirm }: StartQuestionnaireModalProps) {
   const router = useRouter();
 
   const handleTestSelection = (testId: string) => {
+    onConfirm();
     router.push(`/questionnaire?test=${testId}`);
-    // We don't call onClose here because navigation will unmount the component
   };
 
   return (
-    <Dialog open={isOpen}>
+    <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent 
         className="sm:max-w-lg"
         onInteractOutside={(e) => e.preventDefault()} // Prevents closing on outside click
+        hideCloseButton={true} // Prevent the 'x' button from showing
       >
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
