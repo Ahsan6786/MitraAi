@@ -94,8 +94,10 @@ service cloud.firestore {
 
       // TASKS SUBCOLLECTION (for Rewards)
       match /tasks/{taskId} {
-        // A user can read their own task statuses. Admin can also read.
-        allow read: if request.auth != null && (request.auth.uid == userId || isAdmin());
+        // A user can read their own task statuses.
+        allow read: if request.auth != null && request.auth.uid == userId;
+        // An admin can also read/list any user's tasks.
+        allow get, list: if request.auth != null && isAdmin();
         // A user can create/update their own task status (e.g., mark as complete).
         allow write: if request.auth != null && request.auth.uid == userId;
       }
