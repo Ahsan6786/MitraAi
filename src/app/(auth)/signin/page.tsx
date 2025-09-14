@@ -9,9 +9,10 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
+import { auth, db } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
+import { collection, query, where, getDocs, limit } from 'firebase/firestore';
 
 const ADMIN_EMAIL = 'ahsan.khan@mitwpu.edu.in';
 
@@ -28,11 +29,30 @@ function AuthForm() {
     setIsLoading(true);
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      if (userCredential.user.email === ADMIN_EMAIL) {
+      const user = userCredential.user;
+
+      if (user.email === ADMIN_EMAIL) {
         router.push('/admin');
-      } else {
-        router.push('/welcome');
+        return;
       }
+      
+      // Check if user has taken a questionnaire before
+      const q = query(
+        collection(db, 'questionnaires'), 
+        where('userId', '==', user.uid),
+        limit(1)
+      );
+
+      const querySnapshot = await getDocs(q);
+
+      if (querySnapshot.empty) {
+        // No questionnaire taken, redirect to welcome for screening
+        router.push('/welcome');
+      } else {
+        // Questionnaire already taken, redirect to chat
+        router.push('/chat');
+      }
+
     } catch (error: any) {
        toast({
         title: "Sign In Failed",
