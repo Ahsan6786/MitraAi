@@ -11,9 +11,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Loader2, User, Bot, MapPin, Edit, Phone } from 'lucide-react';
+import { Loader2, User, Bot, MapPin, Edit, Phone, CalendarIcon } from 'lucide-react';
 import { SidebarTrigger } from '@/components/ui/sidebar';
-import { ThemeToggle } from '@/components/theme-toggle';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { useToast } from '@/hooks/use-toast';
 import { GenZToggle } from '@/components/genz-toggle';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -26,6 +26,7 @@ export default function ProfilePage() {
     const { user, loading, reloadUser } = useAuth();
     const { toast } = useToast();
     const [displayName, setDisplayName] = useState('');
+    const [age, setAge] = useState('');
     const [companionName, setCompanionName] = useState('');
     const [state, setState] = useState('');
     const [city, setCity] = useState('');
@@ -47,6 +48,7 @@ export default function ProfilePage() {
                 if (docSnap.exists()) {
                     const data = docSnap.data();
                     setCompanionName(data.companionName || '');
+                    setAge(data.age || '');
                     setState(data.state || '');
                     setCity(data.city || '');
                     setEmergencyContactName(data.emergencyContactName || '');
@@ -79,8 +81,8 @@ export default function ProfilePage() {
              toast({ title: "Not authenticated", variant: "destructive" });
             return;
         }
-        if (!displayName.trim()) {
-            toast({ title: "Name is required", variant: "destructive" });
+        if (!displayName.trim() || !age.trim()) {
+            toast({ title: "Name and Age are required", variant: "destructive" });
             return;
         }
 
@@ -107,6 +109,7 @@ export default function ProfilePage() {
                 companionName: companionName.trim(),
                 state: state.trim(),
                 city: city.trim(),
+                age: parseInt(age, 10),
                 displayName: displayName.trim(),
                 email: currentUser.email,
                 photoURL: photoURL || null, // Ensure this is always set, use null if no photo
@@ -199,16 +202,29 @@ export default function ProfilePage() {
                                 <Input id="email" type="email" value={user?.email || ''} disabled />
                                 <p className="text-xs text-muted-foreground">Your email address cannot be changed.</p>
                             </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="displayName">Display Name</Label>
-                                <Input
-                                    id="displayName"
-                                    type="text"
-                                    value={displayName}
-                                    onChange={(e) => setDisplayName(e.target.value)}
-                                    placeholder="Enter your name"
-                                    disabled={isSubmitting}
-                                />
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="displayName">Display Name</Label>
+                                    <Input
+                                        id="displayName"
+                                        type="text"
+                                        value={displayName}
+                                        onChange={(e) => setDisplayName(e.target.value)}
+                                        placeholder="Enter your name"
+                                        disabled={isSubmitting}
+                                    />
+                                </div>
+                                 <div className="space-y-2">
+                                    <Label htmlFor="age" className="flex items-center gap-2"><CalendarIcon className="w-4 h-4" />Age</Label>
+                                    <Input
+                                        id="age"
+                                        type="number"
+                                        value={age}
+                                        onChange={(e) => setAge(e.target.value)}
+                                        placeholder="Enter your age"
+                                        disabled={isSubmitting}
+                                    />
+                                </div>
                             </div>
                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div className="space-y-2">

@@ -9,24 +9,26 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
+import { auth, db } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 
 function SignUpForm() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [age, setAge] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim()) {
+    if (!name.trim() || !age.trim()) {
       toast({
         title: "Sign Up Failed",
-        description: "Please enter your name.",
+        description: "Please fill in all fields.",
         variant: "destructive",
       });
       return;
@@ -42,12 +44,21 @@ function SignUpForm() {
     setIsLoading(true);
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+
       // After creating the user, update their profile with the name
-      if (userCredential.user) {
-        await updateProfile(userCredential.user, {
-          displayName: name,
-        });
-      }
+      await updateProfile(user, {
+        displayName: name,
+      });
+
+      // Also create their user document in Firestore with additional details
+      await setDoc(doc(db, 'users', user.uid), {
+        displayName: name,
+        email: user.email,
+        age: parseInt(age, 10),
+        createdAt: serverTimestamp(),
+      });
+
       router.push('/chat');
     } catch (error: any) {
       toast({
@@ -70,15 +81,28 @@ function SignUpForm() {
       </CardHeader>
       <form onSubmit={handleSignUp}>
         <CardContent className="grid gap-4">
-          <div className="grid gap-2">
-            <Label htmlFor="name">Name</Label>
-            <Input
-              id="name"
-              placeholder="Your Name"
-              required
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-            />
+          <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-2">
+              <Label htmlFor="name">Name</Label>
+              <Input
+                id="name"
+                placeholder="Your Name"
+                required
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+              />
+            </div>
+             <div className="grid gap-2">
+              <Label htmlFor="age">Age</Label>
+              <Input
+                id="age"
+                type="number"
+                placeholder="21"
+                required
+                value={age}
+                onChange={(e) => setAge(e.target.value)}
+              />
+            </div>
           </div>
           <div className="grid gap-2">
             <Label htmlFor="email">Email</Label>
