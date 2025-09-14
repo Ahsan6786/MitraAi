@@ -32,8 +32,8 @@ service cloud.firestore {
 
     // USERS (for profile data like companionName)
     match /users/{userId} {
-      // Users can read and write their own profile document.
-      allow read, update: if request.auth != null && request.auth.uid == userId;
+      // Users can create, read, and write their own profile document.
+      allow create, read, update: if request.auth != null && request.auth.uid == userId;
       // Any authenticated user can read public profile data (displayName, email) for friend requests.
       allow get: if request.auth != null;
       
