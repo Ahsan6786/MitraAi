@@ -76,7 +76,7 @@ service cloud.firestore {
         allow write, delete: if request.auth != null && (request.auth.uid == userId || request.auth.uid == friendId);
       }
 
-      // NEW: CONVERSATIONS SUBCOLLECTION (MitraGPT Chats)
+      // CONVERSATIONS SUBCOLLECTION (MitraGPT Chats)
       match /conversations/{conversationId} {
         // A user can manage their own conversations (list, get, create, update for rename, delete).
         allow read, create, update, delete: if request.auth != null && request.auth.uid == userId;
@@ -90,6 +90,14 @@ service cloud.firestore {
           // Users cannot update messages.
           allow update: if false;
         }
+      }
+
+      // TASKS SUBCOLLECTION (for Rewards)
+      match /tasks/{taskId} {
+        // A user can read their own task statuses. Admin can also read.
+        allow read: if request.auth != null && (request.auth.uid == userId || isAdmin());
+        // A user can create/update their own task status (e.g., mark as complete).
+        allow write: if request.auth != null && request.auth.uid == userId;
       }
     }
 
