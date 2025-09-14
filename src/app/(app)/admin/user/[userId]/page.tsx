@@ -155,12 +155,10 @@ function UserTasks({ userId }: { userId: string }) {
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        // Fetch all tasks and filter/sort on the client to avoid needing a composite index.
         const tasksQuery = query(collection(db, `users/${userId}/tasks`));
         const unsubscribe = onSnapshot(tasksQuery, (snapshot) => {
             const allTasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as UserTask));
             
-            // Filter for completed tasks and sort them by completion date
             const completedTasks = allTasks
                 .filter(task => task.completed)
                 .sort((a, b) => b.completedAt.toMillis() - a.completedAt.toMillis());
