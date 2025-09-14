@@ -160,7 +160,12 @@ const chatEmpatheticToneFlow = ai.defineFlow(
             ],
           },
         });
-        return { response: output!.response };
+        
+        if (output === null) {
+            throw new Error("The AI model did not return a valid response. This could be due to the safety filters being triggered.");
+        }
+
+        return { response: output.response };
       } catch (error: any) {
         attempt++;
         if (attempt > maxRetries || !error.message.includes('503 Service Unavailable')) {
