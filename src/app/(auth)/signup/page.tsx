@@ -59,7 +59,7 @@ function SignUpForm() {
         createdAt: serverTimestamp(),
       });
 
-      router.push('/chat');
+      router.push('/welcome');
     } catch (error: any) {
       toast({
         title: "Sign Up Failed",

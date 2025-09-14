@@ -31,7 +31,7 @@ function AuthForm() {
       if (userCredential.user.email === ADMIN_EMAIL) {
         router.push('/admin');
       } else {
-        router.push('/chat');
+        router.push('/welcome');
       }
     } catch (error: any) {
        toast({
