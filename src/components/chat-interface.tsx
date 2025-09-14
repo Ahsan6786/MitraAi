@@ -141,7 +141,7 @@ const MessageBubble = ({ message, senderName }: { message: Message; senderName: 
       <div className="flex flex-col gap-1 items-start w-full">
         <span className="text-muted-foreground text-sm font-medium">{senderName}</span>
         {message.text && (
-            <div className={cn('text-base font-normal leading-normal rounded-lg px-4 py-3 max-w-md shadow-sm', message.sender === 'user' ? 'bg-primary text-primary-foreground rounded-tr-none' : 'bg-muted text-foreground rounded-tl-none')}>
+            <div className={cn('text-base font-normal leading-normal rounded-2xl px-4 py-3 max-w-md shadow-sm', message.sender === 'user' ? 'bg-primary text-primary-foreground rounded-br-none' : 'bg-muted text-foreground rounded-tl-none')}>
                 <MessageContent text={message.text} />
             </div>
         )}
