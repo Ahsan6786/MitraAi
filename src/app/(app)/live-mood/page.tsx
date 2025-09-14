@@ -8,7 +8,7 @@ import { Loader2, Mic, Square, Bot, Camera, User, Languages } from 'lucide-react
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
 import { SidebarTrigger } from '@/components/ui/sidebar';
-import { ThemeToggle } from '@/components/theme-toggle';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { predictLiveMood } from '@/ai/flows/predict-live-mood';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -17,6 +17,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { GenZToggle } from '@/components/genz-toggle';
 import { SOSButton } from '@/components/sos-button';
+import { db } from '@/lib/firebase';
+import { doc, runTransaction, increment } from 'firebase/firestore';
 
 const SpeechRecognition =
   (typeof window !== 'undefined' && (window.SpeechRecognition || window.webkitSpeechRecognition));
@@ -31,6 +33,8 @@ const languageToSpeechCode: Record<string, string> = {
     Hindi: 'hi-IN',
     Hinglish: 'en-IN',
 };
+
+const TOKEN_COST = 10;
 
 export default function LiveMoodPage() {
     const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
@@ -112,7 +116,7 @@ export default function LiveMoodPage() {
     };
 
     const processMood = useCallback(async (transcript: string) => {
-        if (!transcript.trim()) {
+        if (!transcript.trim() || !user) {
             setIsProcessing(false);
             return;
         }
@@ -127,16 +131,30 @@ export default function LiveMoodPage() {
             setIsProcessing(false);
             return;
         }
+        
+        const userDocRef = doc(db, 'users', user.uid);
 
         try {
+            await runTransaction(db, async (transaction) => {
+                const userDoc = await transaction.get(userDocRef);
+                if (!userDoc.exists()) throw "User document does not exist!";
+                
+                const currentTokens = userDoc.data().tokens || 0;
+                if (currentTokens < TOKEN_COST) throw "Insufficient tokens.";
+
+                transaction.update(userDocRef, { tokens: increment(-TOKEN_COST) });
+            });
+            
             const result = await predictLiveMood({ photoDataUri, description: transcript, language });
             const aiMessage: ChatMessage = { sender: 'ai', text: result.response };
             setChatMessages(prev => [...prev, aiMessage]);
+            toast({ title: `${TOKEN_COST} tokens used.`});
 
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error predicting live mood:', error);
-            toast({ title: 'AI Analysis Failed', variant: 'destructive' });
-            const errorMessage: ChatMessage = { sender: 'ai', text: "Sorry, I couldn't process that right now." };
+            const errorMessageText = typeof error === 'string' ? error : "Sorry, I couldn't process that right now.";
+            toast({ title: 'AI Analysis Failed', description: errorMessageText, variant: 'destructive' });
+            const errorMessage: ChatMessage = { sender: 'ai', text: errorMessageText };
             setChatMessages(prev => [...prev, errorMessage]);
         } finally {
              setIsProcessing(false);
@@ -145,7 +163,7 @@ export default function LiveMoodPage() {
                 startListeningRef.current?.();
              }, 500);
         }
-    }, [language, toast]);
+    }, [language, toast, user]);
     
     const startListening = useCallback(() => {
         if (!SpeechRecognition) {
@@ -209,7 +227,7 @@ export default function LiveMoodPage() {
                     <SidebarTrigger className="md:hidden" />
                     <div>
                         <h1 className="text-lg md:text-xl font-bold">Live Mood Analysis</h1>
-                        <p className="text-sm text-muted-foreground">Interact with an AI that sees and hears you.</p>
+                        <p className="text-sm text-muted-foreground">Each analysis costs {TOKEN_COST} tokens.</p>
                     </div>
                 </div>
                 <div className="flex items-center gap-2">

@@ -4,7 +4,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { db, storage } from '@/lib/firebase';
-import { collection, addDoc, serverTimestamp, query, where, onSnapshot, orderBy, doc, deleteDoc, Timestamp } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, query, where, onSnapshot, orderBy, doc, deleteDoc, Timestamp, getDoc, runTransaction, increment } from 'firebase/firestore';
 import { ref, uploadString, getDownloadURL, deleteObject } from 'firebase/storage';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -13,7 +13,7 @@ import { Loader2, BookHeart, Trash2, Mic, PenSquare, AlertTriangle, FileText, Ch
 import { useToast } from '@/hooks/use-toast';
 import { predictUserMood } from '@/ai/flows/predict-user-mood';
 import { SidebarTrigger } from '@/components/ui/sidebar';
-import { ThemeToggle } from '@/components/theme-toggle';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { Badge } from '@/components/ui/badge';
 import {
   AlertDialog,
@@ -41,6 +41,8 @@ interface JournalEntry {
   reviewed: boolean;
   doctorReport?: string;
 }
+
+const TOKEN_COST = 10;
 
 function JournalEntryCard({ entry }: { entry: JournalEntry }) {
     const [isDeleting, setIsDeleting] = useState(false);
@@ -145,28 +147,48 @@ function JournalPageContent() {
   const handleSaveTextEntry = async () => {
     if (!entry.trim() || !user) return;
     setIsSubmitting(true);
-    try {
-      // 1. Get mood from AI
-      const moodResult = await predictUserMood({ journalEntry: entry });
+    
+    const userDocRef = doc(db, 'users', user.uid);
 
-      // 2. Save to Firestore
-      await addDoc(collection(db, 'journalEntries'), {
-        userId: user.uid,
-        userEmail: user.email,
-        type: 'text',
-        content: entry,
-        mood: moodResult.mood,
-        confidence: moodResult.confidence,
-        createdAt: serverTimestamp(),
-        reviewed: false,
-        doctorReport: null,
+    try {
+      await runTransaction(db, async (transaction) => {
+        const userDoc = await transaction.get(userDocRef);
+        if (!userDoc.exists()) {
+          throw "User document does not exist!";
+        }
+        const currentTokens = userDoc.data().tokens || 0;
+        if (currentTokens < TOKEN_COST) {
+          throw "Insufficient tokens. Please contact support to recharge.";
+        }
+
+        // Deduct tokens
+        transaction.update(userDocRef, { tokens: increment(-TOKEN_COST) });
+
+        // Get mood from AI
+        const moodResult = await predictUserMood({ journalEntry: entry });
+
+        // Create new journal entry
+        const newEntryRef = doc(collection(db, 'journalEntries'));
+        transaction.set(newEntryRef, {
+          userId: user.uid,
+          userEmail: user.email,
+          type: 'text',
+          content: entry,
+          mood: moodResult.mood,
+          confidence: moodResult.confidence,
+          createdAt: serverTimestamp(),
+          reviewed: false,
+          doctorReport: null,
+        });
+
+        toast({ title: "Entry Saved", description: `We've logged your entry. Detected mood: ${moodResult.mood}. ${TOKEN_COST} tokens used.` });
       });
 
-      toast({ title: "Entry Saved", description: `We've logged your entry. Detected mood: ${moodResult.mood}` });
       setEntry('');
+
     } catch (error: any) {
       console.error("Error saving entry:", error);
-      toast({ title: "Error saving entry", description: error.message, variant: "destructive" });
+      toast({ title: "Error saving entry", description: typeof error === 'string' ? error : error.message, variant: "destructive" });
     } finally {
       setIsSubmitting(false);
     }
@@ -202,7 +224,7 @@ function JournalPageContent() {
                         <PenSquare className="w-6 h-6 text-primary"/> How are you feeling today?
                     </CardTitle>
                     <CardDescription>
-                        Write anything that's on your mind. It's completely private.
+                        Write anything that's on your mind. It's completely private. Each analysis costs {TOKEN_COST} tokens.
                     </CardDescription>
                 </CardHeader>
                 <CardContent>

@@ -5,12 +5,12 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 import { db } from '@/lib/firebase';
-import { collection, query, where, onSnapshot, orderBy, Timestamp, getDocs, doc, getDoc, limit, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, orderBy, Timestamp, getDocs, doc, getDoc, limit, addDoc, serverTimestamp, updateDoc, increment } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, BarChart, LineChart, FileQuestion, ArrowLeft, PenSquare, Mic, Send, MessageSquare } from 'lucide-react';
+import { Loader2, BarChart, LineChart, FileQuestion, ArrowLeft, PenSquare, Mic, Send, MessageSquare, Coins } from 'lucide-react';
 import { Bar, BarChart as RechartsBarChart, Line, LineChart as RechartsLineChart, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { subDays, format, eachDayOfInterval, startOfDay } from 'date-fns';
-import { ThemeToggle } from '@/components/theme-toggle';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { GenZToggle } from '@/components/genz-toggle';
 import { Button } from '@/components/ui/button';
@@ -22,6 +22,7 @@ import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { SOSButton } from '@/components/sos-button';
+import { useToast } from '@/hooks/use-toast';
 
 
 const ADMIN_EMAIL = 'ahsan.khan@mitwpu.edu.in';
@@ -51,6 +52,7 @@ interface QuestionnaireSubmission {
 interface UserProfile {
     displayName?: string;
     email: string;
+    tokens?: number;
 }
 
 interface Message {
@@ -80,6 +82,64 @@ const valueToEmoji = (value: number): string => {
         case 5: return '😄';
         default: return '';
     }
+}
+
+function AdminActions({ userId, userProfile }: { userId: string; userProfile: UserProfile | null }) {
+    const [tokenAmount, setTokenAmount] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const { toast } = useToast();
+
+    const handleAddTokens = async () => {
+        const amount = parseInt(tokenAmount, 10);
+        if (isNaN(amount) || amount <= 0) {
+            toast({ title: 'Invalid amount', variant: 'destructive' });
+            return;
+        }
+
+        setIsSubmitting(true);
+        try {
+            const userDocRef = doc(db, 'users', userId);
+            await updateDoc(userDocRef, {
+                tokens: increment(amount)
+            });
+            toast({ title: 'Success', description: `${amount} tokens added to the user.` });
+            setTokenAmount('');
+        } catch (error) {
+            console.error('Error adding tokens:', error);
+            toast({ title: 'Error', description: 'Could not add tokens.', variant: 'destructive' });
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>Admin Actions</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                <div className="flex items-center justify-between p-3 bg-muted rounded-md">
+                    <div className="flex items-center gap-2">
+                        <Coins className="w-5 h-5 text-primary"/>
+                        <p className="font-semibold">User Tokens:</p>
+                    </div>
+                    <p className="font-bold text-lg">{userProfile?.tokens ?? 0}</p>
+                </div>
+                <div className="flex items-center gap-2">
+                    <Input 
+                        type="number" 
+                        placeholder="Amount to add" 
+                        value={tokenAmount} 
+                        onChange={(e) => setTokenAmount(e.target.value)} 
+                    />
+                    <Button onClick={handleAddTokens} disabled={isSubmitting}>
+                        {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
+                        Add Tokens
+                    </Button>
+                </div>
+            </CardContent>
+        </Card>
+    )
 }
 
 function UserMoodDashboard({ userId }: { userId: string }) {
@@ -411,22 +471,22 @@ export default function UserDetailPage() {
 
     useEffect(() => {
         if (userId) {
-            const fetchUserProfile = async () => {
-                const userDocRef = doc(db, 'users', userId);
-                const docSnap = await getDoc(userDocRef);
-                if (docSnap.exists()) {
+            const userDocRef = doc(db, 'users', userId);
+            const unsubscribe = onSnapshot(userDocRef, (docSnap) => {
+                 if (docSnap.exists()) {
                     setUserProfile(docSnap.data() as UserProfile);
                 } else {
                     // Fallback to get email from another collection if profile doesn't exist
                     const q = query(collection(db, 'journalEntries'), where('userId', '==', userId), orderBy('createdAt', 'desc'), limit(1));
-                    const querySnapshot = await getDocs(q);
-                    if (!querySnapshot.empty) {
-                         setUserProfile({ email: querySnapshot.docs[0].data().userEmail });
-                    }
+                    getDocs(q).then(querySnapshot => {
+                        if (!querySnapshot.empty) {
+                             setUserProfile({ email: querySnapshot.docs[0].data().userEmail });
+                        }
+                    });
                 }
                 setIsLoadingProfile(false);
-            };
-            fetchUserProfile();
+            });
+            return () => unsubscribe();
         }
     }, [userId]);
 
@@ -453,13 +513,17 @@ export default function UserDetailPage() {
                 </div>
             </header>
             <main className="flex-1 overflow-auto p-2 sm:p-4 md:p-6">
-                <Tabs defaultValue="mood-analysis" className="w-full">
-                    <TabsList className="grid w-full grid-cols-2 md:grid-cols-4">
+                <Tabs defaultValue="actions" className="w-full">
+                    <TabsList className="grid w-full grid-cols-2 md:grid-cols-5">
+                        <TabsTrigger value="actions">Actions</TabsTrigger>
                         <TabsTrigger value="mood-analysis">Mood Analysis</TabsTrigger>
                         <TabsTrigger value="journal-entries">Journal Entries</TabsTrigger>
                         <TabsTrigger value="questionnaires">Questionnaires</TabsTrigger>
                         <TabsTrigger value="messages">Messages</TabsTrigger>
                     </TabsList>
+                    <TabsContent value="actions" className="mt-4">
+                        <AdminActions userId={userId} userProfile={userProfile} />
+                    </TabsContent>
                     <TabsContent value="mood-analysis" className="mt-4">
                         <UserMoodDashboard userId={userId} />
                     </TabsContent>

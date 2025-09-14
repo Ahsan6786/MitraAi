@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { BookHeart, MessageSquare, MicVocal, ShieldCheck, LogOut, FileText, Puzzle, Phone, LayoutDashboard, Info, HeartPulse, Sparkles, Trophy, Newspaper, User, Users, Star, Camera, UserCheck, CalendarPlus, CalendarClock, Menu, LandPlot, Smile, ChevronDown, Stethoscope, PenSquare, UserPlus, ArrowRight } from 'lucide-react';
+import { BookHeart, MessageSquare, MicVocal, ShieldCheck, LogOut, FileText, Puzzle, Phone, LayoutDashboard, Info, HeartPulse, Sparkles, Trophy, Newspaper, User, Users, Star, Camera, UserCheck, CalendarPlus, CalendarClock, Menu, LandPlot, Smile, ChevronDown, Stethoscope, PenSquare, UserPlus, ArrowRight, Coins } from 'lucide-react';
 import {
   SidebarProvider,
   Sidebar,
@@ -24,7 +24,7 @@ import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { auth, db } from '@/lib/firebase';
 import { signOut } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 import { ChatHistoryProvider } from '@/hooks/use-chat-history';
 import { GenZToggle } from '@/components/genz-toggle';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -42,6 +42,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
   const sidebar = useSidebar();
   const [userType, setUserType] = useState<'user' | 'admin' | 'counsellor' | null>(null);
   const [showFeatureHint, setShowFeatureHint] = useState(false);
+  const [userTokens, setUserTokens] = useState<number | null>(null);
   const isMobile = useIsMobile();
 
   const professionalHelpPaths = ['/reports', '/booking', '/my-appointments', '/screening-tools'];
@@ -68,6 +69,18 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
         return () => clearTimeout(timer);
     }
   }, [isMobile]);
+
+  useEffect(() => {
+    if (user) {
+      const userDocRef = doc(db, 'users', user.uid);
+      const unsubscribe = onSnapshot(userDocRef, (doc) => {
+        if (doc.exists()) {
+          setUserTokens(doc.data().tokens);
+        }
+      });
+      return () => unsubscribe();
+    }
+  }, [user]);
 
   const handleHintClick = () => {
     sessionStorage.setItem('hasSeenFeatureHint', 'true');
@@ -365,6 +378,12 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
                 </Avatar>
                 <div className="flex flex-col overflow-hidden">
                   <span className="text-sm font-medium truncate">{userDisplayName}</span>
+                  {userType === 'user' && userTokens !== null && (
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <Coins className="w-3 h-3 text-amber-500"/>
+                        <span>{userTokens} Tokens</span>
+                    </div>
+                  )}
                 </div>
               </div>
               <Button variant="ghost" size="sm" asChild className="w-full justify-start">

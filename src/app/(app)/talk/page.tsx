@@ -10,7 +10,7 @@ import { textToSpeech } from '@/ai/flows/text-to-speech';
 import { useToast } from '@/hooks/use-toast';
 import { detectCrisis } from '@/ai/flows/detect-crisis';
 import CrisisAlertModal from '@/components/crisis-alert-modal';
-import { ThemeToggle } from '@/components/theme-toggle';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -25,6 +25,8 @@ import {
 import { useAuth } from '@/hooks/use-auth';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { db } from '@/lib/firebase';
+import { doc, runTransaction, increment } from 'firebase/firestore';
 
 
 const SpeechRecognition =
@@ -66,6 +68,8 @@ interface ChatMessage {
   text: string;
 }
 
+const TOKEN_COST = 10;
+
 function TalkPageContent() {
   const [isLoading, setIsLoading] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
@@ -89,7 +93,7 @@ function TalkPageContent() {
   }, [chatHistory]);
 
   const handleAiResponse = async (messageText: string) => {
-    if (!messageText.trim()) {
+    if (!messageText.trim() || !user) {
         setIsLoading(false);
         return;
     };
@@ -97,7 +101,19 @@ function TalkPageContent() {
     setChatHistory(prev => [...prev, { sender: 'user', text: messageText }]);
     setIsLoading(true);
 
+    const userDocRef = doc(db, 'users', user.uid);
+
     try {
+      await runTransaction(db, async (transaction) => {
+        const userDoc = await transaction.get(userDocRef);
+        if (!userDoc.exists()) throw "User document does not exist!";
+        
+        const currentTokens = userDoc.data().tokens || 0;
+        if (currentTokens < TOKEN_COST) throw "Insufficient tokens.";
+
+        transaction.update(userDocRef, { tokens: increment(-TOKEN_COST) });
+      });
+
       const crisisResult = await detectCrisis({ message: messageText });
       if (crisisResult.isCrisis) {
         setShowCrisisModal(true);
@@ -107,7 +123,8 @@ function TalkPageContent() {
       
       const result = await chatEmpatheticTone({ message: messageText, language: language });
       setChatHistory(prev => [...prev, { sender: 'ai', text: result.response }]);
-      
+      toast({ title: `${TOKEN_COST} tokens used.`});
+
       if (result.response.trim()) {
         const ttsResult = await textToSpeech({ text: result.response });
         if (ttsResult.audioDataUri) {
@@ -116,9 +133,11 @@ function TalkPageContent() {
             audio.play().catch(e => console.error("Error playing audio:", e));
         }
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error getting AI response:', error);
-      setChatHistory(prev => [...prev, { sender: 'ai', text: 'Sorry, I encountered an error. Please try again.' }]);
+      const errorMessageText = typeof error === 'string' ? error : "Sorry, I encountered an error. Please try again.";
+      setChatHistory(prev => [...prev, { sender: 'ai', text: errorMessageText }]);
+      toast({ title: "Error", description: errorMessageText, variant: 'destructive' });
     } finally {
       setIsLoading(false);
     }
@@ -254,7 +273,7 @@ function TalkPageContent() {
             <SidebarTrigger />
             <div>
               <h1 className="text-lg md:text-xl font-bold">Talk to Mitra</h1>
-              <p className="text-sm text-muted-foreground">Have a live voice conversation.</p>
+              <p className="text-sm text-muted-foreground">Each interaction costs {TOKEN_COST} tokens.</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -371,5 +390,3 @@ export default function TalkPage() {
 
     return <TalkPageContent />;
 }
-
-    

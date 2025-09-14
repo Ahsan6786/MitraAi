@@ -56,6 +56,7 @@ function SignUpForm() {
         displayName: name,
         email: user.email,
         age: parseInt(age, 10),
+        tokens: 1000, // Grant 1000 tokens on sign up
         createdAt: serverTimestamp(),
       });
 
