@@ -13,6 +13,7 @@ import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 import { featureNavigator } from '../tools/feature-navigator';
 import { userDataRetriever } from '../tools/user-data-retriever';
+import { googleAI } from '@genkit-ai/googleai';
 
 const ChatMessageSchema = z.object({
     role: z.enum(['user', 'model']),
@@ -153,6 +154,7 @@ const chatEmpatheticToneFlow = ai.defineFlow(
     while (attempt <= maxRetries) {
       try {
         const { output } = await prompt(input, {
+          model: googleAI.model('gemini-1.5-flash-latest'),
           config: {
             safetySettings: [
               { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_NONE' },
