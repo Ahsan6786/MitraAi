@@ -18,7 +18,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
 import { detectCrisis } from '@/ai/flows/detect-crisis';
-import CrisisAlertModal from '@/components/crisis-alert-modal';
+import CrisisAlertModal from './crisis-alert-modal';
 import { SidebarTrigger } from './ui/sidebar';
 import { ThemeToggle } from './theme-toggle';
 import { useTheme } from 'next-themes';
@@ -326,7 +326,7 @@ export default function ChatInterface({ conversationId }: { conversationId?: str
           <ThemeToggle />
         </div>
       </header>
-      <main className="flex-1 overflow-hidden">
+      <div className="flex-1 overflow-y-auto">
         <ScrollArea className="h-full" viewportRef={scrollViewportRef}>
           <div className="p-4 md:p-6 space-y-6">
             {messages.length === 0 && !isLoading && (
@@ -355,16 +355,16 @@ export default function ChatInterface({ conversationId }: { conversationId?: str
             )}
           </div>
         </ScrollArea>
-      </main>
+      </div>
       <footer className="shrink-0 bg-background border-t p-2 md:p-3 z-20">
         <form onSubmit={handleFormSubmit} className="relative flex items-center gap-2">
-          <Avatar className="w-10 h-10 border shrink-0"><AvatarFallback>{user?.email ? user.email[0].toUpperCase() : <User className="w-5 h-5" />}</AvatarFallback></Avatar>
+          <Avatar className="hidden md:flex w-10 h-10 border shrink-0"><AvatarFallback>{user?.email ? user.email[0].toUpperCase() : <User className="w-5 h-5" />}</AvatarFallback></Avatar>
           <Input value={input} onChange={(e) => setInput(e.target.value)} placeholder="Ask anything..." className="h-12 pr-12 rounded-full" disabled={isLoading} autoComplete="off" />
           <div className="absolute inset-y-0 right-0 flex items-center pr-2">
               <Button type="submit" className="ml-2 h-8 px-4" disabled={isLoading || (!input.trim())}><Send className="w-4 h-4"/></Button>
           </div>
         </form>
-         <div className="flex items-center justify-between mt-2 pl-14">
+         <div className="flex items-center justify-between mt-2 pl-0 md:pl-14">
              <Select value={language} onValueChange={setLanguage}>
                 <SelectTrigger className="w-auto h-8 text-xs"><Languages className="w-3 h-3 mr-1.5"/><SelectValue placeholder="Language" /></SelectTrigger>
                 <SelectContent>
