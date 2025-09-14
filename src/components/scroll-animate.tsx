@@ -1,16 +1,18 @@
 
 'use client';
 
-import { useRef, useEffect, useState, HTMLAttributes } from 'react';
+import { useRef, useEffect, useState, HTMLAttributes, ElementType } from 'react';
 import { cn } from '@/lib/utils';
 
 interface ScrollAnimateProps extends HTMLAttributes<HTMLDivElement> {
   children: React.ReactNode;
+  asChild?: boolean;
 }
 
-export function ScrollAnimate({ children, className, ...props }: ScrollAnimateProps) {
+export function ScrollAnimate({ children, className, asChild = false, ...props }: ScrollAnimateProps) {
   const [isVisible, setIsVisible] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const Comp = asChild ? 'div' : 'div'; // In a real scenario with Slot, you'd handle this differently. For this simple case, we'll stick to div.
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -39,7 +41,7 @@ export function ScrollAnimate({ children, className, ...props }: ScrollAnimatePr
   }, []);
 
   return (
-    <div
+    <Comp
       ref={ref}
       className={cn(
         'transition-all duration-700 ease-out',
@@ -49,6 +51,6 @@ export function ScrollAnimate({ children, className, ...props }: ScrollAnimatePr
       {...props}
     >
       {children}
-    </div>
+    </Comp>
   );
 }

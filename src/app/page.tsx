@@ -136,6 +136,40 @@ function LandingPageContent() {
       description: 'Share your progress with your doctor, who can review your entries and provide professional feedback.',
     },
   ];
+  
+  const missionItems = [
+      {
+          title: "Empowerment Through Insight",
+          description: "Empower individuals to understand their emotions through AI-driven insights."
+      },
+      {
+          title: "Reduce Stigma",
+          description: "Encourage seeking help early and reduce the stigma around mental health."
+      },
+      {
+          title: "Build Connections",
+          description: "Help build stronger emotional connections with themselves and their loved ones."
+      }
+  ];
+
+  const whyUsItems = [
+      {
+          title: "A Safe Space to Talk",
+          description: "Share your thoughts with our AI companion without fear of judgment."
+      },
+      {
+          title: "Track Your Emotional Health",
+          description: "Through mood journals and voice reflections, visualize your emotional patterns."
+      },
+      {
+          title: "Early Awareness & Support",
+          description: "MitraAI gently helps you notice signs of stress or anxiety before they become overwhelming."
+      },
+      {
+          title: "Privacy First",
+          description: "Your journal is private. All data is securely stored, and you are in complete control of your information."
+      }
+  ];
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
@@ -281,27 +315,21 @@ function LandingPageContent() {
                     </p>
                  </div>
                </ScrollAnimate>
-               <ScrollAnimate style={{ animationDelay: '150ms' }}>
-                 <div className="flex flex-col items-start space-y-4">
-                    <div className="inline-flex items-center rounded-lg bg-muted p-3">
+               <div className="flex flex-col items-start space-y-4">
+                    <ScrollAnimate className="inline-flex items-center rounded-lg bg-muted p-3">
                        <Handshake className="h-6 w-6 text-primary" />
-                    </div>
+                    </ScrollAnimate>
                     <ul className="grid gap-4">
-                       <li>
-                          <h3 className="text-lg font-bold">Empowerment Through Insight</h3>
-                          <p className="text-muted-foreground">Empower individuals to understand their emotions through AI-driven insights.</p>
-                       </li>
-                        <li>
-                          <h3 className="text-lg font-bold">Reduce Stigma</h3>
-                          <p className="text-muted-foreground">Encourage seeking help early and reduce the stigma around mental health.</p>
-                       </li>
-                        <li>
-                          <h3 className="text-lg font-bold">Build Connections</h3>
-                          <p className="text-muted-foreground">Help build stronger emotional connections with themselves and their loved ones.</p>
-                       </li>
+                       {missionItems.map((item, index) => (
+                           <ScrollAnimate asChild key={index} style={{ animationDelay: `${index * 150}ms` }}>
+                               <li>
+                                  <h3 className="text-lg font-bold">{item.title}</h3>
+                                  <p className="text-muted-foreground">{item.description}</p>
+                               </li>
+                           </ScrollAnimate>
+                       ))}
                     </ul>
                  </div>
-               </ScrollAnimate>
             </div>
           </div>
         </section>
@@ -325,34 +353,17 @@ function LandingPageContent() {
                   <div className="mx-auto max-w-2xl items-center">
                     <div className="flex flex-col justify-center space-y-4">
                       <ul className="grid gap-6">
-                        <li className="flex items-start gap-3">
-                            <div className="pt-1"><ShieldCheck className="w-5 h-5 text-primary"/></div>
-                            <div>
-                                <h4 className="font-semibold">A Safe Space to Talk</h4>
-                                <p className="text-sm text-muted-foreground">Share your thoughts with our AI companion without fear of judgment.</p>
-                            </div>
-                        </li>
-                        <li className="flex items-start gap-3">
-                            <div className="pt-1"><ShieldCheck className="w-5 h-5 text-primary"/></div>
-                            <div>
-                                <h4 className="font-semibold">Track Your Emotional Health</h4>
-                                <p className="text-sm text-muted-foreground">Through mood journals and voice reflections, visualize your emotional patterns.</p>
-                            </div>
-                        </li>
-                        <li className="flex items-start gap-3">
-                            <div className="pt-1"><ShieldCheck className="w-5 h-5 text-primary"/></div>
-                            <div>
-                                <h4 className="font-semibold">Early Awareness & Support</h4>
-                                <p className="text-sm text-muted-foreground">MitraAI gently helps you notice signs of stress or anxiety before they become overwhelming.</p>
-                            </div>
-                        </li>
-                        <li className="flex items-start gap-3">
-                            <div className="pt-1"><ShieldCheck className="w-5 h-5 text-primary"/></div>
-                            <div>
-                                <h4 className="font-semibold">Privacy First</h4>
-                                <p className="text-sm text-muted-foreground">Your journal is private. All data is securely stored, and you are in complete control of your information.</p>
-                            </div>
-                        </li>
+                        {whyUsItems.map((item, index) => (
+                            <ScrollAnimate asChild key={index} style={{ animationDelay: `${index * 150}ms` }}>
+                                <li className="flex items-start gap-3">
+                                    <div className="pt-1"><ShieldCheck className="w-5 h-5 text-primary"/></div>
+                                    <div>
+                                        <h4 className="font-semibold">{item.title}</h4>
+                                        <p className="text-sm text-muted-foreground">{item.description}</p>
+                                    </div>
+                                </li>
+                            </ScrollAnimate>
+                        ))}
                       </ul>
                     </div>
                   </div>
