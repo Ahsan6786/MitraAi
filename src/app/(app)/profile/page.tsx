@@ -48,7 +48,7 @@ export default function ProfilePage() {
                 if (docSnap.exists()) {
                     const data = docSnap.data();
                     setCompanionName(data.companionName || '');
-                    setAge(data.age || '');
+                    setAge(data.age ? String(data.age) : '');
                     setState(data.state || '');
                     setCity(data.city || '');
                     setEmergencyContactName(data.emergencyContactName || '');
@@ -321,5 +321,3 @@ export default function ProfilePage() {
         </div>
     );
 }
-
-    
