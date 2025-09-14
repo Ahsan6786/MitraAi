@@ -14,6 +14,7 @@ import { Loader2, CheckCircle, AlertTriangle, ArrowLeft, ArrowRight, Sparkles } 
 import { useToast } from '@/hooks/use-toast';
 import { Progress } from '@/components/ui/progress';
 import { screeningToolsData, ScreeningToolId } from '@/lib/screening-tools';
+import CompletionAnimation from '@/components/completion-animation';
 
 type Answers = { [key: number]: number };
 
@@ -40,6 +41,7 @@ function QuestionnaireContent() {
     const [result, setResult] = useState<{ severity: string; recommendation: string; } | null>(null);
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
     const [motivationalMessage, setMotivationalMessage] = useState('');
+    const [showCheerAnimation, setShowCheerAnimation] = useState(false);
 
     const randomMessage = useMemo(() => {
         return motivationalMessages[Math.floor(Math.random() * motivationalMessages.length)];
@@ -49,6 +51,11 @@ function QuestionnaireContent() {
         if (currentQuestionIndex > 0 && currentQuestionIndex % 2 === 0) {
             setMotivationalMessage(randomMessage);
             const timer = setTimeout(() => setMotivationalMessage(''), 2000); // Hide after 2 seconds
+            return () => clearTimeout(timer);
+        }
+        if (currentQuestionIndex > 0 && currentQuestionIndex % 3 === 0) {
+            setShowCheerAnimation(true);
+            const timer = setTimeout(() => setShowCheerAnimation(false), 2000);
             return () => clearTimeout(timer);
         }
     }, [currentQuestionIndex, randomMessage]);
@@ -175,8 +182,9 @@ function QuestionnaireContent() {
 
     if (result) {
         return (
-             <div className="flex h-screen items-center justify-center p-4 bg-background">
-                <Card className="w-full max-w-lg">
+             <div className="flex h-screen items-center justify-center p-4 bg-background relative overflow-hidden">
+                <CompletionAnimation />
+                <Card className="w-full max-w-lg z-10">
                     <CardHeader className="text-center">
                         <CheckCircle className="mx-auto h-12 w-12 text-green-500" />
                         <CardTitle className="mt-4">Thank You for Completing the {questionnaireData.name}</CardTitle>
@@ -213,6 +221,7 @@ function QuestionnaireContent() {
 
     return (
         <div className="flex h-full flex-col bg-background">
+             {showCheerAnimation && <CompletionAnimation key={currentQuestionIndex} />}
             <header className="border-b p-3 md:p-4 flex items-center justify-between gap-2">
                  <div className="flex items-center gap-2">
                     <Button variant="ghost" size="icon" onClick={() => router.back()}>
