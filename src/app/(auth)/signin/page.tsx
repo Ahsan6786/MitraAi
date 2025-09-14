@@ -42,7 +42,7 @@ function AuthForm() {
       if (!userDoc.exists() || userDoc.data().tokens === undefined) {
           await setDoc(userDocRef, { 
               tokens: 1000,
-              displayName: user.displayName,
+              displayName: user.displayName || user.email,
               email: user.email,
            }, { merge: true });
       }

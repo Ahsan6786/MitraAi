@@ -32,10 +32,26 @@ service cloud.firestore {
 
     // USERS (for profile data like companionName)
     match /users/{userId} {
-      // Users can create, read, and write their own profile document.
-      allow create, read, update: if request.auth != null && request.auth.uid == userId;
-      // Any authenticated user can read public profile data (displayName, email) for friend requests.
-      allow get: if request.auth != null;
+      // Allow read for any logged-in user to check profiles, but only the owner can write.
+      allow read, get: if request.auth != null;
+      
+      // CREATE: A user can create their own document, but they MUST start with exactly 1000 tokens.
+      allow create: if request.auth != null 
+                    && request.auth.uid == userId
+                    && request.resource.data.tokens == 1000;
+      
+      // UPDATE: A user can update their profile. If they are updating tokens, it must be a decrement of 10.
+      // The admin can update anything.
+      allow update: if request.auth != null && (
+                      (request.auth.uid == userId && 
+                        (
+                          // Case 1: Not updating tokens, just other profile info
+                          !'tokens' in request.resource.data.diff(resource.data).affectedKeys() ||
+                          // Case 2: Updating tokens, must be a decrement of 10
+                          (request.resource.data.tokens == resource.data.tokens - 10)
+                        )
+                      ) || isAdmin() // Admin can do anything
+                    );
       
       // FRIEND REQUESTS SUBCOLLECTION
       match /friendRequests/{senderId} {
