@@ -1,3 +1,4 @@
+
 rules_version = '2';
 
 service cloud.firestore {
@@ -29,6 +30,13 @@ service cloud.firestore {
     function isFriend(userId1, userId2) {
       return exists(/databases/$(database)/documents/users/$(userId1)/friends/$(userId2));
     }
+    
+    function isValidRewardIncrement() {
+        // List of valid token reward amounts
+        let validRewards = [10, 20, 30, 40, 50, 100];
+        let tokenDiff = request.resource.data.tokens - resource.data.tokens;
+        return tokenDiff in validRewards;
+    }
 
     // USERS (for profile data like companionName)
     match /users/{userId} {
@@ -40,7 +48,7 @@ service cloud.firestore {
                     && request.auth.uid == userId
                     && request.resource.data.tokens == 1000;
       
-      // UPDATE: A user can update their profile. If they are updating tokens, it must be a valid decrement.
+      // UPDATE: A user can update their profile. If they are updating tokens, it must be a valid decrement or a valid reward increment.
       // The admin can update anything.
       allow update: if request.auth != null && (
                       (request.auth.uid == userId && 
@@ -48,7 +56,9 @@ service cloud.firestore {
                           // Case 1: Not updating tokens, just other profile info
                           !'tokens' in request.resource.data.diff(resource.data).affectedKeys() ||
                           // Case 2: Updating tokens, must be a decrement of 10 (AI) or 50 (booking)
-                          (request.resource.data.tokens == resource.data.tokens - 10 || request.resource.data.tokens == resource.data.tokens - 50)
+                          (request.resource.data.tokens == resource.data.tokens - 10 || request.resource.data.tokens == resource.data.tokens - 50) ||
+                          // Case 3: Or it must be a valid reward increment from completing a task
+                          isValidRewardIncrement()
                         )
                       ) || isAdmin() // Admin can do anything
                     );
@@ -94,10 +104,8 @@ service cloud.firestore {
 
       // TASKS SUBCOLLECTION (for Rewards)
       match /tasks/{taskId} {
-        // A user can read their own task statuses.
-        allow read: if request.auth != null && request.auth.uid == userId;
-        // An admin can also read/list any user's tasks.
-        allow get, list: if request.auth != null && isAdmin();
+        // A user can read their own task statuses. Admin can also read/list them.
+        allow get, list: if request.auth != null && (request.auth.uid == userId || isAdmin());
         // A user can create/update their own task status (e.g., mark as complete).
         allow write: if request.auth != null && request.auth.uid == userId;
       }
