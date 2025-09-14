@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { db } from '@/lib/firebase';
 import { collection, doc, onSnapshot, setDoc, serverTimestamp, Timestamp, runTransaction, increment } from 'firebase/firestore';
-import { SidebarTrigger } from '@/components/ui/sidebar';
+import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { GenZToggle } from '@/components/genz-toggle';
 import { SOSButton } from '@/components/sos-button';
@@ -76,7 +76,7 @@ const TaskCard = ({ task, status, onComplete }: { task: Task, status: { complete
     );
 };
 
-export default function RewardsPage() {
+function RewardsPageContent() {
     const { user } = useAuth();
     const { toast } = useToast();
     const [taskStatuses, setTaskStatuses] = useState<UserTaskStatus>({});
@@ -167,4 +167,12 @@ export default function RewardsPage() {
             </main>
         </div>
     );
+}
+
+export default function RewardsPage() {
+    return (
+        <SidebarProvider>
+            <RewardsPageContent />
+        </SidebarProvider>
+    )
 }
