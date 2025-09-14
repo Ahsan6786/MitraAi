@@ -12,7 +12,7 @@ import { signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/aut
 import { auth, db } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
-import { collection, query, where, getDocs, limit } from 'firebase/firestore';
+import { collection, query, where, getDocs, limit, doc, getDoc, setDoc } from 'firebase/firestore';
 
 const ADMIN_EMAIL = 'ahsan.khan@mitwpu.edu.in';
 
@@ -36,6 +36,17 @@ function AuthForm() {
         return;
       }
       
+      // Ensure user document and tokens exist for all users (new and old)
+      const userDocRef = doc(db, 'users', user.uid);
+      const userDoc = await getDoc(userDocRef);
+      if (!userDoc.exists() || userDoc.data().tokens === undefined) {
+          await setDoc(userDocRef, { 
+              tokens: 1000,
+              displayName: user.displayName,
+              email: user.email,
+           }, { merge: true });
+      }
+
       // Check if user has taken a questionnaire before
       const q = query(
         collection(db, 'questionnaires'), 
