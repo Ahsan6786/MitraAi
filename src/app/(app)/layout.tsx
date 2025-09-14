@@ -24,8 +24,7 @@ import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { auth, db } from '@/lib/firebase';
 import { signOut } from 'firebase/auth';
-import { collection, getDocs, limit, query, where, doc, getDoc } from 'firebase/firestore';
-import StartQuestionnaireModal from '@/components/start-questionnaire-modal';
+import { doc, getDoc } from 'firebase/firestore';
 import { ChatHistoryProvider } from '@/hooks/use-chat-history';
 import { GenZToggle } from '@/components/genz-toggle';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -41,7 +40,6 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
   const router = useRouter();
   const sidebar = useSidebar();
-  const [showQuestionnaireModal, setShowQuestionnaireModal] = useState(false);
   const [userType, setUserType] = useState<'user' | 'admin' | 'counsellor' | null>(null);
   const [showFeatureHint, setShowFeatureHint] = useState(false);
   const isMobile = useIsMobile();
@@ -102,28 +100,6 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
     }
   }, [user, loading, router, pathname]);
 
-  useEffect(() => {
-    const checkQuestionnaire = async () => {
-        if (userType === 'user') {
-            const dismissed = sessionStorage.getItem('questionnaireDismissed');
-            if (dismissed) return;
-
-            const q = query(
-                collection(db, 'questionnaires'),
-                where('userId', '==', user.uid),
-                limit(1)
-            );
-            const querySnapshot = await getDocs(q);
-            if (querySnapshot.empty) {
-                setShowQuestionnaireModal(true);
-            }
-        }
-    };
-    if (user && userType) {
-        checkQuestionnaire();
-    }
-  }, [user, userType, pathname]);
-  
   const handleSignOut = async () => {
     await signOut(auth);
     // Redirect to the appropriate sign-in page
@@ -155,17 +131,6 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
 
   return (
     <>
-      <StartQuestionnaireModal
-        isOpen={showQuestionnaireModal}
-        onClose={() => {
-            sessionStorage.setItem('questionnaireDismissed', 'true');
-            setShowQuestionnaireModal(false);
-        }}
-        onConfirm={() => {
-            setShowQuestionnaireModal(false);
-            router.push('/screening-tools');
-        }}
-      />
       <Sidebar>
         <SidebarHeader>
            <div className="flex items-center justify-between">
