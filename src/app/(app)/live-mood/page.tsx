@@ -8,7 +8,7 @@ import { Loader2, Mic, Square, Bot, Camera, User, Languages } from 'lucide-react
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
 import { SidebarTrigger } from '@/components/ui/sidebar';
-import { ThemeToggle } from '@/components/theme-toggle';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { predictLiveMood } from '@/ai/flows/predict-live-mood';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -19,6 +19,8 @@ import { GenZToggle } from '@/components/genz-toggle';
 import { SOSButton } from '@/components/sos-button';
 import { db } from '@/lib/firebase';
 import { doc, runTransaction, increment } from 'firebase/firestore';
+import { useRouter } from 'next/navigation';
+import { ToastAction } from '@/components/ui/toast';
 
 const SpeechRecognition =
   (typeof window !== 'undefined' && (window.SpeechRecognition || window.webkitSpeechRecognition));
@@ -48,6 +50,7 @@ export default function LiveMoodPage() {
     const recognitionRef = useRef<any>(null);
     const { toast } = useToast();
     const { user } = useAuth();
+    const router = useRouter();
     const scrollViewportRef = useRef<HTMLDivElement>(null);
     const streamRef = useRef<MediaStream | null>(null);
 
@@ -140,7 +143,7 @@ export default function LiveMoodPage() {
                 if (!userDoc.exists()) throw "User document does not exist!";
                 
                 const currentTokens = userDoc.data().tokens || 0;
-                if (currentTokens < TOKEN_COST) throw "Insufficient tokens.";
+                if (currentTokens < TOKEN_COST) throw new Error("Insufficient tokens.");
 
                 transaction.update(userDocRef, { tokens: increment(-TOKEN_COST) });
             });
@@ -152,10 +155,19 @@ export default function LiveMoodPage() {
 
         } catch (error: any) {
             console.error('Error predicting live mood:', error);
-            const errorMessageText = typeof error === 'string' ? error : "Sorry, I couldn't process that right now.";
-            toast({ title: 'AI Analysis Failed', description: errorMessageText, variant: 'destructive' });
-            const errorMessage: ChatMessage = { sender: 'ai', text: errorMessageText };
+            const errorMessage: ChatMessage = { sender: 'ai', text: "Sorry, I couldn't process that right now." };
             setChatMessages(prev => [...prev, errorMessage]);
+
+            if (error.message.includes("Insufficient tokens")) {
+                 toast({
+                    title: "Insufficient Tokens",
+                    description: "Please ask your doctor for a recharge.",
+                    variant: "destructive",
+                    action: <ToastAction altText="Message Doctor" onClick={() => router.push('/reports')}>Message Doctor</ToastAction>,
+                });
+            } else {
+                toast({ title: 'AI Analysis Failed', description: error.message, variant: 'destructive' });
+            }
         } finally {
              setIsProcessing(false);
              // After AI responds, wait 0.5s and then listen again.
@@ -163,7 +175,7 @@ export default function LiveMoodPage() {
                 startListeningRef.current?.();
              }, 500);
         }
-    }, [language, toast, user]);
+    }, [language, toast, user, router]);
     
     const startListening = useCallback(() => {
         if (!SpeechRecognition) {
@@ -325,3 +337,5 @@ export default function LiveMoodPage() {
         </div>
     );
 }
+
+    

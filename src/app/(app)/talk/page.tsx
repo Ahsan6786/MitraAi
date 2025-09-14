@@ -10,7 +10,7 @@ import { textToSpeech } from '@/ai/flows/text-to-speech';
 import { useToast } from '@/hooks/use-toast';
 import { detectCrisis } from '@/ai/flows/detect-crisis';
 import CrisisAlertModal from '@/components/crisis-alert-modal';
-import { ThemeToggle } from '@/components/theme-toggle';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -27,6 +27,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { db } from '@/lib/firebase';
 import { doc, runTransaction, increment } from 'firebase/firestore';
+import { useRouter } from 'next/navigation';
+import { ToastAction } from '@/components/ui/toast';
 
 
 const SpeechRecognition =
@@ -85,6 +87,7 @@ function TalkPageContent() {
 
   const { toast } = useToast();
   const { user } = useAuth();
+  const router = useRouter();
 
   useEffect(() => {
     if (scrollViewportRef.current) {
@@ -109,7 +112,7 @@ function TalkPageContent() {
         if (!userDoc.exists()) throw "User document does not exist!";
         
         const currentTokens = userDoc.data().tokens || 0;
-        if (currentTokens < TOKEN_COST) throw "Insufficient tokens.";
+        if (currentTokens < TOKEN_COST) throw new Error("Insufficient tokens.");
 
         transaction.update(userDocRef, { tokens: increment(-TOKEN_COST) });
       });
@@ -135,9 +138,19 @@ function TalkPageContent() {
       }
     } catch (error: any) {
       console.error('Error getting AI response:', error);
-      const errorMessageText = typeof error === 'string' ? error : "Sorry, I encountered an error. Please try again.";
+      const errorMessageText = "Sorry, I encountered an error. Please try again.";
       setChatHistory(prev => [...prev, { sender: 'ai', text: errorMessageText }]);
-      toast({ title: "Error", description: errorMessageText, variant: 'destructive' });
+      
+      if (error.message.includes("Insufficient tokens")) {
+        toast({
+            title: "Insufficient Tokens",
+            description: "Please ask your doctor for a recharge.",
+            variant: "destructive",
+            action: <ToastAction altText="Message Doctor" onClick={() => router.push('/reports')}>Message Doctor</ToastAction>,
+        });
+      } else {
+        toast({ title: "Error", description: error.message, variant: 'destructive' });
+      }
     } finally {
       setIsLoading(false);
     }
@@ -186,7 +199,6 @@ function TalkPageContent() {
     
     recognition.onerror = (event: any) => {
         if (event.error !== 'no-speech' && event.error !== 'aborted') {
-            console.error('Speech recognition error:', event.error);
             toast({
                 title: "Voice Error",
                 description: `Could not start voice recognition: ${event.error}`,

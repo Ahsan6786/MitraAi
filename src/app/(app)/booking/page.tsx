@@ -30,6 +30,8 @@ import { GenZToggle } from '@/components/genz-toggle';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { SOSButton } from '@/components/sos-button';
+import { ToastAction } from '@/components/ui/toast';
+import { useRouter } from 'next/navigation';
 
 interface Counsellor {
   id: string;
@@ -72,6 +74,7 @@ function BookingDialog({ counsellor, user, isOpen, onOpenChange }: { counsellor:
     const [isBooking, setIsBooking] = useState(false);
     const [isCalendarOpen, setIsCalendarOpen] = useState(false);
     const { toast } = useToast();
+    const router = useRouter();
 
     const resetForm = () => {
         setDate(undefined);
@@ -103,7 +106,7 @@ function BookingDialog({ counsellor, user, isOpen, onOpenChange }: { counsellor:
                     }
                     const currentTokens = userDoc.data().tokens || 0;
                     if (currentTokens < TOKEN_COST) {
-                        throw `Insufficient tokens. You need ${TOKEN_COST} tokens to book an appointment.`;
+                        throw new Error("Insufficient tokens.");
                     }
                     // Deduct tokens
                     transaction.update(userDocRef, { tokens: increment(-TOKEN_COST) });
@@ -152,11 +155,20 @@ function BookingDialog({ counsellor, user, isOpen, onOpenChange }: { counsellor:
             resetForm();
         } catch (error: any) {
             console.error('Error booking appointment:', error);
-            toast({ 
-                title: 'Booking Failed', 
-                description: typeof error === 'string' ? error : error.message, 
-                variant: 'destructive' 
-            });
+            if (error.message.includes("Insufficient tokens")) {
+                toast({
+                    title: "Insufficient Tokens",
+                    description: "You need 50 tokens for this. Please ask your doctor for a recharge.",
+                    variant: "destructive",
+                    action: <ToastAction altText="Message Doctor" onClick={() => router.push('/reports')}>Message Doctor</ToastAction>,
+                });
+            } else {
+                 toast({ 
+                    title: 'Booking Failed', 
+                    description: error.message, 
+                    variant: 'destructive' 
+                });
+            }
         } finally {
             setIsBooking(false);
         }
@@ -355,3 +367,5 @@ export default function BookingPage() {
         </div>
     );
 }
+
+    

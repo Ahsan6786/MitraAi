@@ -13,7 +13,7 @@ import { Loader2, BookHeart, Trash2, Mic, PenSquare, AlertTriangle, FileText, Ch
 import { useToast } from '@/hooks/use-toast';
 import { predictUserMood } from '@/ai/flows/predict-user-mood';
 import { SidebarTrigger } from '@/components/ui/sidebar';
-import { ThemeToggle } from '@/components/theme-toggle';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { Badge } from '@/components/ui/badge';
 import {
   AlertDialog,
@@ -30,6 +30,8 @@ import Link from 'next/link';
 import { GenZToggle } from '@/components/genz-toggle';
 import SectionIntroAnimation from '@/components/section-intro-animation';
 import { SOSButton } from '@/components/sos-button';
+import { useRouter } from 'next/navigation';
+import { ToastAction } from '@/components/ui/toast';
 
 interface JournalEntry {
   id: string;
@@ -118,6 +120,7 @@ function JournalEntryCard({ entry }: { entry: JournalEntry }) {
 function JournalPageContent() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const router = useRouter();
   const [entry, setEntry] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [entries, setEntries] = useState<JournalEntry[]>([]);
@@ -158,7 +161,7 @@ function JournalPageContent() {
         }
         const currentTokens = userDoc.data().tokens || 0;
         if (currentTokens < TOKEN_COST) {
-          throw "Insufficient tokens. Please contact support to recharge.";
+          throw new Error("Insufficient tokens.");
         }
 
         // Deduct tokens
@@ -188,7 +191,16 @@ function JournalPageContent() {
 
     } catch (error: any) {
       console.error("Error saving entry:", error);
-      toast({ title: "Error saving entry", description: typeof error === 'string' ? error : error.message, variant: "destructive" });
+      if (error.message.includes("Insufficient tokens")) {
+        toast({
+            title: "Insufficient Tokens",
+            description: "Please ask your doctor for a recharge.",
+            variant: "destructive",
+            action: <ToastAction altText="Message Doctor" onClick={() => router.push('/reports')}>Message Doctor</ToastAction>,
+        });
+      } else {
+        toast({ title: "Error saving entry", description: error.message, variant: "destructive" });
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -319,3 +331,5 @@ export default function JournalPage() {
 
     return <JournalPageContent />;
 }
+
+    
