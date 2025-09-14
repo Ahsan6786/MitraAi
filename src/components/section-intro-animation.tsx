@@ -11,7 +11,7 @@ interface SectionIntroAnimationProps {
     subtitle: string;
 }
 
-const TOTAL_DURATION = 2500; // 2.5 seconds total
+const TOTAL_DURATION = 4000; // 4 seconds total
 
 export default function SectionIntroAnimation({ onFinish, icon, title, subtitle }: SectionIntroAnimationProps) {
     const [animationState, setAnimationState] = useState('entering');
