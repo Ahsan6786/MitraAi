@@ -10,7 +10,7 @@ import { textToSpeech } from '@/ai/flows/text-to-speech';
 import { useToast } from '@/hooks/use-toast';
 import { detectCrisis } from '@/ai/flows/detect-crisis';
 import CrisisAlertModal from '@/components/crisis-alert-modal';
-import { ThemeToggle } from '@/components/ui/theme-toggle';
+import { ThemeToggle } from '@/components/theme-toggle';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -273,7 +273,7 @@ function TalkPageContent() {
             <SidebarTrigger />
             <div>
               <h1 className="text-lg md:text-xl font-bold">Talk to Mitra</h1>
-              <p className="text-sm text-muted-foreground">Each interaction costs {TOKEN_COST} tokens.</p>
+              <p className="text-sm text-muted-foreground">Each interaction costs ${TOKEN_COST} tokens.</p>
             </div>
           </div>
           <div className="flex items-center gap-2">

@@ -8,7 +8,7 @@ import { Loader2, Mic, Square, Bot, Camera, User, Languages } from 'lucide-react
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
 import { SidebarTrigger } from '@/components/ui/sidebar';
-import { ThemeToggle } from '@/components/ui/theme-toggle';
+import { ThemeToggle } from '@/components/theme-toggle';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { predictLiveMood } from '@/ai/flows/predict-live-mood';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -227,7 +227,7 @@ export default function LiveMoodPage() {
                     <SidebarTrigger className="md:hidden" />
                     <div>
                         <h1 className="text-lg md:text-xl font-bold">Live Mood Analysis</h1>
-                        <p className="text-sm text-muted-foreground">Each analysis costs {TOKEN_COST} tokens.</p>
+                        <p className="text-sm text-muted-foreground">Each analysis costs ${TOKEN_COST} tokens.</p>
                     </div>
                 </div>
                 <div className="flex items-center gap-2">

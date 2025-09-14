@@ -13,7 +13,7 @@ import { Loader2, BookHeart, Trash2, Mic, PenSquare, AlertTriangle, FileText, Ch
 import { useToast } from '@/hooks/use-toast';
 import { predictUserMood } from '@/ai/flows/predict-user-mood';
 import { SidebarTrigger } from '@/components/ui/sidebar';
-import { ThemeToggle } from '@/components/ui/theme-toggle';
+import { ThemeToggle } from '@/components/theme-toggle';
 import { Badge } from '@/components/ui/badge';
 import {
   AlertDialog,
@@ -224,7 +224,7 @@ function JournalPageContent() {
                         <PenSquare className="w-6 h-6 text-primary"/> How are you feeling today?
                     </CardTitle>
                     <CardDescription>
-                        Write anything that's on your mind. It's completely private. Each analysis costs {TOKEN_COST} tokens.
+                        Write anything that's on your mind. It's completely private. Each analysis costs ${TOKEN_COST} tokens.
                     </CardDescription>
                 </CardHeader>
                 <CardContent>

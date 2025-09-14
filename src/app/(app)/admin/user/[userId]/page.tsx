@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Loader2, BarChart, LineChart, FileQuestion, ArrowLeft, PenSquare, Mic, Send, MessageSquare, Coins } from 'lucide-react';
 import { Bar, BarChart as RechartsBarChart, Line, LineChart as RechartsLineChart, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { subDays, format, eachDayOfInterval, startOfDay } from 'date-fns';
-import { ThemeToggle } from '@/components/ui/theme-toggle';
+import { ThemeToggle } from '@/components/theme-toggle';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { GenZToggle } from '@/components/genz-toggle';
 import { Button } from '@/components/ui/button';
