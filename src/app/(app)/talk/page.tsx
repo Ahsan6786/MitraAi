@@ -124,7 +124,7 @@ function TalkPageContent() {
         return;
       }
       
-      const result = await chatEmpatheticTone({ message: messageText, language: language });
+      const result = await chatEmpatheticTone({ message: messageText, userId: user.uid, language: language });
       setChatHistory(prev => [...prev, { sender: 'ai', text: result.response }]);
       toast({ title: `${TOKEN_COST} tokens used.`});
 
