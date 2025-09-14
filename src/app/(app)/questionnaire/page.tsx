@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, Suspense, useMemo } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { db } from '@/lib/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
@@ -10,12 +10,22 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from '@/components/ui/button';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
-import { Loader2, CheckCircle, AlertTriangle, ArrowLeft, ArrowRight } from 'lucide-react';
+import { Loader2, CheckCircle, AlertTriangle, ArrowLeft, ArrowRight, Sparkles } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Progress } from '@/components/ui/progress';
 import { screeningToolsData, ScreeningToolId } from '@/lib/screening-tools';
 
 type Answers = { [key: number]: number };
+
+const motivationalMessages = [
+    "You're doing great!",
+    "Keep it up, you're making progress!",
+    "Every step forward is a victory.",
+    "Almost there, you've got this!",
+    "Thank you for sharing, this is helpful.",
+    "Just a few more to go!",
+    "Well done for taking this step."
+];
 
 function QuestionnaireContent() {
     const { user, loading } = useAuth();
@@ -29,6 +39,19 @@ function QuestionnaireContent() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [result, setResult] = useState<{ severity: string; recommendation: string; } | null>(null);
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+    const [motivationalMessage, setMotivationalMessage] = useState('');
+
+    const randomMessage = useMemo(() => {
+        return motivationalMessages[Math.floor(Math.random() * motivationalMessages.length)];
+    }, [currentQuestionIndex]);
+    
+    useEffect(() => {
+        if (currentQuestionIndex > 0 && currentQuestionIndex % 2 === 0) {
+            setMotivationalMessage(randomMessage);
+            const timer = setTimeout(() => setMotivationalMessage(''), 2000); // Hide after 2 seconds
+            return () => clearTimeout(timer);
+        }
+    }, [currentQuestionIndex, randomMessage]);
 
     useEffect(() => {
         const id = searchParams.get('test') as ScreeningToolId;
@@ -52,14 +75,9 @@ function QuestionnaireContent() {
 
             if (event.key === 'Enter' && answers[currentQuestion.id] !== undefined) {
                 if (isLastQuestion) {
-                    // We can't call handleSubmit directly as it's not memoized and would
-                    // cause this effect to re-run constantly. Instead, we can simulate a click
-                    // or handle the logic carefully. For simplicity, let's just trigger the next/submit.
-                    // A better approach might be to wrap handleSubmit in useCallback.
                     document.getElementById('submit-button')?.click();
-                    document.getElementById('next-button')?.click();
                 } else {
-                    setCurrentQuestionIndex(prev => prev + 1);
+                    document.getElementById('next-button')?.click();
                 }
             }
         };
@@ -209,6 +227,12 @@ function QuestionnaireContent() {
             </header>
             <main className="flex-1 flex items-center justify-center p-2 sm:p-4 md:p-6 overflow-auto">
                 <div className="w-full max-w-2xl space-y-4">
+                    {motivationalMessage && (
+                        <div className="flex items-center justify-center gap-2 text-primary font-medium animate-in fade-in-50">
+                            <Sparkles className="w-5 h-5" />
+                            {motivationalMessage}
+                        </div>
+                    )}
                     <Card className="w-full">
                          <CardHeader className="md:hidden">
                             <Progress value={progress} />
