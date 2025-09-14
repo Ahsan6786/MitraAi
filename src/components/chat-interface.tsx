@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
@@ -328,7 +327,7 @@ export default function ChatInterface({ conversationId }: { conversationId?: str
           <ThemeToggle />
         </div>
       </header>
-      <main className="flex-1 overflow-hidden">
+      <div className="flex-1 overflow-hidden">
         <ScrollArea className="h-full" viewportRef={scrollViewportRef}>
           <div className="p-4 md:p-6 space-y-6">
             {messages.length === 0 && !isLoading && (
@@ -357,7 +356,7 @@ export default function ChatInterface({ conversationId }: { conversationId?: str
             )}
           </div>
         </ScrollArea>
-      </main>
+      </div>
       <footer className="shrink-0 bg-background border-t p-2 md:p-3 z-20">
         <form onSubmit={handleFormSubmit} className="relative flex items-center gap-2">
           <Avatar className="hidden md:flex w-10 h-10 border shrink-0"><AvatarFallback>{user?.email ? user.email[0].toUpperCase() : <User className="w-5 h-5" />}</AvatarFallback></Avatar>
@@ -388,3 +387,5 @@ export default function ChatInterface({ conversationId }: { conversationId?: str
     </div>
   );
 }
+
+    
