@@ -6,7 +6,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { db } from '@/lib/firebase';
 import { collection, doc, onSnapshot, setDoc, serverTimestamp, Timestamp, runTransaction, increment } from 'firebase/firestore';
 import { SidebarTrigger } from '@/components/ui/sidebar';
-import { ThemeToggle } from '@/components/ui/theme-toggle';
+import { ThemeToggle } from '@/components/theme-toggle';
 import { GenZToggle } from '@/components/genz-toggle';
 import { SOSButton } from '@/components/sos-button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -15,21 +15,30 @@ import { Loader2, Coins, CheckCircle2, Trophy } from 'lucide-react';
 import { tasksData, Task } from '@/lib/tasks-data';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 interface UserTaskStatus {
     [taskId: string]: {
         completed: boolean;
         completedAt?: Timestamp;
-        rewarded?: boolean; // Keep this to know if reward was given
+        rewarded?: boolean;
     };
 }
 
-const TaskCard = ({ task, status, onComplete }: { task: Task, status: boolean, onComplete: (task: Task) => void }) => {
+const TaskCard = ({ task, status, onComplete }: { task: Task, status: { completed: boolean, rewarded: boolean }, onComplete: (task: Task, isNavigating?: boolean) => Promise<void> }) => {
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const router = useRouter();
 
-    const handleComplete = async () => {
+    const handleAction = async () => {
         setIsSubmitting(true);
-        await onComplete(task);
+        if (task.actionUrl) {
+            // Mark as complete, then navigate
+            await onComplete(task, true);
+            router.push(task.actionUrl);
+        } else {
+            // Just mark as complete
+            await onComplete(task);
+        }
         setIsSubmitting(false);
     };
 
@@ -46,21 +55,20 @@ const TaskCard = ({ task, status, onComplete }: { task: Task, status: boolean, o
                 </div>
             </CardContent>
             <CardFooter>
-                {status ? (
+                {status.rewarded ? (
                     <Button variant="outline" disabled className="w-full">
-                        <CheckCircle2 className="mr-2 h-4 w-4" />
+                        <CheckCircle2 className="mr-2 h-4 w-4 text-green-500" />
                         Completed & Rewarded
                     </Button>
-                ) : task.actionUrl ? (
-                     <Button asChild className="w-full">
-                        <Link href={task.actionUrl}>
-                            Go to Task
-                        </Link>
+                ) : status.completed ? (
+                     <Button variant="outline" disabled className="w-full">
+                        <CheckCircle2 className="mr-2 h-4 w-4" />
+                        Pending Admin Approval
                     </Button>
                 ) : (
-                    <Button onClick={handleComplete} disabled={isSubmitting} className="w-full">
+                    <Button onClick={handleAction} disabled={isSubmitting} className="w-full">
                         {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        Mark as Completed
+                        {task.actionUrl ? 'Go to Task' : 'Mark as Completed'}
                     </Button>
                 )}
             </CardFooter>
@@ -80,7 +88,7 @@ export default function RewardsPage() {
         const unsubscribe = onSnapshot(tasksRef, (snapshot) => {
             const statuses: UserTaskStatus = {};
             snapshot.forEach(doc => {
-                statuses[doc.id] = doc.data() as { completed: boolean, completedAt: Timestamp, rewarded: boolean };
+                statuses[doc.id] = doc.data() as { completed: boolean, rewarded: boolean, completedAt: Timestamp };
             });
             setTaskStatuses(statuses);
             setIsLoading(false);
@@ -91,30 +99,20 @@ export default function RewardsPage() {
     const handleCompleteTask = async (task: Task) => {
         if (!user) return;
         
-        const userRef = doc(db, 'users', user.uid);
         const taskRef = doc(db, `users/${user.uid}/tasks`, task.id);
 
         try {
-            await runTransaction(db, async (transaction) => {
-                const taskDoc = await transaction.get(taskRef);
-                if (taskDoc.exists() && taskDoc.data().rewarded) {
-                    throw new Error("Task already rewarded.");
-                }
-
-                // Grant tokens to the user
-                transaction.update(userRef, { tokens: increment(task.reward) });
-
-                // Mark the task as completed and rewarded
-                transaction.set(taskRef, {
-                    completed: true,
-                    completedAt: serverTimestamp(),
-                    rewarded: true,
-                });
-            });
+            // Set the task as completed, awaiting admin review.
+            // Rewarded status is not set here.
+            await setDoc(taskRef, {
+                completed: true,
+                completedAt: serverTimestamp(),
+                rewarded: false, // Explicitly set rewarded to false
+            }, { merge: true });
 
             toast({
-                title: "Task Completed!",
-                description: `You've earned ${task.reward} tokens! They have been added to your account.`
+                title: "Task Submitted!",
+                description: "An admin will review your task and grant you the tokens shortly."
             });
 
         } catch (error: any) {
@@ -145,7 +143,7 @@ export default function RewardsPage() {
                         <Trophy className="mx-auto w-12 h-12 text-amber-500 mb-4" />
                         <h1 className="text-3xl md:text-4xl font-bold tracking-tight">Earn Rewards</h1>
                         <p className="mt-2 text-lg text-muted-foreground">
-                            Complete the tasks below to automatically earn tokens and boost your balance.
+                            Complete the tasks below. An admin will review your submissions and add tokens to your account.
                         </p>
                     </div>
 
@@ -159,7 +157,7 @@ export default function RewardsPage() {
                                 <TaskCard 
                                     key={task.id} 
                                     task={task} 
-                                    status={taskStatuses[task.id]?.rewarded || false} 
+                                    status={taskStatuses[task.id] || { completed: false, rewarded: false }} 
                                     onComplete={handleCompleteTask} 
                                 />
                             ))}
