@@ -150,7 +150,7 @@ function SidebarContent({ currentConversationId }: { currentConversationId?: str
             <ScrollArea className="flex-1">
                 <div className="space-y-1">
                     {conversations.map(convo => (
-                        <div key={convo.id} className="group relative rounded-md flex items-center justify-between hover:bg-accent">
+                        <div key={convo.id} className="group relative rounded-md">
                             {editingId === convo.id ? (
                                 <div className="flex items-center gap-1 p-1 w-full">
                                     <Input 
@@ -162,11 +162,11 @@ function SidebarContent({ currentConversationId }: { currentConversationId?: str
                                     <Button size="icon" variant="ghost" className="h-8 w-8" onClick={handleCancelRename}><X className="w-4 h-4"/></Button>
                                 </div>
                             ) : (
-                                <div className="flex items-center w-full">
+                                <>
                                     <Link
                                         href={`/chat/${convo.id}`}
                                         className={cn(
-                                            "w-full h-full justify-start truncate p-2 flex items-center gap-2 text-sm rounded-md",
+                                            "w-full h-full justify-start p-2 flex items-center gap-2 text-sm rounded-md hover:bg-accent",
                                             currentConversationId === convo.id && "bg-accent text-accent-foreground"
                                         )}
                                         onClick={handleLinkClick}
@@ -174,7 +174,7 @@ function SidebarContent({ currentConversationId }: { currentConversationId?: str
                                         <MessageSquare className="mr-2 h-4 w-4 flex-shrink-0" />
                                         <span className="truncate flex-1">{convo.title}</span>
                                     </Link>
-                                    <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity bg-accent">
+                                    <div className="absolute top-1/2 right-1 -translate-y-1/2 flex items-center opacity-0 group-hover:opacity-100 transition-opacity bg-accent rounded-md">
                                         <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleStartRename(convo)}><Edit className="w-4 h-4"/></Button>
                                          <AlertDialog>
                                             <AlertDialogTrigger asChild>
@@ -194,7 +194,7 @@ function SidebarContent({ currentConversationId }: { currentConversationId?: str
                                             </AlertDialogContent>
                                         </AlertDialog>
                                     </div>
-                                </div>
+                                </>
                             )}
                         </div>
                     ))}
