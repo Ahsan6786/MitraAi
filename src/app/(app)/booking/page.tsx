@@ -4,7 +4,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { db } from '@/lib/firebase';
-import { collection, query, where, getDocs, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, where, getDocs, addDoc, serverTimestamp, doc, runTransaction, increment } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -48,6 +48,8 @@ const issueTypes = [
     "Other"
 ];
 
+const TOKEN_COST = 50;
+
 // Generates a user-friendly random code
 const generateStudentCode = () => {
     const adjectives = ["Brave", "Calm", "Wise", "Kind", "Strong", "Happy", "Proud"];
@@ -87,48 +89,74 @@ function BookingDialog({ counsellor, user, isOpen, onOpenChange }: { counsellor:
             return;
         }
         setIsBooking(true);
+
+        const studentCode = isAnonymous ? generateStudentCode() : null;
+        const userDocRef = doc(db, 'users', user.uid);
+        const bookingsCollectionRef = collection(db, 'bookings');
+
         try {
-            const time = `${hour}:${minute} ${ampm}`;
-            const studentCode = isAnonymous ? generateStudentCode() : null;
-
-            const newBooking = {
-                student_id: isAnonymous ? null : user.uid,
-                student_email: isAnonymous ? null : user.email,
-                student_phone: isAnonymous ? null : (user.phoneNumber || null),
-                student_code: studentCode,
-                counsellor_id: counsellor.id,
-                counsellor_name: counsellor.name,
-                counsellor_email: counsellor.email,
-                counsellor_avatar: counsellor.avatarUrl || null,
-                appointment_date: format(date, 'yyyy-MM-dd'),
-                appointment_time: time,
-                appointment_status: 'Pending',
-                is_anonymous: isAnonymous,
-                issue_type: issueType,
-                meet_link: null,
-                student_notes: notes,
-                counsellor_notes: null,
-                created_at: serverTimestamp(),
-                updated_at: serverTimestamp(),
-            };
-
-            const docRef = await addDoc(collection(db, 'bookings'), newBooking);
+            const bookingDocRef = await runTransaction(db, async (transaction) => {
+                if (!isAnonymous) {
+                    const userDoc = await transaction.get(userDocRef);
+                    if (!userDoc.exists()) {
+                        throw "User document not found.";
+                    }
+                    const currentTokens = userDoc.data().tokens || 0;
+                    if (currentTokens < TOKEN_COST) {
+                        throw `Insufficient tokens. You need ${TOKEN_COST} tokens to book an appointment.`;
+                    }
+                    // Deduct tokens
+                    transaction.update(userDocRef, { tokens: increment(-TOKEN_COST) });
+                }
+                
+                // Create the booking document
+                const time = `${hour}:${minute} ${ampm}`;
+                const newBooking = {
+                    student_id: isAnonymous ? null : user.uid,
+                    student_email: isAnonymous ? null : user.email,
+                    student_phone: isAnonymous ? null : (user.phoneNumber || null),
+                    student_code: studentCode,
+                    counsellor_id: counsellor.id,
+                    counsellor_name: counsellor.name,
+                    counsellor_email: counsellor.email,
+                    counsellor_avatar: counsellor.avatarUrl || null,
+                    appointment_date: format(date, 'yyyy-MM-dd'),
+                    appointment_time: time,
+                    appointment_status: 'Pending',
+                    is_anonymous: isAnonymous,
+                    issue_type: issueType,
+                    meet_link: null,
+                    student_notes: notes,
+                    counsellor_notes: null,
+                    created_at: serverTimestamp(),
+                    updated_at: serverTimestamp(),
+                };
+                
+                const newBookingRef = doc(bookingsCollectionRef);
+                transaction.set(newBookingRef, newBooking);
+                return newBookingRef;
+            });
             
             let toastDescription = 'Your request has been sent to the counsellor.';
             if (isAnonymous && studentCode) {
-                toastDescription += ` Your anonymous code is ${studentCode}. Please save it.`
-                // Save anonymous booking ID to local storage
+                toastDescription += ` Your anonymous code is ${studentCode}. Please save it.`;
                 const anonymousBookingIds = JSON.parse(localStorage.getItem('anonymousBookingIds') || '[]');
-                anonymousBookingIds.push(docRef.id);
+                anonymousBookingIds.push(bookingDocRef.id);
                 localStorage.setItem('anonymousBookingIds', JSON.stringify(anonymousBookingIds));
+            } else {
+                 toastDescription += ` ${TOKEN_COST} tokens have been deducted.`;
             }
 
             toast({ title: 'Appointment Booked!', description: toastDescription });
             onOpenChange(false);
             resetForm();
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error booking appointment:', error);
-            toast({ title: 'Booking Failed', variant: 'destructive' });
+            toast({ 
+                title: 'Booking Failed', 
+                description: typeof error === 'string' ? error : error.message, 
+                variant: 'destructive' 
+            });
         } finally {
             setIsBooking(false);
         }
@@ -142,7 +170,7 @@ function BookingDialog({ counsellor, user, isOpen, onOpenChange }: { counsellor:
                 <DialogHeader>
                     <DialogTitle>Book with {counsellor.name}</DialogTitle>
                     <DialogDescription>
-                        Select a date and time for your appointment.
+                        Select a date and time for your appointment. This will cost {TOKEN_COST} tokens.
                     </DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
@@ -154,7 +182,7 @@ function BookingDialog({ counsellor, user, isOpen, onOpenChange }: { counsellor:
                         <div className="flex items-start gap-3 rounded-md border border-amber-500 bg-amber-50 p-3 dark:bg-amber-950/20">
                             <AlertTriangle className="h-5 w-5 flex-shrink-0 text-amber-600"/>
                             <p className="text-xs text-amber-800 dark:text-amber-300">
-                                Your name and email will be hidden. You will receive a unique code to track your appointment.
+                                Your name and email will be hidden. You will receive a unique code to track your appointment. No tokens will be deducted for anonymous bookings.
                             </p>
                         </div>
                     )}
