@@ -233,20 +233,24 @@ function LandingPageContent() {
         <section id="screening-tool" className="w-full py-12 md:py-24">
             <div className="container mx-auto grid items-center gap-6 px-4 md:px-6 lg:grid-cols-2 lg:gap-10">
                 <ScrollAnimate>
-                  <div className="space-y-4">
-                      <div className="inline-block rounded-lg bg-muted px-3 py-1 text-sm">Medically Accepted Screening</div>
-                      <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">Grounded in Science</h2>
-                      <p className="max-w-[600px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                          MitraAI integrates the Geriatric Depression Scale (GDS), a clinically validated and medically accepted screening tool developed at Stanford University School of Medicine. It is used worldwide by doctors and researchers to help measure depression severity.
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                          While not a diagnostic tool, the GDS provides a reliable, peer-reviewed starting point for understanding your mental health.
-                      </p>
-                  </div>
+                  <Card className="h-full flex flex-col">
+                    <CardHeader>
+                        <div className="inline-block rounded-lg bg-muted px-3 py-1 text-sm w-fit">Medically Accepted Screening</div>
+                        <CardTitle className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl mt-2">Grounded in Science</CardTitle>
+                    </CardHeader>
+                    <CardContent className="flex-grow">
+                        <p className="max-w-[600px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
+                            MitraAI integrates the Geriatric Depression Scale (GDS), a clinically validated and medically accepted screening tool developed at Stanford University School of Medicine. It is used worldwide by doctors and researchers to help measure depression severity.
+                        </p>
+                        <p className="text-sm text-muted-foreground mt-4">
+                            While not a diagnostic tool, the GDS provides a reliable, peer-reviewed starting point for understanding your mental health.
+                        </p>
+                    </CardContent>
+                  </Card>
                 </ScrollAnimate>
                 <ScrollAnimate style={{ animationDelay: '150ms' }}>
                   <div className="flex flex-col gap-4">
-                      <Card>
+                      <Card className="h-full">
                           <CardHeader className="flex-row items-center gap-4">
                               <FileQuestion className="w-8 h-8 text-primary" />
                               <div>
@@ -316,40 +320,44 @@ function LandingPageContent() {
               </div>
             </ScrollAnimate>
             <ScrollAnimate>
-              <div className="mx-auto max-w-2xl items-center gap-6 py-12">
-                <div className="flex flex-col justify-center space-y-4">
-                  <ul className="grid gap-6">
-                     <li className="flex items-start gap-3">
-                        <div className="pt-1"><ShieldCheck className="w-5 h-5 text-primary"/></div>
-                        <div>
-                            <h4 className="font-semibold">A Safe Space to Talk</h4>
-                            <p className="text-sm text-muted-foreground">Share your thoughts with our AI companion without fear of judgment.</p>
-                        </div>
-                    </li>
-                     <li className="flex items-start gap-3">
-                        <div className="pt-1"><ShieldCheck className="w-5 h-5 text-primary"/></div>
-                        <div>
-                            <h4 className="font-semibold">Track Your Emotional Health</h4>
-                            <p className="text-sm text-muted-foreground">Through mood journals and voice reflections, visualize your emotional patterns.</p>
-                        </div>
-                    </li>
-                     <li className="flex items-start gap-3">
-                        <div className="pt-1"><ShieldCheck className="w-5 h-5 text-primary"/></div>
-                        <div>
-                            <h4 className="font-semibold">Early Awareness & Support</h4>
-                            <p className="text-sm text-muted-foreground">MitraAI gently helps you notice signs of stress or anxiety before they become overwhelming.</p>
-                        </div>
-                    </li>
-                     <li className="flex items-start gap-3">
-                        <div className="pt-1"><ShieldCheck className="w-5 h-5 text-primary"/></div>
-                        <div>
-                            <h4 className="font-semibold">Privacy First</h4>
-                            <p className="text-sm text-muted-foreground">Your journal is private. All data is securely stored, and you are in complete control of your information.</p>
-                        </div>
-                    </li>
-                  </ul>
-                </div>
-              </div>
+              <Card className="mt-12">
+                <CardContent className="p-8">
+                  <div className="mx-auto max-w-2xl items-center">
+                    <div className="flex flex-col justify-center space-y-4">
+                      <ul className="grid gap-6">
+                        <li className="flex items-start gap-3">
+                            <div className="pt-1"><ShieldCheck className="w-5 h-5 text-primary"/></div>
+                            <div>
+                                <h4 className="font-semibold">A Safe Space to Talk</h4>
+                                <p className="text-sm text-muted-foreground">Share your thoughts with our AI companion without fear of judgment.</p>
+                            </div>
+                        </li>
+                        <li className="flex items-start gap-3">
+                            <div className="pt-1"><ShieldCheck className="w-5 h-5 text-primary"/></div>
+                            <div>
+                                <h4 className="font-semibold">Track Your Emotional Health</h4>
+                                <p className="text-sm text-muted-foreground">Through mood journals and voice reflections, visualize your emotional patterns.</p>
+                            </div>
+                        </li>
+                        <li className="flex items-start gap-3">
+                            <div className="pt-1"><ShieldCheck className="w-5 h-5 text-primary"/></div>
+                            <div>
+                                <h4 className="font-semibold">Early Awareness & Support</h4>
+                                <p className="text-sm text-muted-foreground">MitraAI gently helps you notice signs of stress or anxiety before they become overwhelming.</p>
+                            </div>
+                        </li>
+                        <li className="flex items-start gap-3">
+                            <div className="pt-1"><ShieldCheck className="w-5 h-5 text-primary"/></div>
+                            <div>
+                                <h4 className="font-semibold">Privacy First</h4>
+                                <p className="text-sm text-muted-foreground">Your journal is private. All data is securely stored, and you are in complete control of your information.</p>
+                            </div>
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             </ScrollAnimate>
           </div>
         </section>
