@@ -7,7 +7,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { db } from '@/lib/firebase';
 import { collection, query, where, onSnapshot, orderBy, Timestamp, getDocs, doc, getDoc, limit, addDoc, serverTimestamp, updateDoc, increment } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, BarChart, LineChart, FileQuestion, ArrowLeft, PenSquare, Mic, Send, MessageSquare, Coins, Trophy } from 'lucide-react';
+import { Loader2, BarChart, LineChart, FileQuestion, ArrowLeft, PenSquare, Mic, Send, MessageSquare, Coins, Trophy, CheckCircle2 } from 'lucide-react';
 import { Bar, BarChart as RechartsBarChart, Line, LineChart as RechartsLineChart, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { subDays, format, eachDayOfInterval, startOfDay } from 'date-fns';
 import { ThemeToggle } from '@/components/theme-toggle';
@@ -66,6 +66,7 @@ interface UserTask {
     id: string; // This will be the task ID from tasks-data.ts
     completed: boolean;
     completedAt: Timestamp;
+    rewarded?: boolean;
 }
 
 
@@ -152,9 +153,11 @@ function AdminActions({ userId, userProfile }: { userId: string; userProfile: Us
 function UserTasks({ userId }: { userId: string }) {
     const [userTasks, setUserTasks] = useState<UserTask[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [isApproving, setIsApproving] = useState<string | null>(null);
+    const { toast } = useToast();
 
     useEffect(() => {
-        const tasksQuery = query(collection(db, `users/${userId}/tasks`), where('completed', '==', true));
+        const tasksQuery = query(collection(db, `users/${userId}/tasks`), where('completed', '==', true), orderBy('completedAt', 'desc'));
         const unsubscribe = onSnapshot(tasksQuery, (snapshot) => {
             const completedTasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as UserTask));
             setUserTasks(completedTasks);
@@ -162,6 +165,43 @@ function UserTasks({ userId }: { userId: string }) {
         });
         return () => unsubscribe();
     }, [userId]);
+
+    const handleApproveReward = async (task: UserTask) => {
+        const taskData = tasksData.find(t => t.id === task.id);
+        if (!taskData) {
+            toast({ title: "Task data not found!", variant: "destructive" });
+            return;
+        }
+
+        setIsApproving(task.id);
+        try {
+            // Use a transaction to ensure atomicity
+            const userRef = doc(db, 'users', userId);
+            const taskRef = doc(db, `users/${userId}/tasks`, task.id);
+
+            await runTransaction(db, async (transaction) => {
+                const userDoc = await transaction.get(userRef);
+                const taskDoc = await transaction.get(taskRef);
+
+                if (!userDoc.exists()) throw new Error("User not found");
+                if (!taskDoc.exists()) throw new Error("Task not found");
+                if (taskDoc.data().rewarded) throw new Error("Task already rewarded");
+
+                // Update user tokens
+                transaction.update(userRef, { tokens: increment(taskData.reward) });
+                // Update task status to rewarded
+                transaction.update(taskRef, { rewarded: true });
+            });
+
+            toast({ title: "Reward Granted!", description: `${taskData.reward} tokens added to user's account.` });
+
+        } catch (error: any) {
+            console.error("Error approving reward:", error);
+            toast({ title: "Approval Failed", description: error.message, variant: "destructive" });
+        } finally {
+            setIsApproving(null);
+        }
+    };
 
     if (isLoading) {
         return <div className="flex justify-center items-center h-64"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
@@ -182,15 +222,26 @@ function UserTasks({ userId }: { userId: string }) {
                             const taskData = tasksData.find(t => t.id === task.id);
                             if (!taskData) return null;
                             return (
-                                <div key={task.id} className="p-3 bg-muted rounded-md">
-                                    <div className="flex justify-between items-center">
-                                        <div>
-                                            <p className="font-semibold">{taskData.title}</p>
-                                            <p className="text-xs text-muted-foreground">Completed on: {task.completedAt.toDate().toLocaleDateString()}</p>
-                                        </div>
+                                <div key={task.id} className="p-3 bg-muted rounded-md flex justify-between items-center">
+                                    <div>
+                                        <p className="font-semibold">{taskData.title}</p>
+                                        <p className="text-xs text-muted-foreground">Completed on: {task.completedAt.toDate().toLocaleDateString()}</p>
+                                    </div>
+                                    <div className="flex items-center gap-4">
                                         <Badge variant="secondary" className="flex items-center gap-1">
                                             <Coins className="w-3 h-3 text-amber-500" /> +{taskData.reward}
                                         </Badge>
+                                        {task.rewarded ? (
+                                            <Button variant="outline" size="sm" disabled>
+                                                <CheckCircle2 className="w-4 h-4 mr-2" />
+                                                Approved
+                                            </Button>
+                                        ) : (
+                                            <Button size="sm" onClick={() => handleApproveReward(task)} disabled={isApproving === task.id}>
+                                                {isApproving === task.id && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
+                                                Approve
+                                            </Button>
+                                        )}
                                     </div>
                                 </div>
                             )
