@@ -26,6 +26,7 @@ import { GenZToggle } from './genz-toggle';
 import { doc, getDoc, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, DocumentData, WithFieldValue, setDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { SOSButton } from './sos-button';
+import { useChatHistorySidebar } from './chat-history-sidebar';
 
 interface Message {
   sender: 'user' | 'ai';
@@ -165,6 +166,7 @@ export default function ChatInterface({ conversationId }: { conversationId?: str
   const { toast } = useToast();
   const { user } = useAuth();
   const { theme } = useTheme();
+  const chatHistorySidebar = useChatHistorySidebar();
 
   const isGenzMode = theme === 'theme-genz-dark';
   
@@ -326,7 +328,7 @@ export default function ChatInterface({ conversationId }: { conversationId?: str
           <ThemeToggle />
         </div>
       </header>
-      <div className="flex-1 overflow-y-auto">
+      <main className="flex-1 overflow-hidden">
         <ScrollArea className="h-full" viewportRef={scrollViewportRef}>
           <div className="p-4 md:p-6 space-y-6">
             {messages.length === 0 && !isLoading && (
@@ -355,7 +357,7 @@ export default function ChatInterface({ conversationId }: { conversationId?: str
             )}
           </div>
         </ScrollArea>
-      </div>
+      </main>
       <footer className="shrink-0 bg-background border-t p-2 md:p-3 z-20">
         <form onSubmit={handleFormSubmit} className="relative flex items-center gap-2">
           <Avatar className="hidden md:flex w-10 h-10 border shrink-0"><AvatarFallback>{user?.email ? user.email[0].toUpperCase() : <User className="w-5 h-5" />}</AvatarFallback></Avatar>
@@ -365,12 +367,22 @@ export default function ChatInterface({ conversationId }: { conversationId?: str
           </div>
         </form>
          <div className="flex items-center justify-between mt-2 pl-0 md:pl-14">
-             <Select value={language} onValueChange={setLanguage}>
-                <SelectTrigger className="w-auto h-8 text-xs"><Languages className="w-3 h-3 mr-1.5"/><SelectValue placeholder="Language" /></SelectTrigger>
-                <SelectContent>
-                    {languages.map(lang => (<SelectItem key={lang.value} value={lang.value}>{lang.label}</SelectItem>))}
-                </SelectContent>
-            </Select>
+            <div className="flex items-center gap-2">
+                 <Select value={language} onValueChange={setLanguage}>
+                    <SelectTrigger className="w-auto h-8 text-xs"><Languages className="w-3 h-3 mr-1.5"/><SelectValue placeholder="Language" /></SelectTrigger>
+                    <SelectContent>
+                        {languages.map(lang => (<SelectItem key={lang.value} value={lang.value}>{lang.label}</SelectItem>))}
+                    </SelectContent>
+                </Select>
+                 <Button
+                    variant="ghost"
+                    size="sm"
+                    className="md:hidden"
+                    onClick={() => chatHistorySidebar.setIsOpen(true)}
+                >
+                    Show Chats
+                </Button>
+            </div>
          </div>
       </footer>
     </div>
