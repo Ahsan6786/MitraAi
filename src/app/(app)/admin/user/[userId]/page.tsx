@@ -7,7 +7,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { db } from '@/lib/firebase';
 import { collection, query, where, onSnapshot, orderBy, Timestamp, getDocs, doc, getDoc, limit, addDoc, serverTimestamp, updateDoc, increment } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, BarChart, LineChart, FileQuestion, ArrowLeft, PenSquare, Mic, Send, MessageSquare, Coins } from 'lucide-react';
+import { Loader2, BarChart, LineChart, FileQuestion, ArrowLeft, PenSquare, Mic, Send, MessageSquare, Coins, Trophy } from 'lucide-react';
 import { Bar, BarChart as RechartsBarChart, Line, LineChart as RechartsLineChart, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { subDays, format, eachDayOfInterval, startOfDay } from 'date-fns';
 import { ThemeToggle } from '@/components/theme-toggle';
@@ -23,7 +23,7 @@ import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { SOSButton } from '@/components/sos-button';
 import { useToast } from '@/hooks/use-toast';
-
+import { tasksData } from '@/lib/tasks-data';
 
 const ADMIN_EMAIL = 'ahsan.khan@mitwpu.edu.in';
 const ADMIN_UID = 'ADMIN'; // A special UID for the admin/doctor
@@ -61,6 +61,13 @@ interface Message {
     senderId: string;
     createdAt: Timestamp;
 }
+
+interface UserTask {
+    id: string; // This will be the task ID from tasks-data.ts
+    completed: boolean;
+    completedAt: Timestamp;
+}
+
 
 // A simple mapping for mood to a numerical value for the line chart
 const moodToValue = (mood: string): number => {
@@ -137,6 +144,59 @@ function AdminActions({ userId, userProfile }: { userId: string; userProfile: Us
                         Add Tokens
                     </Button>
                 </div>
+            </CardContent>
+        </Card>
+    )
+}
+
+function UserTasks({ userId }: { userId: string }) {
+    const [userTasks, setUserTasks] = useState<UserTask[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        const tasksQuery = query(collection(db, `users/${userId}/tasks`), where('completed', '==', true));
+        const unsubscribe = onSnapshot(tasksQuery, (snapshot) => {
+            const completedTasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as UserTask));
+            setUserTasks(completedTasks);
+            setIsLoading(false);
+        });
+        return () => unsubscribe();
+    }, [userId]);
+
+    if (isLoading) {
+        return <div className="flex justify-center items-center h-64"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
+    }
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2"><Trophy />Completed Tasks</CardTitle>
+                <CardDescription>Review the tasks completed by the user to grant rewards.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                {userTasks.length === 0 ? (
+                    <p className="text-muted-foreground text-center py-4">This user has not completed any tasks yet.</p>
+                ) : (
+                    <div className="space-y-3">
+                        {userTasks.map(task => {
+                            const taskData = tasksData.find(t => t.id === task.id);
+                            if (!taskData) return null;
+                            return (
+                                <div key={task.id} className="p-3 bg-muted rounded-md">
+                                    <div className="flex justify-between items-center">
+                                        <div>
+                                            <p className="font-semibold">{taskData.title}</p>
+                                            <p className="text-xs text-muted-foreground">Completed on: {task.completedAt.toDate().toLocaleDateString()}</p>
+                                        </div>
+                                        <Badge variant="secondary" className="flex items-center gap-1">
+                                            <Coins className="w-3 h-3 text-amber-500" /> +{taskData.reward}
+                                        </Badge>
+                                    </div>
+                                </div>
+                            )
+                        })}
+                    </div>
+                )}
             </CardContent>
         </Card>
     )
@@ -432,14 +492,14 @@ function UserMessages({ userId, userProfile }: { userId: string, userProfile: Us
                     <div className="p-4 space-y-4">
                         {isLoading && <Loader2 className="mx-auto w-6 h-6 animate-spin" />}
                         {messages.map(msg => (
-                            <div key={msg.id} className={cn('flex items-start gap-3', msg.senderId === ADMIN_UID ? 'justify-end' : 'justify-start')}>
-                                {msg.senderId !== ADMIN_UID && <Avatar className="w-8 h-8 border"><AvatarFallback>{userProfile?.displayName?.[0] || 'U'}</AvatarFallback></Avatar>}
-                                <div className={cn("flex flex-col max-w-[70%]", msg.senderId === ADMIN_UID ? 'items-end' : 'items-start')}>
-                                    <div className={cn('rounded-xl px-4 py-2 text-sm shadow-sm', msg.senderId === ADMIN_UID ? 'bg-primary text-primary-foreground' : 'bg-muted')}>
+                            <div key={msg.id} className={cn('flex items-start gap-3', msg.senderId === ADMIN_UID ? 'justify-start' : 'justify-end')}>
+                                {msg.senderId === ADMIN_UID && <Avatar className="w-8 h-8 border"><AvatarFallback>A</AvatarFallback></Avatar>}
+                                <div className={cn("flex flex-col max-w-[70%]", msg.senderId === ADMIN_UID ? 'items-start' : 'items-end')}>
+                                    <div className={cn('rounded-xl px-4 py-2 text-sm shadow-sm', msg.senderId === ADMIN_UID ? 'bg-muted' : 'bg-primary text-primary-foreground')}>
                                         {msg.text}
                                     </div>
                                 </div>
-                                {msg.senderId === ADMIN_UID && <Avatar className="w-8 h-8 border"><AvatarFallback>A</AvatarFallback></Avatar>}
+                                {msg.senderId !== ADMIN_UID && <Avatar className="w-8 h-8 border"><AvatarFallback>{userProfile?.displayName?.[0] || 'U'}</AvatarFallback></Avatar>}
                             </div>
                         ))}
                     </div>
@@ -514,8 +574,9 @@ export default function UserDetailPage() {
             </header>
             <main className="flex-1 overflow-auto p-2 sm:p-4 md:p-6">
                 <Tabs defaultValue="actions" className="w-full">
-                    <TabsList className="grid w-full grid-cols-2 md:grid-cols-5">
+                    <TabsList className="grid w-full grid-cols-2 md:grid-cols-6">
                         <TabsTrigger value="actions">Actions</TabsTrigger>
+                        <TabsTrigger value="tasks">Tasks</TabsTrigger>
                         <TabsTrigger value="mood-analysis">Mood Analysis</TabsTrigger>
                         <TabsTrigger value="journal-entries">Journal Entries</TabsTrigger>
                         <TabsTrigger value="questionnaires">Questionnaires</TabsTrigger>
@@ -523,6 +584,9 @@ export default function UserDetailPage() {
                     </TabsList>
                     <TabsContent value="actions" className="mt-4">
                         <AdminActions userId={userId} userProfile={userProfile} />
+                    </TabsContent>
+                     <TabsContent value="tasks" className="mt-4">
+                        <UserTasks userId={userId} />
                     </TabsContent>
                     <TabsContent value="mood-analysis" className="mt-4">
                         <UserMoodDashboard userId={userId} />

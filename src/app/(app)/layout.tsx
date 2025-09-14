@@ -355,6 +355,14 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
                  <SidebarMenuItem>
+                  <SidebarMenuButton asChild isActive={pathname === '/rewards'}>
+                    <Link href="/rewards" onClick={handleLinkClick}>
+                      <Trophy />
+                      <span>Rewards</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                 <SidebarMenuItem>
                   <SidebarMenuButton
                     asChild
                     isActive={pathname === '/about'}
