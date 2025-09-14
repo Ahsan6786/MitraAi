@@ -9,7 +9,7 @@ import { collection, query, where, onSnapshot, Timestamp, doc, updateDoc, orderB
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Mic, PenSquare, ShieldCheck, Sparkles, AlertTriangle, FileQuestion, UserPlus, Mail, Phone, Check, X, Trash2, Users, ArrowRight } from 'lucide-react';
+import { Loader2, Mic, PenSquare, ShieldCheck, Sparkles, AlertTriangle, FileQuestion, UserPlus, Mail, Phone, Check, X, Trash2, Users, ArrowRight, Coins } from 'lucide-react';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
@@ -74,6 +74,7 @@ interface AppUser {
     id: string;
     email: string;
     displayName?: string;
+    tokens?: number;
 }
 
 const questionnaireQuestions = [
@@ -221,42 +222,18 @@ function ManageUsers() {
         const fetchUsers = async () => {
             setIsLoading(true);
             try {
-                // Fetch users from both collections and merge them
-                const journalUsersQuery = await getDocs(collection(db, 'journalEntries'));
-                const questionnaireUsersQuery = await getDocs(collection(db, 'questionnaires'));
-
-                const userMap = new Map<string, AppUser>();
-
-                journalUsersQuery.forEach(doc => {
-                    const data = doc.data();
-                    if (data.userId && !userMap.has(data.userId)) {
-                        userMap.set(data.userId, { id: data.userId, email: data.userEmail });
-                    }
-                });
-
-                questionnaireUsersQuery.forEach(doc => {
-                    const data = doc.data();
-                    if (data.userId && !userMap.has(data.userId)) {
-                        userMap.set(data.userId, { id: data.userId, email: data.userEmail });
-                    }
-                });
-
-                // Fetch display names
-                const userIds = Array.from(userMap.keys());
-                const userProfilePromises = userIds.map(id => getDoc(doc(db, 'users', id)));
-                const userProfileSnapshots = await Promise.all(userProfilePromises);
+                // Fetch all user profiles from the 'users' collection
+                const usersQuery = await getDocs(collection(db, 'users'));
                 
-                userProfileSnapshots.forEach(docSnap => {
-                    if (docSnap.exists()) {
-                        const data = docSnap.data();
-                        const user = userMap.get(docSnap.id);
-                        if (user) {
-                            user.displayName = data.displayName;
-                        }
-                    }
-                });
+                const userList = usersQuery.docs.map(doc => ({
+                    id: doc.id,
+                    email: doc.data().email || 'No email',
+                    displayName: doc.data().displayName,
+                    tokens: doc.data().tokens
+                } as AppUser));
 
-                setUsers(Array.from(userMap.values()));
+                setUsers(userList);
+
             } catch (error) {
                 console.error("Error fetching users:", error);
             } finally {
@@ -268,7 +245,7 @@ function ManageUsers() {
     }, []);
 
     if (isLoading) return <div className="flex justify-center items-center h-full"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
-    if (users.length === 0) return <Card className="text-center p-6 md:p-10"><CardTitle>No Users Found</CardTitle><CardDescription className="mt-2">There are no users with journal entries or questionnaire submissions yet.</CardDescription></Card>;
+    if (users.length === 0) return <Card className="text-center p-6 md:p-10"><CardTitle>No Users Found</CardTitle><CardDescription className="mt-2">There are no user profiles in the database yet.</CardDescription></Card>;
 
     return (
         <div className="space-y-4">
@@ -279,12 +256,18 @@ function ManageUsers() {
                             <p className="font-semibold">{user.displayName || 'No name set'}</p>
                             <p className="text-sm text-muted-foreground">{user.email}</p>
                         </div>
-                        <Button asChild variant="outline" size="sm">
-                            <Link href={`/admin/user/${user.id}`}>
-                                View Dashboard
-                                <ArrowRight className="ml-2 h-4 w-4" />
-                            </Link>
-                        </Button>
+                        <div className="flex items-center gap-4">
+                             <div className="flex items-center gap-2 text-sm font-semibold p-2 bg-muted rounded-md">
+                                <Coins className="w-4 h-4 text-amber-500" />
+                                <span>{user.tokens ?? 0}</span>
+                            </div>
+                            <Button asChild variant="outline" size="sm">
+                                <Link href={`/admin/user/${user.id}`}>
+                                    View Dashboard
+                                    <ArrowRight className="ml-2 h-4 w-4" />
+                                </Link>
+                            </Button>
+                        </div>
                     </CardContent>
                 </Card>
             ))}
@@ -344,3 +327,5 @@ export default function AdminPage() {
         </div>
     );
 }
+
+    
