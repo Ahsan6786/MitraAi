@@ -137,11 +137,18 @@ const MessageContent = ({ text }: { text: string }) => {
 };
 
 const MessageBubble = ({ message, senderName }: { message: Message; senderName: string }) => {
+    const isUser = message.sender === 'user';
+    
     return (
       <div className="flex flex-col gap-1 items-start w-full">
-        <span className="text-muted-foreground text-sm font-medium">{senderName}</span>
+        {!isUser && (
+             <span className="text-muted-foreground text-sm font-medium">{senderName}</span>
+        )}
         {message.text && (
-            <div className={cn('text-base font-normal leading-normal rounded-2xl px-4 py-3 max-w-md shadow-sm', message.sender === 'user' ? 'bg-primary text-primary-foreground rounded-br-none' : 'bg-muted text-foreground rounded-tl-none')}>
+            <div className={cn(
+                'text-base font-normal leading-normal max-w-md', 
+                isUser ? 'bg-primary text-primary-foreground rounded-2xl rounded-br-none px-4 py-3 shadow-sm' : ''
+            )}>
                 <MessageContent text={message.text} />
             </div>
         )}
