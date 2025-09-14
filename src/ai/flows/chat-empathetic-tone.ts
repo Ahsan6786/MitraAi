@@ -12,6 +12,7 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 import { featureNavigator } from '../tools/feature-navigator';
+import { userDataRetriever } from '../tools/user-data-retriever';
 
 const ChatMessageSchema = z.object({
     role: z.enum(['user', 'model']),
@@ -23,6 +24,7 @@ const ChatMessageSchema = z.object({
 
 const ChatEmpatheticToneInputSchema = z.object({
   message: z.string().describe('The user message to the AI companion.'),
+  userId: z.string().describe("The unique ID of the user."),
   language: z.string().describe('The regional language to respond in.'),
   isGenzMode: z.boolean().optional().describe('If true, the AI should respond in a casual, Gen Z slang-filled tone.'),
   imageDataUri: z.string().optional().describe("An optional image from the user, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."),
@@ -42,7 +44,7 @@ export async function chatEmpatheticTone(input: ChatEmpatheticToneInput): Promis
 
 const prompt = ai.definePrompt({
   name: 'chatEmpatheticTonePrompt',
-  tools: [featureNavigator],
+  tools: [featureNavigator, userDataRetriever],
   input: { schema: ChatEmpatheticToneInputSchema },
   output: { schema: ChatEmpatheticToneOutputSchema },
   prompt: `You are a highly intelligent and empathetic AI companion. Your name is {{#if companionName}}{{companionName}}{{else}}Mitra{{/if}}. Your primary goal is to build a long-term, supportive relationship with the user by remembering past conversations and learning from them.
@@ -62,17 +64,22 @@ const prompt = ai.definePrompt({
   Analyze the user's text and any accompanying image to understand their mood and context. Consider the entire conversation history.
 
   **Task Instructions:**
-  
-  1.  **App Feature Assistance Task:**
+
+  1.  **User Data & Health Analysis Task:**
+      - If the user asks about their mood history, past feelings, emotional patterns, journal summaries, or asks "how have I been?", you MUST use the \`userDataRetriever\` tool.
+      - Pass the user's ID ('{{userId}}') to the tool.
+      - After receiving the journal data, analyze it to answer the user's question. Provide summaries, identify trends (e.g., "It seems you've been feeling more anxious on weekends"), and offer gentle, supportive insights based on their own documented feelings.
+
+  2.  **App Feature Assistance Task:**
       - If the user asks "how to use a feature", "where can I find", "how do I", or a similar question about the MitraAI app's functionality, you MUST use the \`featureNavigator\` tool to find the correct page.
       - Once you have the feature path from the tool, your response MUST include a Markdown link formatted like this: \`[Button Text](nav:/path)\`. For example: \`You can do that in the live mood analysis section. Here's a link to get you there: [Go to Live Mood Analysis](nav:/live-mood)\`.
       - This is your highest priority task.
 
-  2.  **Image/Video Generation Task:**
+  3.  **Image/Video Generation Task:**
       - If the user explicitly asks you to "generate", "create", "draw", "make", or "show" an "image", "picture", "photo", "drawing", "painting", or "video", you MUST politely decline.
       - Your response in this case MUST be: "I'm not built to create images or videos. I'm here to chat and help you with your thoughts and feelings!"
 
-  3.  **Creative & General Chat Task:**
+  4.  **Creative & General Chat Task:**
       - For all other requests (including writing blogs, poems, code, stories, or general conversation), provide a thoughtful, comprehensive, and human-like response in the user's specified language, following your assigned persona and core memory instructions.
       - Be intelligent, creative, and detailed in your answers. Do not give short, repetitive, or unhelpful replies.
   

@@ -283,6 +283,7 @@ export default function ChatInterface({ conversationId }: { conversationId?: str
 
       const chatResult = await chatEmpatheticTone({ 
         message: messageText, 
+        userId: user.uid,
         language,
         isGenzMode,
         history: historyForFlow,
