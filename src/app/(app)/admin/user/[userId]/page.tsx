@@ -7,7 +7,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { db } from '@/lib/firebase';
 import { collection, query, where, onSnapshot, orderBy, Timestamp, getDocs, doc, getDoc, limit, addDoc, serverTimestamp, updateDoc, increment, runTransaction } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, BarChart, LineChart, FileQuestion, ArrowLeft, PenSquare, Mic, Send, MessageSquare, Coins, Trophy, CheckCircle2 } from 'lucide-react';
+import { Loader2, BarChart, LineChart, FileQuestion, ArrowLeft, PenSquare, Mic, Send, MessageSquare, Coins, Trophy, CheckCircle2, CircleDot } from 'lucide-react';
 import { Bar, BarChart as RechartsBarChart, Line, LineChart as RechartsLineChart, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { subDays, format, eachDayOfInterval, startOfDay } from 'date-fns';
 import { ThemeToggle } from '@/components/theme-toggle';
@@ -23,7 +23,7 @@ import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { SOSButton } from '@/components/sos-button';
 import { useToast } from '@/hooks/use-toast';
-import { tasksData } from '@/lib/tasks-data';
+import { tasksData, Task } from '@/lib/tasks-data';
 
 const ADMIN_EMAIL = 'ahsan.khan@mitwpu.edu.in';
 const ADMIN_UID = 'ADMIN'; // A special UID for the admin/doctor
@@ -153,40 +153,75 @@ function AdminActions({ userId, userProfile }: { userId: string; userProfile: Us
 function UserTasks({ userId }: { userId: string }) {
     const [userTasks, setUserTasks] = useState<UserTask[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [isSubmitting, setIsSubmitting] = useState<Record<string, boolean>>({});
+    const { toast } = useToast();
 
     useEffect(() => {
         const tasksQuery = query(collection(db, `users/${userId}/tasks`));
         const unsubscribe = onSnapshot(tasksQuery, (snapshot) => {
             const allTasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as UserTask));
-            
-            const completedTasks = allTasks
-                .filter(task => task.completed)
-                .sort((a, b) => b.completedAt.toMillis() - a.completedAt.toMillis());
-            
-            setUserTasks(completedTasks);
+            allTasks.sort((a, b) => b.completedAt.toMillis() - a.completedAt.toMillis());
+            setUserTasks(allTasks);
             setIsLoading(false);
         });
         return () => unsubscribe();
     }, [userId]);
+    
+    const handleGrantReward = async (task: UserTask) => {
+        setIsSubmitting(prev => ({...prev, [task.id]: true}));
+        
+        const taskData = tasksData.find(t => t.id === task.id);
+        if (!taskData) {
+            toast({ title: 'Task data not found.', variant: 'destructive' });
+            setIsSubmitting(prev => ({...prev, [task.id]: false}));
+            return;
+        }
+
+        const userRef = doc(db, 'users', userId);
+        const taskRef = doc(db, `users/${userId}/tasks`, task.id);
+
+        try {
+            await runTransaction(db, async (transaction) => {
+                const taskDoc = await transaction.get(taskRef);
+                if (taskDoc.exists() && taskDoc.data().rewarded) {
+                    throw new Error("Task already rewarded.");
+                }
+
+                transaction.update(userRef, { tokens: increment(taskData.reward) });
+                transaction.update(taskRef, { rewarded: true });
+            });
+
+            toast({ title: 'Reward Granted!', description: `${taskData.reward} tokens added to the user.` });
+        } catch (error: any) {
+            console.error('Error granting reward:', error);
+            toast({ title: 'Error', description: error.message, variant: 'destructive' });
+        } finally {
+            setIsSubmitting(prev => ({...prev, [task.id]: false}));
+        }
+    };
+
 
     if (isLoading) {
         return <div className="flex justify-center items-center h-64"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
     }
 
+    const completedTasks = userTasks.filter(t => t.completed);
+
     return (
         <Card>
             <CardHeader>
                 <CardTitle className="flex items-center gap-2"><Trophy />Completed Tasks</CardTitle>
-                <CardDescription>Review the tasks completed and automatically rewarded to the user.</CardDescription>
+                <CardDescription>Review and reward the tasks completed by the user.</CardDescription>
             </CardHeader>
             <CardContent>
-                {userTasks.length === 0 ? (
+                {completedTasks.length === 0 ? (
                     <p className="text-muted-foreground text-center py-4">This user has not completed any tasks yet.</p>
                 ) : (
                     <div className="space-y-3">
-                        {userTasks.map(task => {
+                        {completedTasks.map(task => {
                             const taskData = tasksData.find(t => t.id === task.id);
                             if (!taskData) return null;
+                            const isTaskSubmitting = isSubmitting[task.id];
                             return (
                                 <div key={task.id} className="p-3 bg-muted rounded-md flex justify-between items-center">
                                     <div>
@@ -203,9 +238,10 @@ function UserTasks({ userId }: { userId: string }) {
                                                 <span>Rewarded</span>
                                             </div>
                                         ) : (
-                                            <div className="flex items-center gap-2 text-sm text-muted-foreground font-medium">
-                                                <span>Pending</span>
-                                            </div>
+                                            <Button size="sm" onClick={() => handleGrantReward(task)} disabled={isTaskSubmitting}>
+                                                {isTaskSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
+                                                Approve & Grant Reward
+                                            </Button>
                                         )}
                                     </div>
                                 </div>

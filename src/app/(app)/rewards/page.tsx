@@ -4,7 +4,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { db } from '@/lib/firebase';
-import { collection, doc, onSnapshot, setDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
+import { collection, doc, onSnapshot, setDoc, serverTimestamp, Timestamp, runTransaction, increment } from 'firebase/firestore';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { GenZToggle } from '@/components/genz-toggle';
@@ -15,20 +15,30 @@ import { Loader2, Coins, CheckCircle2, Trophy } from 'lucide-react';
 import { tasksData, Task } from '@/lib/tasks-data';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 interface UserTaskStatus {
     [taskId: string]: {
         completed: boolean;
         completedAt?: Timestamp;
+        rewarded?: boolean;
     };
 }
 
-const TaskCard = ({ task, status, onComplete }: { task: Task, status: boolean, onComplete: (taskId: string) => void }) => {
+const TaskCard = ({ task, status, onComplete }: { task: Task, status: { completed: boolean, rewarded: boolean }, onComplete: (task: Task, isNavigating?: boolean) => Promise<void> }) => {
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const router = useRouter();
 
-    const handleComplete = async () => {
+    const handleAction = async () => {
         setIsSubmitting(true);
-        await onComplete(task.id);
+        if (task.actionUrl) {
+            // Mark as complete, then navigate
+            await onComplete(task, true);
+            router.push(task.actionUrl);
+        } else {
+            // Just mark as complete
+            await onComplete(task);
+        }
         setIsSubmitting(false);
     };
 
@@ -45,21 +55,20 @@ const TaskCard = ({ task, status, onComplete }: { task: Task, status: boolean, o
                 </div>
             </CardContent>
             <CardFooter>
-                {status ? (
+                {status.rewarded ? (
                     <Button variant="outline" disabled className="w-full">
-                        <CheckCircle2 className="mr-2 h-4 w-4" />
-                        Completed
+                        <CheckCircle2 className="mr-2 h-4 w-4 text-green-500" />
+                        Completed & Rewarded
                     </Button>
-                ) : task.actionUrl ? (
-                     <Button asChild className="w-full">
-                        <Link href={task.actionUrl}>
-                            Go to Task
-                        </Link>
+                ) : status.completed ? (
+                     <Button variant="outline" disabled className="w-full">
+                        <CheckCircle2 className="mr-2 h-4 w-4" />
+                        Pending Admin Approval
                     </Button>
                 ) : (
-                    <Button onClick={handleComplete} disabled={isSubmitting} className="w-full">
+                    <Button onClick={handleAction} disabled={isSubmitting} className="w-full">
                         {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        Mark as Completed
+                        {task.actionUrl ? 'Go to Task' : 'Mark as Completed'}
                     </Button>
                 )}
             </CardFooter>
@@ -79,7 +88,7 @@ export default function RewardsPage() {
         const unsubscribe = onSnapshot(tasksRef, (snapshot) => {
             const statuses: UserTaskStatus = {};
             snapshot.forEach(doc => {
-                statuses[doc.id] = doc.data() as { completed: boolean, completedAt: Timestamp };
+                statuses[doc.id] = doc.data() as { completed: boolean, rewarded: boolean, completedAt: Timestamp };
             });
             setTaskStatuses(statuses);
             setIsLoading(false);
@@ -87,21 +96,28 @@ export default function RewardsPage() {
         return () => unsubscribe();
     }, [user]);
 
-    const handleCompleteTask = async (taskId: string) => {
+    const handleCompleteTask = async (task: Task) => {
         if (!user) return;
+        
+        const taskRef = doc(db, `users/${user.uid}/tasks`, task.id);
+
         try {
-            const taskRef = doc(db, `users/${user.uid}/tasks`, taskId);
+            // Set the task as completed, awaiting admin review.
+            // Rewarded status is not set here.
             await setDoc(taskRef, {
                 completed: true,
                 completedAt: serverTimestamp(),
-            });
+                rewarded: false, // Explicitly set rewarded to false
+            }, { merge: true });
+
             toast({
                 title: "Task Submitted!",
                 description: "An admin will review your task and grant you the tokens shortly."
             });
-        } catch (error) {
+
+        } catch (error: any) {
             console.error("Error completing task:", error);
-            toast({ title: "Error", description: "Could not update task status.", variant: "destructive" });
+            toast({ title: "Error", description: error.message || "Could not complete the task.", variant: "destructive" });
         }
     };
     
@@ -141,7 +157,7 @@ export default function RewardsPage() {
                                 <TaskCard 
                                     key={task.id} 
                                     task={task} 
-                                    status={taskStatuses[task.id]?.completed || false} 
+                                    status={taskStatuses[task.id] || { completed: false, rewarded: false }} 
                                     onComplete={handleCompleteTask} 
                                 />
                             ))}
