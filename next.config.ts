@@ -9,6 +9,25 @@ const nextConfig: NextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
+  async redirects() {
+    return [
+      {
+        source: '/',
+        destination: '/chat',
+        permanent: false,
+        // This is a temporary redirect for logged-in users.
+        // The actual landing page is at /home or another public route.
+        // For this app, we assume if you hit the root, you want the chat.
+        // A more robust solution might check for an auth cookie.
+        missing: [
+          {
+            type: 'header',
+            key: 'Next-Action',
+          },
+        ],
+      },
+    ]
+  },
   images: {
     remotePatterns: [
       {

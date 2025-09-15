@@ -78,6 +78,7 @@ function TalkPageContent() {
   const [showCrisisModal, setShowCrisisModal] = useState(false);
   const [language, setLanguage] = useState('English');
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
+  const [liveTranscript, setLiveTranscript] = useState('');
   
   const recognitionRef = useRef<any | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -93,7 +94,7 @@ function TalkPageContent() {
     if (scrollViewportRef.current) {
       scrollViewportRef.current.scrollTo({ top: scrollViewportRef.current.scrollHeight, behavior: 'smooth' });
     }
-  }, [chatHistory]);
+  }, [chatHistory, liveTranscript]);
 
   const handleAiResponse = async (messageText: string) => {
     if (!messageText.trim() || !user) {
@@ -171,6 +172,7 @@ function TalkPageContent() {
 
     setIsRecording(true);
     finalTranscriptRef.current = ""; // Reset transcript
+    setLiveTranscript(""); // Reset live transcript
     const recognition = new SpeechRecognition();
     recognitionRef.current = recognition;
     
@@ -190,7 +192,9 @@ function TalkPageContent() {
           interimTranscript += event.results[i][0].transcript;
         }
       }
-      finalTranscriptRef.current = currentFinalTranscript;
+      finalTranscriptRef.current += currentFinalTranscript;
+      setLiveTranscript(finalTranscriptRef.current + interimTranscript);
+
 
       pauseTimerRef.current = setTimeout(() => {
         stopRecording();
@@ -213,8 +217,8 @@ function TalkPageContent() {
       if (pauseTimerRef.current) clearTimeout(pauseTimerRef.current);
       recognitionRef.current = null;
       
-      // Use the final transcript we've been building
       const finalTranscript = finalTranscriptRef.current;
+      setLiveTranscript(''); // Clear live transcript after sending
       if(finalTranscript) {
           handleAiResponse(finalTranscript);
       }
@@ -254,7 +258,7 @@ function TalkPageContent() {
   }, []);
   
   const getStatusText = () => {
-      if (isRecording) return "Listening... I'll send when you pause.";
+      if (isRecording) return "Listening...";
       if (isLoading) return "Mitra is thinking...";
       if (chatHistory.length > 0) return "Tap the microphone to reply.";
       return "Tap the microphone to start talking.";
@@ -336,6 +340,14 @@ function TalkPageContent() {
                             {msg.sender === 'user' && <Avatar><AvatarFallback>{user?.email?.[0].toUpperCase() ?? <User />}</AvatarFallback></Avatar>}
                         </div>
                     ))}
+                     {liveTranscript && (
+                        <div className="flex items-start gap-3 justify-end">
+                            <p className="max-w-[80%] rounded-xl px-4 py-3 text-sm shadow-sm text-left bg-primary/80 text-primary-foreground opacity-80">
+                                {liveTranscript}
+                            </p>
+                            <Avatar><AvatarFallback>{user?.email?.[0].toUpperCase() ?? <User />}</AvatarFallback></Avatar>
+                        </div>
+                    )}
                     {isLoading && (
                         <div className="flex items-start gap-3 justify-start">
                             <Avatar><AvatarFallback><Bot /></AvatarFallback></Avatar>
@@ -402,7 +414,3 @@ export default function TalkPage() {
 
     return <TalkPageContent />;
 }
-
-    
-
-    
