@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { BookHeart, MessageSquare, MicVocal, ShieldCheck, LogOut, FileText, Puzzle, Phone, LayoutDashboard, Info, HeartPulse, Sparkles, Trophy, Newspaper, User, Users, Star, Camera, UserCheck, CalendarPlus, CalendarClock, Menu, LandPlot, Smile, ChevronDown, Stethoscope, PenSquare, UserPlus, ArrowRight, Coins } from 'lucide-react';
+import { BookHeart, MessageSquare, MicVocal, ShieldCheck, LogOut, FileText, Puzzle, Phone, LayoutDashboard, Info, HeartPulse, Sparkles, Trophy, Newspaper, User, Users, Star, Camera, UserCheck, CalendarPlus, CalendarClock, Menu, LandPlot, Smile, ChevronDown, Stethoscope, PenSquare, UserPlus, ArrowRight, Coins, Palette } from 'lucide-react';
 import {
   SidebarProvider,
   Sidebar,
@@ -35,6 +35,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { useUsageTracker } from '@/hooks/use-usage-tracker';
 import TimeUpScreen from '@/components/time-up-screen';
 import UsageTracker from '@/components/usage-tracker';
+import { ThemeToggle } from '@/components/theme-toggle';
 
 const ADMIN_EMAIL = 'ahsan.khan@mitwpu.edu.in';
 
@@ -45,6 +46,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
   const sidebar = useSidebar();
   const [userType, setUserType] = useState<'user' | 'admin' | 'counsellor' | null>(null);
   const [showFeatureHint, setShowFeatureHint] = useState(false);
+  const [showThemeHint, setShowThemeHint] = useState(false);
   const [userTokens, setUserTokens] = useState<number | null>(null);
   const isMobile = useIsMobile();
   const { usage, timeLimitExceeded } = useUsageTracker();
@@ -65,14 +67,26 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
 
   // Effect for the feature hint animation
   useEffect(() => {
-    const hasSeenHint = sessionStorage.getItem('hasSeenFeatureHint');
-    if (!hasSeenHint && !isMobile) {
+    const hasSeenFeatureHint = sessionStorage.getItem('hasSeenFeatureHint');
+    if (!hasSeenFeatureHint && !isMobile) {
         const timer = setTimeout(() => {
             setShowFeatureHint(true);
         }, 2000); // Show after 2 seconds
         return () => clearTimeout(timer);
     }
   }, [isMobile]);
+
+  // Effect for the theme hint animation
+  useEffect(() => {
+    const hasSeenThemeHint = sessionStorage.getItem('hasSeenThemeHint');
+    if (!hasSeenThemeHint) {
+        const timer = setTimeout(() => {
+            setShowThemeHint(true);
+        }, 3000); // Show after 3 seconds
+        return () => clearTimeout(timer);
+    }
+  }, []);
+
 
   useEffect(() => {
     if (user) {
@@ -90,6 +104,12 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
     sessionStorage.setItem('hasSeenFeatureHint', 'true');
     setShowFeatureHint(false);
     sidebar?.setOpenMobile(true);
+  };
+  
+  const handleThemeHintClick = () => {
+      sessionStorage.setItem('hasSeenThemeHint', 'true');
+      setShowThemeHint(false);
+      // We can't programmatically open the dropdown, but we can remove the hint
   };
 
 
@@ -422,34 +442,47 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
             <div className="flex-1">
               {children}
             </div>
-            <div className="fixed bottom-6 left-4 z-50 flex items-center gap-3">
-              <TooltipProvider>
-                  <Tooltip>
-                      <TooltipTrigger asChild>
-                            <Button 
-                            onClick={() => sidebar?.setOpenMobile(true)}
-                            size="icon"
-                            className="rounded-full shadow-lg h-12 w-12 hidden md:flex"
-                          >
-                            <Menu className="h-6 w-6"/>
-                            <span className="sr-only">Explore Features</span>
-                          </Button>
-                      </TooltipTrigger>
-                      <TooltipContent side="right">
-                          <p>Explore Features</p>
-                      </TooltipContent>
-                  </Tooltip>
-              </TooltipProvider>
+            { /* Floating button container */ }
+            <div className="fixed bottom-6 left-4 z-50 flex flex-col gap-3">
+                { /* Theme hint */ }
+                {showThemeHint && (
+                    <div
+                        className="flex items-center gap-2 bg-primary text-primary-foreground rounded-full p-2 pr-4 shadow-lg cursor-pointer animate-in fade-in-50"
+                        onClick={handleThemeHintClick}
+                    >
+                        <Palette className="h-5 w-5" />
+                        <span className="text-sm font-medium">Customize!</span>
+                    </div>
+                )}
+                <div className="flex items-center gap-3">
+                  <TooltipProvider>
+                      <Tooltip>
+                          <TooltipTrigger asChild>
+                                <Button 
+                                onClick={() => sidebar?.setOpenMobile(true)}
+                                size="icon"
+                                className="rounded-full shadow-lg h-12 w-12 hidden md:flex"
+                              >
+                                <Menu className="h-6 w-6"/>
+                                <span className="sr-only">Explore Features</span>
+                              </Button>
+                          </TooltipTrigger>
+                          <TooltipContent side="right">
+                              <p>Explore Features</p>
+                          </TooltipContent>
+                      </Tooltip>
+                  </TooltipProvider>
 
-              {showFeatureHint && !isMobile && (
-                  <div 
-                      className="flex items-center gap-2 bg-primary text-primary-foreground rounded-full p-2 pr-4 shadow-lg cursor-pointer animate-in fade-in-50"
-                      onClick={handleHintClick}
-                  >
-                      <ArrowRight className="h-5 w-5 animate-point-right" />
-                      <span className="text-sm font-medium">Explore Features</span>
-                  </div>
-              )}
+                  {showFeatureHint && !isMobile && (
+                      <div 
+                          className="flex items-center gap-2 bg-primary text-primary-foreground rounded-full p-2 pr-4 shadow-lg cursor-pointer animate-in fade-in-50"
+                          onClick={handleHintClick}
+                      >
+                          <ArrowRight className="h-5 w-5 animate-point-right" />
+                          <span className="text-sm font-medium">Explore Features</span>
+                      </div>
+                  )}
+                </div>
             </div>
           </div>
         </SidebarInset>
