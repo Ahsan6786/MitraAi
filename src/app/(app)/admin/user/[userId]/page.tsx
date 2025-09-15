@@ -5,9 +5,9 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 import { db } from '@/lib/firebase';
-import { collection, query, where, onSnapshot, orderBy, Timestamp, getDocs, doc, getDoc, limit, addDoc, serverTimestamp, updateDoc, increment, runTransaction } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, orderBy, Timestamp, getDocs, doc, getDoc, limit, addDoc, serverTimestamp, updateDoc, increment, runTransaction, setDoc } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, BarChart, LineChart, FileQuestion, ArrowLeft, PenSquare, Mic, Send, MessageSquare, Coins, Trophy, CheckCircle2, CircleDot } from 'lucide-react';
+import { Loader2, BarChart, LineChart, FileQuestion, ArrowLeft, PenSquare, Mic, Send, MessageSquare, Coins, Trophy, CheckCircle2, CircleDot, Hourglass, RotateCcw } from 'lucide-react';
 import { Bar, BarChart as RechartsBarChart, Line, LineChart as RechartsLineChart, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { subDays, format, eachDayOfInterval, startOfDay } from 'date-fns';
 import { ThemeToggle } from '@/components/theme-toggle';
@@ -27,6 +27,7 @@ import { tasksData, Task } from '@/lib/tasks-data';
 
 const ADMIN_EMAIL = 'ahsan.khan@mitwpu.edu.in';
 const ADMIN_UID = 'ADMIN'; // A special UID for the admin/doctor
+const DAILY_LIMIT_SECONDS = 3600;
 
 interface JournalEntry {
     id: string;
@@ -69,6 +70,10 @@ interface UserTask {
     rewarded?: boolean;
 }
 
+interface DailyUsage {
+    timeSpentSeconds: number;
+}
+
 
 // A simple mapping for mood to a numerical value for the line chart
 const moodToValue = (mood: string): number => {
@@ -94,55 +99,157 @@ const valueToEmoji = (value: number): string => {
 
 function AdminActions({ userId, userProfile }: { userId: string; userProfile: UserProfile | null }) {
     const [tokenAmount, setTokenAmount] = useState('');
-    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [usageAmount, setUsageAmount] = useState('');
+    const [dailyUsage, setDailyUsage] = useState<DailyUsage | null>(null);
+    const [isLoading, setIsLoading] = useState<Record<string, boolean>>({});
     const { toast } = useToast();
 
-    const handleAddTokens = async () => {
+    useEffect(() => {
+        if (!userId) return;
+        const todayId = format(new Date(), 'yyyy-MM-dd');
+        const usageDocRef = doc(db, `users/${userId}/dailyUsage`, todayId);
+        const unsubscribe = onSnapshot(usageDocRef, (docSnap) => {
+            if (docSnap.exists()) {
+                setDailyUsage(docSnap.data() as DailyUsage);
+            } else {
+                setDailyUsage({ timeSpentSeconds: 0 });
+            }
+        });
+        return () => unsubscribe();
+    }, [userId]);
+
+    const handleUpdateTokens = async (action: 'add' | 'set') => {
         const amount = parseInt(tokenAmount, 10);
-        if (isNaN(amount) || amount <= 0) {
+        if (isNaN(amount) || amount < 0) {
             toast({ title: 'Invalid amount', variant: 'destructive' });
             return;
         }
 
-        setIsSubmitting(true);
+        setIsLoading(prev => ({ ...prev, tokens: true }));
         try {
             const userDocRef = doc(db, 'users', userId);
             await updateDoc(userDocRef, {
-                tokens: increment(amount)
+                tokens: action === 'add' ? increment(amount) : amount
             });
-            toast({ title: 'Success', description: `${amount} tokens added to the user.` });
+            toast({ title: 'Success', description: `User tokens have been updated.` });
             setTokenAmount('');
         } catch (error) {
-            console.error('Error adding tokens:', error);
-            toast({ title: 'Error', description: 'Could not add tokens.', variant: 'destructive' });
+            console.error('Error updating tokens:', error);
+            toast({ title: 'Error', description: 'Could not update tokens.', variant: 'destructive' });
         } finally {
-            setIsSubmitting(false);
+            setIsLoading(prev => ({ ...prev, tokens: false }));
         }
     };
+    
+    const handleUpdateUsage = async () => {
+        const minutesToAdd = parseInt(usageAmount, 10);
+        if (isNaN(minutesToAdd) || minutesToAdd <= 0) {
+            toast({ title: 'Invalid amount', variant: 'destructive' });
+            return;
+        }
+
+        setIsLoading(prev => ({ ...prev, usage: true }));
+        const secondsToAdd = minutesToAdd * 60;
+        const todayId = format(new Date(), 'yyyy-MM-dd');
+        const usageDocRef = doc(db, `users/${userId}/dailyUsage`, todayId);
+
+        try {
+            // Decrement the time spent, effectively adding time to their limit.
+            await setDoc(usageDocRef, {
+                timeSpentSeconds: increment(-secondsToAdd)
+            }, { merge: true });
+
+            toast({ title: 'Usage Time Added', description: `${minutesToAdd} minutes have been added to the user's daily limit.` });
+            setUsageAmount('');
+        } catch (error) {
+            console.error('Error updating usage:', error);
+            toast({ title: 'Error', description: 'Could not update usage time.', variant: 'destructive' });
+        } finally {
+            setIsLoading(prev => ({ ...prev, usage: false }));
+        }
+    };
+    
+    const handleResetUsage = async () => {
+        setIsLoading(prev => ({ ...prev, resetUsage: true }));
+        const todayId = format(new Date(), 'yyyy-MM-dd');
+        const usageDocRef = doc(db, `users/${userId}/dailyUsage`, todayId);
+        try {
+            await setDoc(usageDocRef, { timeSpentSeconds: 0 });
+            toast({ title: 'Usage Reset', description: "User's daily usage has been reset to zero." });
+        } catch (error) {
+            console.error('Error resetting usage:', error);
+            toast({ title: 'Error', description: 'Could not reset usage.', variant: 'destructive' });
+        } finally {
+            setIsLoading(prev => ({ ...prev, resetUsage: false }));
+        }
+    };
+    
+    const timeSpent = dailyUsage?.timeSpentSeconds ?? 0;
+    const minutesSpent = Math.floor(timeSpent / 60);
+    const minutesLeft = Math.max(0, Math.floor((DAILY_LIMIT_SECONDS - timeSpent) / 60));
+
 
     return (
         <Card>
             <CardHeader>
                 <CardTitle>Admin Actions</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-                <div className="flex items-center justify-between p-3 bg-muted rounded-md">
-                    <div className="flex items-center gap-2">
-                        <Coins className="w-5 h-5 text-primary"/>
-                        <p className="font-semibold">User Tokens:</p>
+            <CardContent className="space-y-6">
+                {/* Token Management */}
+                <div className="space-y-4 p-4 border rounded-lg">
+                    <h3 className="font-semibold">Token Management</h3>
+                    <div className="flex items-center justify-between p-3 bg-muted rounded-md">
+                        <div className="flex items-center gap-2">
+                            <Coins className="w-5 h-5 text-primary"/>
+                            <p className="font-semibold">Current User Tokens:</p>
+                        </div>
+                        <p className="font-bold text-lg">{userProfile?.tokens ?? 0}</p>
                     </div>
-                    <p className="font-bold text-lg">{userProfile?.tokens ?? 0}</p>
+                    <div className="flex items-center gap-2">
+                        <Input 
+                            type="number" 
+                            placeholder="Amount" 
+                            value={tokenAmount} 
+                            onChange={(e) => setTokenAmount(e.target.value)}
+                            disabled={isLoading.tokens}
+                        />
+                        <Button onClick={() => handleUpdateTokens('add')} disabled={isLoading.tokens}>
+                            {isLoading.tokens && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
+                            Add
+                        </Button>
+                         <Button onClick={() => handleUpdateTokens('set')} disabled={isLoading.tokens} variant="outline">
+                            {isLoading.tokens && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
+                            Set
+                        </Button>
+                    </div>
                 </div>
-                <div className="flex items-center gap-2">
-                    <Input 
-                        type="number" 
-                        placeholder="Amount to add" 
-                        value={tokenAmount} 
-                        onChange={(e) => setTokenAmount(e.target.value)} 
-                    />
-                    <Button onClick={handleAddTokens} disabled={isSubmitting}>
-                        {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
-                        Add Tokens
+
+                {/* Usage Management */}
+                <div className="space-y-4 p-4 border rounded-lg">
+                    <h3 className="font-semibold">Daily Usage Management</h3>
+                     <div className="flex items-center justify-between p-3 bg-muted rounded-md">
+                        <div className="flex items-center gap-2">
+                            <Hourglass className="w-5 h-5 text-primary"/>
+                            <p className="font-semibold">Time Spent Today:</p>
+                        </div>
+                        <p className="font-bold text-lg">{minutesSpent} / {DAILY_LIMIT_SECONDS / 60} min</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <Input 
+                            type="number" 
+                            placeholder="Minutes to add" 
+                            value={usageAmount} 
+                            onChange={(e) => setUsageAmount(e.target.value)} 
+                            disabled={isLoading.usage}
+                        />
+                        <Button onClick={handleUpdateUsage} disabled={isLoading.usage}>
+                            {isLoading.usage && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
+                            Add Time
+                        </Button>
+                    </div>
+                     <Button onClick={handleResetUsage} disabled={isLoading.resetUsage} variant="destructive" className="w-full">
+                        <RotateCcw className="mr-2 h-4 w-4" />
+                        Reset Daily Usage to 0
                     </Button>
                 </div>
             </CardContent>
