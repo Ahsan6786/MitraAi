@@ -54,11 +54,12 @@ export function SOSButton() {
   return (
     <>
       <Button
-        variant="destructive"
+        variant="outline"
         size="icon"
         onClick={handleSOSClick}
         disabled={isLoading}
         aria-label="SOS Emergency"
+        className="border-destructive/50 text-destructive hover:bg-destructive/10 hover:text-destructive"
       >
         {isLoading ? <Loader2 className="h-[1.2rem] w-[1.2rem] animate-spin" /> : <AlertTriangle className="h-[1.2rem] w-[1.2rem]" />}
       </Button>
