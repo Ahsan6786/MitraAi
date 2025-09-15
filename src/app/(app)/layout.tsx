@@ -425,12 +425,12 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
               {children}
             </div>
             { /* Floating button container */ }
-            <div className="fixed bottom-6 left-4 z-50 flex flex-col gap-3">
+            <div className="fixed bottom-6 left-4 z-50 flex flex-col items-start gap-3">
                 <div className="flex items-center gap-3">
                   <ThemeToggle open={isThemeMenuOpen} onOpenChange={setIsThemeMenuOpen} />
                   <Button
                     onClick={() => setIsThemeMenuOpen(true)}
-                    className="rounded-full shadow-lg h-12 bg-primary text-primary-foreground"
+                    className="rounded-full shadow-lg h-12 bg-primary text-primary-foreground hidden md:flex"
                   >
                     <Palette className="h-5 w-5 mr-2" />
                     Customize!
