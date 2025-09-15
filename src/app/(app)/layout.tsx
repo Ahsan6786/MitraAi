@@ -32,6 +32,9 @@ import { cn } from '@/lib/utils';
 import { Sheet } from '@/components/ui/sheet';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useUsageTracker } from '@/hooks/use-usage-tracker';
+import TimeUpScreen from '@/components/time-up-screen';
+import UsageTracker from '@/components/usage-tracker';
 
 const ADMIN_EMAIL = 'ahsan.khan@mitwpu.edu.in';
 
@@ -44,6 +47,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
   const [showFeatureHint, setShowFeatureHint] = useState(false);
   const [userTokens, setUserTokens] = useState<number | null>(null);
   const isMobile = useIsMobile();
+  const { usage, timeLimitExceeded } = useUsageTracker();
 
   const professionalHelpPaths = ['/reports', '/booking', '/my-appointments', '/screening-tools'];
   const isProfessionalHelpActive = professionalHelpPaths.some(p => pathname.startsWith(p));
@@ -138,6 +142,10 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
     );
   }
 
+  if (timeLimitExceeded) {
+      return <TimeUpScreen />;
+  }
+
   const userDisplayName = user.displayName || user.email;
   const userAvatarFallback = user.displayName?.[0] || user.email?.[0] || 'U';
 
@@ -151,6 +159,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
               <Logo className="size-8 text-primary" />
               <span className="text-lg font-semibold font-headline">MitraAI</span>
             </div>
+            {userType === 'user' && <UsageTracker />}
           </div>
         </SidebarHeader>
         <SidebarContent>

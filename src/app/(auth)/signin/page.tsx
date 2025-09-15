@@ -13,6 +13,7 @@ import { auth, db } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { collection, query, where, getDocs, limit, doc, getDoc, setDoc } from 'firebase/firestore';
+import { format } from 'date-fns';
 
 const ADMIN_EMAIL = 'ahsan.khan@mitwpu.edu.in';
 
@@ -34,6 +35,22 @@ function AuthForm() {
       if (user.email === ADMIN_EMAIL) {
         router.push('/admin');
         return;
+      }
+      
+      // Check for daily usage limit
+      const todayId = format(new Date(), 'yyyy-MM-dd');
+      const usageDocRef = doc(db, `users/${user.uid}/dailyUsage`, todayId);
+      const usageDoc = await getDoc(usageDocRef);
+
+      if (usageDoc.exists() && usageDoc.data().timeSpentSeconds >= 3600) {
+          toast({
+              title: "Daily Limit Reached",
+              description: "You have already used your one hour for today. Please come back tomorrow.",
+              variant: "destructive",
+          });
+          await auth.signOut();
+          setIsLoading(false);
+          return;
       }
       
       // Ensure user document and tokens exist for all users (new and old)
