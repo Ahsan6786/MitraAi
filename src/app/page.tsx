@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Logo } from '@/components/icons';
-import { Bot, HeartPulse, Mic, FileText, Instagram, Mail, AlertTriangle, ShieldCheck, Handshake, Users, PlayCircle, FileQuestion, ArrowUp, MessageSquare } from 'lucide-react';
+import { Bot, HeartPulse, Mic, FileText, Instagram, Mail, AlertTriangle, ShieldCheck, Handshake, Users, PlayCircle, FileQuestion, ArrowUp, MessageSquare, Hourglass } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
@@ -164,6 +164,10 @@ function LandingPageContent() {
       {
           title: "Early Awareness & Support",
           description: "MitraAI gently helps you notice signs of stress or anxiety before they become overwhelming."
+      },
+      {
+          title: "Mindful Usage",
+          description: "We encourage balanced technology use with a built-in daily timer to help you disconnect and recharge."
       },
       {
           title: "Privacy First",
@@ -356,7 +360,9 @@ function LandingPageContent() {
                         {whyUsItems.map((item, index) => (
                             <ScrollAnimate asChild key={index} style={{ animationDelay: `${index * 150}ms` }}>
                                 <li className="flex items-start gap-3">
-                                    <div className="pt-1"><ShieldCheck className="w-5 h-5 text-primary"/></div>
+                                    <div className="pt-1">
+                                      {item.title === "Mindful Usage" ? <Hourglass className="w-5 h-5 text-primary"/> : <ShieldCheck className="w-5 h-5 text-primary"/>}
+                                    </div>
                                     <div>
                                         <h4 className="font-semibold">{item.title}</h4>
                                         <p className="text-sm text-muted-foreground">{item.description}</p>
