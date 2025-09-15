@@ -40,10 +40,17 @@ service cloud.firestore {
                     && request.auth.uid == userId
                     && request.resource.data.tokens == 1000;
       
-      // UPDATE: Admin can do anything. A user can update their profile, but cannot change their own tokens.
+      // UPDATE: Admin can do anything. A user can update their profile, but token changes must be valid decrements.
       allow update: if request.auth != null && (
-                      isAdmin() ||
-                      (request.auth.uid == userId && !('tokens' in request.resource.data.diff(resource.data).affectedKeys()))
+                      isAdmin() || // Admin check first
+                      (request.auth.uid == userId &&
+                        (
+                          // Case 1: Updating profile info but NOT tokens
+                          !'tokens' in request.resource.data.diff(resource.data).affectedKeys() ||
+                          // Case 2: Updating tokens, must be a valid decrement of 10 (AI) or 50 (booking)
+                          (request.resource.data.tokens == resource.data.tokens - 10 || request.resource.data.tokens == resource.data.tokens - 50)
+                        )
+                      )
                     );
       
       // FRIEND REQUESTS SUBCOLLECTION
