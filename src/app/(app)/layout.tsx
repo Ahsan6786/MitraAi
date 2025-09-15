@@ -46,7 +46,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
   const sidebar = useSidebar();
   const [userType, setUserType] = useState<'user' | 'admin' | 'counsellor' | null>(null);
   const [showFeatureHint, setShowFeatureHint] = useState(false);
-  const [showThemeHint, setShowThemeHint] = useState(false);
+  const [isThemeMenuOpen, setIsThemeMenuOpen] = useState(false);
   const [userTokens, setUserTokens] = useState<number | null>(null);
   const isMobile = useIsMobile();
   const { usage, timeLimitExceeded } = useUsageTracker();
@@ -76,17 +76,6 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
     }
   }, [isMobile]);
 
-  // Effect for the theme hint animation
-  useEffect(() => {
-    const hasSeenThemeHint = sessionStorage.getItem('hasSeenThemeHint');
-    if (!hasSeenThemeHint) {
-        const timer = setTimeout(() => {
-            setShowThemeHint(true);
-        }, 3000); // Show after 3 seconds
-        return () => clearTimeout(timer);
-    }
-  }, []);
-
 
   useEffect(() => {
     if (user) {
@@ -105,13 +94,6 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
     setShowFeatureHint(false);
     sidebar?.setOpenMobile(true);
   };
-  
-  const handleThemeHintClick = () => {
-      sessionStorage.setItem('hasSeenThemeHint', 'true');
-      setShowThemeHint(false);
-      // We can't programmatically open the dropdown, but we can remove the hint
-  };
-
 
   useEffect(() => {
     if (!loading && !user) {
@@ -444,16 +426,16 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
             </div>
             { /* Floating button container */ }
             <div className="fixed bottom-6 left-4 z-50 flex flex-col gap-3">
-                { /* Theme hint */ }
-                {showThemeHint && (
-                    <div
-                        className="flex items-center gap-2 bg-primary text-primary-foreground rounded-full p-2 pr-4 shadow-lg cursor-pointer animate-in fade-in-50"
-                        onClick={handleThemeHintClick}
-                    >
-                        <Palette className="h-5 w-5" />
-                        <span className="text-sm font-medium">Customize!</span>
-                    </div>
-                )}
+                <div className="flex items-center gap-3">
+                  <ThemeToggle open={isThemeMenuOpen} onOpenChange={setIsThemeMenuOpen} />
+                  <Button
+                    onClick={() => setIsThemeMenuOpen(true)}
+                    className="rounded-full shadow-lg h-12 bg-primary text-primary-foreground"
+                  >
+                    <Palette className="h-5 w-5 mr-2" />
+                    Customize!
+                  </Button>
+                </div>
                 <div className="flex items-center gap-3">
                   <TooltipProvider>
                       <Tooltip>
