@@ -48,7 +48,23 @@ const generateChatTitleFlow = ai.defineFlow(
     outputSchema: GenerateChatTitleOutputSchema,
   },
   async (input) => {
-    const { output } = await prompt(input);
-    return output!;
+    const maxRetries = 2;
+    let attempt = 0;
+
+    while (attempt <= maxRetries) {
+      try {
+        const { output } = await prompt(input);
+        return output!;
+      } catch (error: any) {
+        attempt++;
+        if (attempt > maxRetries || !error.message.includes('503 Service Unavailable')) {
+          throw error;
+        }
+        console.log(`Chat title model overloaded. Retrying attempt ${attempt} of ${maxRetries}...`);
+        await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+      }
+    }
+    
+    throw new Error('Failed to get a response from the chat title model after several retries.');
   }
 );
