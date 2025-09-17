@@ -2,7 +2,7 @@
 'use client';
 
 import { SidebarTrigger } from '@/components/ui/sidebar';
-import { ThemeToggle } from '@/components/ui/theme-toggle';
+import { ThemeToggle } from '@/components/theme-toggle';
 import { GenZToggle } from '@/components/genz-toggle';
 import { SOSButton } from '@/components/sos-button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
