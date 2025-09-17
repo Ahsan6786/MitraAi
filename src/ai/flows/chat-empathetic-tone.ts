@@ -148,38 +148,29 @@ const chatEmpatheticToneFlow = ai.defineFlow(
     outputSchema: ChatEmpatheticToneOutputSchema,
   },
   async (input) => {
-    const maxRetries = 2;
-    let attempt = 0;
+    try {
+      const { output } = await prompt(input, {
+        model: googleAI.model('gemini-1.5-flash-latest'),
+        config: {
+          safetySettings: [
+            { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_NONE' },
+            { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' },
+            { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_NONE' },
+            { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_NONE' },
+          ],
+        },
+      });
 
-    while (attempt <= maxRetries) {
-      try {
-        const { output } = await prompt(input, {
-          model: googleAI.model('gemini-1.5-flash-latest'),
-          config: {
-            safetySettings: [
-              { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_NONE' },
-              { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' },
-              { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_NONE' },
-              { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_NONE' },
-            ],
-          },
-        });
-        
-        if (output === null) {
-            throw new Error("The AI model did not return a valid response. This could be due to the safety filters being triggered.");
-        }
-
-        return { response: output.response };
-      } catch (error: any) {
-        attempt++;
-        if (attempt > maxRetries || !error.message.includes('503 Service Unavailable')) {
-          throw error;
-        }
-        console.log(`Model overloaded. Retrying attempt ${attempt} of ${maxRetries}...`);
-        await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+      if (output === null) {
+        throw new Error("The AI model did not return a valid response. This could be due to the safety filters being triggered.");
       }
-    }
 
-    throw new Error('The AI model is temporarily unavailable. Please try again in a moment.');
+      return { response: output.response };
+    } catch (error: any) {
+      console.error("Error in chatEmpatheticToneFlow:", error);
+      // Re-throw the error to be caught by the client-side caller.
+      // The client can then display a user-friendly message.
+      throw new Error('The AI model is temporarily unavailable. Please try again in a moment.');
+    }
   }
 );
