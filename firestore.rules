@@ -40,17 +40,21 @@ service cloud.firestore {
                     && request.auth.uid == userId
                     && request.resource.data.tokens == 1000;
       
-      // UPDATE: A user can update their own profile, but cannot change their token count.
-      // Admins can update anything. Token decrements by specific amounts are allowed.
+      // UPDATE:
+      // Admins can update anything.
+      // Users can update their own profile as long as they aren't changing the token count.
+      // Token decrements are allowed for feature usage.
       allow update: if request.auth != null && (
                       isAdmin() ||
-                      (request.auth.uid == userId && (
-                          // Rule for User Profile Updates (cannot change tokens)
-                          request.resource.data.tokens == resource.data.tokens
+                      ( request.auth.uid == userId && (
+                          // Scenario 1: User is updating their profile. Allow if 'tokens' is not being changed.
+                          !('tokens' in request.resource.data) || request.resource.data.tokens == resource.data.tokens
                           ||
-                          // Rule for Token Decrements by features
-                          (request.resource.data.tokens == resource.data.tokens - 10 || request.resource.data.tokens == resource.data.tokens - 50)
-                      ))
+                          // Scenario 2: A feature is decrementing tokens. Allow specific decrements.
+                          request.resource.data.tokens == resource.data.tokens - 10 ||
+                          request.resource.data.tokens == resource.data.tokens - 50
+                        )
+                      )
                     );
       
       // FRIEND REQUESTS SUBCOLLECTION
