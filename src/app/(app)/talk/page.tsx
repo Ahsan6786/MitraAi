@@ -372,17 +372,31 @@ function TalkPageContent() {
 
             <div className="w-full max-w-2xl py-4">
                 <div className="flex flex-col items-center justify-center gap-4">
-                    <Button 
-                        className={cn(
-                            "relative rounded-full h-28 w-28 bg-primary text-primary-foreground shadow-lg transition-transform duration-300 ease-in-out hover:scale-105 active:scale-95 focus:outline-none focus:ring-4 focus:ring-primary/50",
-                            isRecording && "scale-105"
-                        )}
-                        onClick={handleMicClick}
-                        disabled={isLoading}
-                    >
-                        {isRecording ? <Square className="text-5xl" /> : <Mic className="text-5xl" />}
-                        {isRecording && <div className="absolute inset-0 rounded-full border-4 border-transparent animate-pulse-border"></div>}
-                    </Button>
+                    <div className="flex items-center justify-center gap-4">
+                        <Button 
+                            className={cn(
+                                "relative rounded-full h-28 w-28 bg-primary text-primary-foreground shadow-lg transition-transform duration-300 ease-in-out hover:scale-105 active:scale-95 focus:outline-none focus:ring-4 focus:ring-primary/50",
+                                isRecording && "scale-105"
+                            )}
+                            onClick={handleMicClick}
+                            disabled={isLoading}
+                        >
+                            {isRecording ? <Square className="text-5xl" /> : <Mic className="text-5xl" />}
+                            {isRecording && <div className="absolute inset-0 rounded-full border-4 border-transparent animate-pulse-border"></div>}
+                        </Button>
+                        <TooltipProvider>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button variant="outline" className="h-14" disabled>
+                                        Custom Voice
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p>This feature is coming soon!</p>
+                                </TooltipContent>
+                            </Tooltip>
+                        </TooltipProvider>
+                    </div>
                     <p className="text-muted-foreground text-base h-5">{getStatusText()}</p>
                 </div>
             </div>
@@ -425,5 +439,3 @@ export default function TalkPage() {
 
     return <TalkPageContent />;
 }
-
-    
