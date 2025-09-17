@@ -322,14 +322,6 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
                 </Collapsible>
                 
                 {/* Rest of the items */}
-                 <SidebarMenuItem>
-                  <SidebarMenuButton asChild isActive={pathname === '/voice-lab'}>
-                    <Link href="/voice-lab" onClick={handleLinkClick}>
-                      <Wand2 />
-                      <span>Voice Lab</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
                 <SidebarMenuItem>
                   <SidebarMenuButton asChild isActive={pathname === '/dashboard'}>
                     <Link href="/dashboard" onClick={handleLinkClick}>
