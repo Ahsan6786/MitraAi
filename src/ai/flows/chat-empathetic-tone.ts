@@ -40,7 +40,11 @@ const ChatEmpatheticToneOutputSchema = z.object({
 export type ChatEmpatheticToneOutput = z.infer<typeof ChatEmpatheticToneOutputSchema>;
 
 export async function chatEmpatheticTone(input: ChatEmpatheticToneInput): Promise<ChatEmpatheticToneOutput> {
-  return chatEmpatheticToneFlow(input);
+  const { output } = await chatEmpatheticToneFlow(input);
+  if (output === null) {
+      throw new Error("The AI model did not return a valid response. This could be due to the safety filters being triggered.");
+  }
+  return output;
 }
 
 const prompt = ai.definePrompt({
@@ -147,9 +151,8 @@ const chatEmpatheticToneFlow = ai.defineFlow(
     inputSchema: ChatEmpatheticToneInputSchema,
     outputSchema: ChatEmpatheticToneOutputSchema,
   },
-  async (input) => {
-    try {
-      const { output } = await prompt(input, {
+  (input) => {
+    return prompt(input, {
         model: googleAI.model('gemini-1.5-flash-latest'),
         config: {
           safetySettings: [
@@ -160,17 +163,5 @@ const chatEmpatheticToneFlow = ai.defineFlow(
           ],
         },
       });
-
-      if (output === null) {
-        throw new Error("The AI model did not return a valid response. This could be due to the safety filters being triggered.");
-      }
-
-      return { response: output.response };
-    } catch (error: any) {
-      console.error("Error in chatEmpatheticToneFlow:", error);
-      // Re-throw the error to be caught by the client-side caller.
-      // The client can then display a user-friendly message.
-      throw new Error('The AI model is temporarily unavailable. Please try again in a moment.');
-    }
   }
 );
