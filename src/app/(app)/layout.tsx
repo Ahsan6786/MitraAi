@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { BookHeart, MessageSquare, MicVocal, ShieldCheck, LogOut, FileText, Puzzle, Phone, LayoutDashboard, Info, HeartPulse, Sparkles, Trophy, Newspaper, User, Users, Star, Camera, UserCheck, CalendarPlus, CalendarClock, Menu, LandPlot, Smile, ChevronDown, Stethoscope, PenSquare, UserPlus, ArrowRight, Coins, Palette } from 'lucide-react';
+import { BookHeart, MessageSquare, MicVocal, ShieldCheck, LogOut, FileText, Puzzle, Phone, LayoutDashboard, Info, HeartPulse, Sparkles, Trophy, Newspaper, User, Users, Star, Camera, UserCheck, CalendarPlus, CalendarClock, Menu, LandPlot, Smile, ChevronDown, Stethoscope, PenSquare, UserPlus, ArrowRight, Coins, Palette, Code } from 'lucide-react';
 import {
   SidebarProvider,
   Sidebar,
@@ -370,6 +370,14 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
                     <Link href="/rewards" onClick={handleLinkClick}>
                       <Trophy />
                       <span>Rewards</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                 <SidebarMenuItem>
+                  <SidebarMenuButton asChild isActive={pathname === '/tech-stack'}>
+                    <Link href="/tech-stack" onClick={handleLinkClick}>
+                      <Code />
+                      <span>Technology Stack</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
