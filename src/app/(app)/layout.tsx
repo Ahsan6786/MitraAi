@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { BookHeart, MessageSquare, MicVocal, ShieldCheck, LogOut, FileText, Puzzle, Phone, LayoutDashboard, Info, HeartPulse, Sparkles, Trophy, Newspaper, User, Users, Star, Camera, UserCheck, CalendarPlus, CalendarClock, Menu, LandPlot, Smile, ChevronDown, Stethoscope, PenSquare, UserPlus, ArrowRight, Coins, Palette, Code } from 'lucide-react';
+import { BookHeart, MessageSquare, MicVocal, ShieldCheck, LogOut, FileText, Puzzle, Phone, LayoutDashboard, Info, HeartPulse, Sparkles, Trophy, Newspaper, User, Users, Star, Camera, UserCheck, CalendarPlus, CalendarClock, Menu, LandPlot, Smile, ChevronDown, Stethoscope, PenSquare, UserPlus, ArrowRight, Coins, Palette, Code, Wand2 } from 'lucide-react';
 import {
   SidebarProvider,
   Sidebar,
@@ -322,6 +322,14 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
                 </Collapsible>
                 
                 {/* Rest of the items */}
+                 <SidebarMenuItem>
+                  <SidebarMenuButton asChild isActive={pathname === '/voice-lab'}>
+                    <Link href="/voice-lab" onClick={handleLinkClick}>
+                      <Wand2 />
+                      <span>Voice Lab</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
                 <SidebarMenuItem>
                   <SidebarMenuButton asChild isActive={pathname === '/dashboard'}>
                     <Link href="/dashboard" onClick={handleLinkClick}>

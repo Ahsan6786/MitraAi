@@ -3,31 +3,26 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
-import { Loader2, Mic, Square, Bot, Languages, Phone, User } from 'lucide-react';
+import { Loader2, Mic, Square, Bot, Languages, Phone, User, Wand2 } from 'lucide-react';
 import { chatEmpatheticTone, ChatEmpatheticToneInput } from '@/ai/flows/chat-empathetic-tone';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { textToSpeech } from '@/ai/flows/text-to-speech';
 import { useToast } from '@/hooks/use-toast';
 import CrisisAlertModal from '@/components/crisis-alert-modal';
-import { ThemeToggle } from '@/components/theme-toggle';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { GenZToggle } from '@/components/genz-toggle';
 import SectionIntroAnimation from '@/components/section-intro-animation';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { useAuth } from '@/hooks/use-auth';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { db } from '@/lib/firebase';
-import { doc, runTransaction, increment } from 'firebase/firestore';
+import { doc, runTransaction, increment, onSnapshot } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { ToastAction } from '@/components/ui/toast';
+import Link from 'next/link';
 
 
 const SpeechRecognition =
@@ -78,6 +73,7 @@ function TalkPageContent() {
   const [language, setLanguage] = useState('English');
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
   const [liveTranscript, setLiveTranscript] = useState('');
+  const [customVoiceId, setCustomVoiceId] = useState<string | null>(null);
   
   const recognitionRef = useRef<any | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -88,6 +84,18 @@ function TalkPageContent() {
   const { toast } = useToast();
   const { user } = useAuth();
   const router = useRouter();
+  
+  useEffect(() => {
+    if (user) {
+        const userDocRef = doc(db, 'users', user.uid);
+        const unsubscribe = onSnapshot(userDocRef, (doc) => {
+            if (doc.exists()) {
+                setCustomVoiceId(doc.data().customVoiceId || null);
+            }
+        });
+        return () => unsubscribe();
+    }
+  }, [user]);
 
   useEffect(() => {
     if (scrollViewportRef.current) {
@@ -141,7 +149,7 @@ function TalkPageContent() {
       toast({ title: `${TOKEN_COST} tokens used.`});
 
       if (result.response.trim()) {
-        const ttsResult = await textToSpeech({ text: result.response });
+        const ttsResult = await textToSpeech({ text: result.response, voiceId: customVoiceId || undefined });
         if (ttsResult.audioDataUri) {
             const audio = new Audio(ttsResult.audioDataUri);
             audioRef.current = audio;
@@ -171,7 +179,6 @@ function TalkPageContent() {
   const stopRecording = useCallback(() => {
     if (recognitionRef.current) {
       recognitionRef.current.stop();
-      // onend will handle the rest
     }
   }, []);
 
@@ -182,8 +189,8 @@ function TalkPageContent() {
     }
 
     setIsRecording(true);
-    finalTranscriptRef.current = ""; // Reset transcript
-    setLiveTranscript(""); // Reset live transcript
+    finalTranscriptRef.current = "";
+    setLiveTranscript("");
     const recognition = new SpeechRecognition();
     recognitionRef.current = recognition;
     
@@ -229,7 +236,7 @@ function TalkPageContent() {
       recognitionRef.current = null;
       
       const finalTranscript = finalTranscriptRef.current;
-      setLiveTranscript(''); // Clear live transcript after sending
+      setLiveTranscript('');
       if(finalTranscript) {
           handleAiResponse(finalTranscript);
       }
@@ -315,18 +322,6 @@ function TalkPageContent() {
                     ))}
                 </SelectContent>
             </Select>
-            <TooltipProvider>
-                <Tooltip>
-                    <TooltipTrigger asChild>
-                        <Button variant="ghost" size="icon" disabled>
-                            <User />
-                        </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                        <p>Custom voice is a feature coming soon!</p>
-                    </TooltipContent>
-                </Tooltip>
-            </TooltipProvider>
             <GenZToggle />
             <ThemeToggle />
           </div>
@@ -384,18 +379,12 @@ function TalkPageContent() {
                             {isRecording ? <Square className="text-5xl" /> : <Mic className="text-5xl" />}
                             {isRecording && <div className="absolute inset-0 rounded-full border-4 border-transparent animate-pulse-border"></div>}
                         </Button>
-                        <TooltipProvider>
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <Button variant="outline" className="h-14" disabled>
-                                        Custom Voice
-                                    </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                    <p>This feature is coming soon!</p>
-                                </TooltipContent>
-                            </Tooltip>
-                        </TooltipProvider>
+                        <Button asChild variant="outline" className="h-14">
+                           <Link href="/voice-lab">
+                             <Wand2 className="mr-2" />
+                             Custom Voice
+                           </Link>
+                        </Button>
                     </div>
                     <p className="text-muted-foreground text-base h-5">{getStatusText()}</p>
                 </div>
