@@ -40,11 +40,31 @@ const ChatEmpatheticToneOutputSchema = z.object({
 export type ChatEmpatheticToneOutput = z.infer<typeof ChatEmpatheticToneOutputSchema>;
 
 export async function chatEmpatheticTone(input: ChatEmpatheticToneInput): Promise<ChatEmpatheticToneOutput> {
-  const { output } = await chatEmpatheticToneFlow(input);
-  if (output === null) {
-      throw new Error("The AI model did not return a valid response. This could be due to the safety filters being triggered.");
+  const maxRetries = 2;
+  let attempt = 0;
+
+  while (attempt <= maxRetries) {
+      try {
+          const { output } = await chatEmpatheticToneFlow(input);
+          if (output === null) {
+              throw new Error("The AI model did not return a valid response. This could be due to the safety filters being triggered.");
+          }
+          return output;
+      } catch (error: any) {
+          attempt++;
+          // Only retry on 503 Service Unavailable or schema validation errors.
+          if (attempt > maxRetries || (!error.message.includes('503 Service Unavailable') && !error.message.includes('Schema validation failed'))) {
+              // If it's the last attempt or a different error, re-throw to fail the flow.
+              throw error;
+          }
+          console.log(`AI model error. Retrying attempt ${attempt} of ${maxRetries}...`, error.message);
+          // Wait for a short duration before retrying.
+          await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+      }
   }
-  return output;
+  
+  // This should not be reached, but as a fallback, throw an error.
+  throw new Error('Failed to get a response from the AI model after several retries.');
 }
 
 const prompt = ai.definePrompt({
@@ -53,6 +73,8 @@ const prompt = ai.definePrompt({
   input: { schema: ChatEmpatheticToneInputSchema },
   output: { schema: ChatEmpatheticToneOutputSchema },
   prompt: `You are a highly intelligent and empathetic AI companion. Your name is {{#if companionName}}{{companionName}}{{else}}Mitra{{/if}}. Your primary goal is to build a long-term, supportive relationship with the user by remembering past conversations and learning from them.
+
+  **CRITICAL OUTPUT INSTRUCTION:** Your final output MUST be a valid JSON object matching the specified schema. Do NOT wrap your response in Markdown backticks (\`\`\`) or any other formatting.
 
   **Core Instructions: Long-Term Memory, Deep Analysis & Single-Turn Tool Use**
   1.  **Remember Everything:** You have a perfect memory. You MUST actively recall key details, topics, and emotional states from the entire conversation history. Mention specific things the user has talked about before (e.g., "Last week you were worried about your exam, how did it go?").
