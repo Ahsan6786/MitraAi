@@ -15,6 +15,7 @@ import { cloneVoice } from '@/ai/flows/clone-voice';
 import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import Link from 'next/link';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 const recordingSentences = [
     "I'm creating a custom voice for my AI companion, Mitra.",
@@ -142,6 +143,13 @@ export default function VoiceLabPage() {
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-6">
+                        <Alert variant="destructive">
+                            <AlertTriangle className="h-4 w-4" />
+                            <AlertTitle>Subscription Required</AlertTitle>
+                            <AlertDescription>
+                                The ElevenLabs API requires a paid subscription to use the voice cloning feature. This page will not work correctly on their free plan.
+                            </AlertDescription>
+                        </Alert>
                         {customVoiceId ? (
                              <div className="p-6 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg text-center">
                                 <CheckCircle2 className="w-12 h-12 text-green-600 mx-auto mb-4" />
