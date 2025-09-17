@@ -4,11 +4,10 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Loader2, Mic, Square, Bot, Languages, Phone, User } from 'lucide-react';
-import { chatEmpatheticTone } from '@/ai/flows/chat-empathetic-tone';
+import { chatEmpatheticTone, ChatEmpatheticToneInput } from '@/ai/flows/chat-empathetic-tone';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { textToSpeech } from '@/ai/flows/text-to-speech';
 import { useToast } from '@/hooks/use-toast';
-import { detectCrisis } from '@/ai/flows/detect-crisis';
 import CrisisAlertModal from '@/components/crisis-alert-modal';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -118,14 +117,26 @@ function TalkPageContent() {
         transaction.update(userDocRef, { tokens: increment(-TOKEN_COST) });
       });
 
-      const crisisResult = await detectCrisis({ message: messageText });
-      if (crisisResult.isCrisis) {
+      const historyForFlow: ChatEmpatheticToneInput['history'] = chatHistory
+        .map(msg => ({
+            role: msg.sender === 'user' ? 'user' : 'model',
+            content: [{ text: msg.text }],
+        }))
+        .filter(msg => msg.content[0].text);
+
+      const result = await chatEmpatheticTone({ 
+          message: messageText, 
+          userId: user.uid, 
+          language: language,
+          history: historyForFlow,
+      });
+
+      if (result.isCrisis) {
         setShowCrisisModal(true);
         setIsLoading(false);
         return;
       }
       
-      const result = await chatEmpatheticTone({ message: messageText, userId: user.uid, language: language });
       setChatHistory(prev => [...prev, { sender: 'ai', text: result.response }]);
       toast({ title: `${TOKEN_COST} tokens used.`});
 
@@ -414,3 +425,5 @@ export default function TalkPage() {
 
     return <TalkPageContent />;
 }
+
+    

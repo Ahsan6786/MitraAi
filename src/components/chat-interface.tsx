@@ -16,7 +16,6 @@ import { Logo } from '@/components/icons';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
-import { detectCrisis } from '@/ai/flows/detect-crisis';
 import CrisisAlertModal from './crisis-alert-modal';
 import { SidebarTrigger } from './ui/sidebar';
 import { ThemeToggle } from './theme-toggle';
@@ -281,13 +280,6 @@ export default function ChatInterface({ conversationId }: { conversationId?: str
     }
 
     try {
-      const crisisResult = await detectCrisis({ message: messageText });
-      if (crisisResult.isCrisis) {
-        setShowCrisisModal(true);
-        setIsLoading(false);
-        return;
-      }
-
       const chatResult = await chatEmpatheticTone({ 
         message: messageText, 
         userId: user.uid,
@@ -296,6 +288,14 @@ export default function ChatInterface({ conversationId }: { conversationId?: str
         history: historyForFlow,
         companionName,
       });
+      
+      if (chatResult.isCrisis) {
+        setShowCrisisModal(true);
+        setIsLoading(false);
+        // Optionally, you might want to remove the user's crisis message from the UI
+        // or replace it with a placeholder for privacy.
+        return;
+      }
       
       const aiMessage: Partial<Message> & { sender: 'ai' } = { 
         sender: 'ai', 
@@ -410,3 +410,5 @@ export default function ChatInterface({ conversationId }: { conversationId?: str
     </div>
   );
 }
+
+    
