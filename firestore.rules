@@ -1,3 +1,4 @@
+
 rules_version = '2';
 
 service cloud.firestore {
@@ -45,10 +46,13 @@ service cloud.firestore {
                       isAdmin() || // Admin check first
                       (request.auth.uid == userId &&
                         (
-                          // Case 1: Updating profile info but NOT tokens
-                          !'tokens' in request.resource.data.diff(resource.data).affectedKeys() ||
+                          // Case 1: Updating profile info but NOT tokens.
+                          // This allows users to save their profile page.
+                          !request.resource.data.diff(resource.data).affectedKeys().has('tokens') ||
+                          
                           // Case 2: Updating tokens, must be a valid decrement of 10 (AI) or 50 (booking)
-                          (request.resource.data.tokens == resource.data.tokens - 10 || request.resource.data.tokens == resource.data.tokens - 50)
+                          (request.resource.data.tokens == resource.data.tokens - 10 || 
+                           request.resource.data.tokens == resource.data.tokens - 50)
                         )
                       )
                     );
