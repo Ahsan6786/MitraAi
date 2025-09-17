@@ -410,5 +410,3 @@ export default function ChatInterface({ conversationId }: { conversationId?: str
     </div>
   );
 }
-
-    
