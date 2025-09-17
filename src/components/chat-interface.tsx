@@ -11,7 +11,6 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { Languages, Loader2, Send, User, Paperclip, X, Copy, Check, Download, ArrowRight, Bot, ArrowDown } from 'lucide-react';
 import { chatEmpatheticTone, ChatEmpatheticToneInput } from '@/ai/flows/chat-empathetic-tone';
-import { generateChatTitle } from '@/ai/flows/generate-chat-title';
 import { Logo } from '@/components/icons';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
@@ -155,6 +154,14 @@ const MessageBubble = ({ message, senderName }: { message: Message; senderName: 
     );
 };
 
+// A simple, non-AI function to generate a chat title
+const generateSimpleChatTitle = (message: string): string => {
+    const words = message.split(' ');
+    // Take the first 4 words, or fewer if the message is shorter
+    return words.slice(0, 4).join(' ');
+};
+
+
 export default function ChatInterface({ conversationId }: { conversationId?: string }) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
@@ -253,10 +260,10 @@ export default function ChatInterface({ conversationId }: { conversationId?: str
 
     if (!currentConvoId) {
         const newConversationRef = doc(collection(db, `users/${user.uid}/conversations`));
-        const titleResult = await generateChatTitle({ message: messageText });
+        const title = generateSimpleChatTitle(messageText);
         
         await setDoc(newConversationRef, {
-            title: titleResult.title,
+            title: title,
             createdAt: serverTimestamp(),
         });
         currentConvoId = newConversationRef.id;
