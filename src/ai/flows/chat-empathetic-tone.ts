@@ -40,31 +40,19 @@ const ChatEmpatheticToneOutputSchema = z.object({
 export type ChatEmpatheticToneOutput = z.infer<typeof ChatEmpatheticToneOutputSchema>;
 
 export async function chatEmpatheticTone(input: ChatEmpatheticToneInput): Promise<ChatEmpatheticToneOutput> {
-  const maxRetries = 2;
-  let attempt = 0;
-
-  while (attempt <= maxRetries) {
-      try {
-          const { output } = await chatEmpatheticToneFlow(input);
-          if (output === null) {
-              throw new Error("The AI model did not return a valid response. This could be due to the safety filters being triggered.");
-          }
-          return output;
-      } catch (error: any) {
-          attempt++;
-          // Only retry on 503 Service Unavailable or schema validation errors.
-          if (attempt > maxRetries || (!error.message.includes('503 Service Unavailable') && !error.message.includes('Schema validation failed'))) {
-              // If it's the last attempt or a different error, re-throw to fail the flow.
-              throw error;
-          }
-          console.log(`AI model error. Retrying attempt ${attempt} of ${maxRetries}...`, error.message);
-          // Wait for a short duration before retrying.
-          await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
-      }
+  try {
+    const { output } = await chatEmpatheticToneFlow(input);
+    if (output === null) {
+      throw new Error("The AI model did not return a valid response. This could be due to the safety filters being triggered.");
+    }
+    return output;
+  } catch (error: any) {
+    console.error(`Error in chatEmpatheticTone flow: ${error.message}`);
+    // Return a user-friendly error message instead of crashing.
+    return {
+      response: "I'm sorry, I'm having a little trouble connecting right now. Please try again in a moment.",
+    };
   }
-  
-  // This should not be reached, but as a fallback, throw an error.
-  throw new Error('Failed to get a response from the AI model after several retries.');
 }
 
 const prompt = ai.definePrompt({
