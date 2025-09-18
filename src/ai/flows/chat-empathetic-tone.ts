@@ -42,7 +42,7 @@ export type ChatEmpatheticToneOutput = z.infer<typeof ChatEmpatheticToneOutputSc
 
 export async function chatEmpatheticTone(input: ChatEmpatheticToneInput): Promise<ChatEmpatheticToneOutput> {
   try {
-    const { output } = await chatEmpatheticToneFlow(input);
+    const output = await chatEmpatheticToneFlow(input);
     if (output === null) {
       throw new Error("The AI model did not return a valid response. This could be due to the safety filters being triggered.");
     }
@@ -167,8 +167,8 @@ const chatEmpatheticToneFlow = ai.defineFlow(
     inputSchema: ChatEmpatheticToneInputSchema,
     outputSchema: ChatEmpatheticToneOutputSchema,
   },
-  (input) => {
-    return prompt(input, {
+  async (input) => {
+    const { output } = await prompt(input, {
         model: googleAI.model('gemini-1.5-flash-latest'),
         config: {
           safetySettings: [
@@ -179,5 +179,7 @@ const chatEmpatheticToneFlow = ai.defineFlow(
           ],
         },
       });
+    
+    return output!;
   }
 );
