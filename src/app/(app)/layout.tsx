@@ -96,13 +96,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
-    if (!loading && !user) {
-      if (pathname.startsWith('/counsellor')) {
-        router.push('/counsellor-signin');
-      } else {
-        router.push('/signin');
-      }
-    } else if (!loading && user) {
+    if (!loading && user) {
         const checkUserType = async () => {
             if (user.email === ADMIN_EMAIL) {
                 setUserType('admin');
