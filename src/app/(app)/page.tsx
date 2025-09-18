@@ -2,7 +2,9 @@
 import { redirect } from 'next/navigation';
 
 export default function AppPage() {
-  // Redirect authenticated users from the root of the authenticated zone ('/app')
-  // to the main chat page. The public landing page is at '/'.
+  // This page is now the entry point for the authenticated app zone.
+  // It redirects users to the main chat page by default.
   redirect('/chat');
 }
+
+    
