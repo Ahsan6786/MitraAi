@@ -277,12 +277,19 @@ export default function BookingPage() {
             try {
                 const q = query(collection(db, 'counsellors'), where('status', '==', 'approved'));
                 const querySnapshot = await getDocs(q);
-                const counsellorsData = querySnapshot.docs.map(doc => {
+                const newNames = ["Dr. Rajesh Joshi", "Dr. Vivek Patil"];
+                
+                const counsellorsData = querySnapshot.docs.map((doc, index) => {
                     const data = doc.data();
-                    // Use a consistent, friendly male cartoon avatar for all counsellors
                     const avatarUrl = 'https://img.freepik.com/free-psd/3d-illustration-person-with-sunglasses_23-2149436188.jpg';
-                    return { id: doc.id, ...data, avatarUrl } as Counsellor
+                    return { 
+                        id: doc.id, 
+                        ...data,
+                        name: newNames[index] || data.name, // Use new name, fallback to original
+                        avatarUrl 
+                    } as Counsellor
                 });
+                
                 setCounsellors(counsellorsData);
             } catch (error) {
                 console.error("Error fetching counsellors:", error);
@@ -367,5 +374,3 @@ export default function BookingPage() {
         </div>
     );
 }
-
-    
