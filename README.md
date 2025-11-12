@@ -6,9 +6,8 @@
 
 <div align="center">
 
-<img src="https://github.com/Ahsan6786/MitraAI/assets/banner.png" width="100%" alt="MitraAI Banner"/>
 
-# 🧠 MITRA AI  
+#  MITRA AI  
 ### *Your AI-Powered Mental Wellness Companion*
 
 [![Next.js](https://img.shields.io/badge/Next.js-000000?style=for-the-badge&logo=nextdotjs&logoColor=white)]()
@@ -36,7 +35,6 @@ From **AI chat** to **VR relaxation**, it blends empathy and innovation into one
 
 ---
 
-## 🌈 Animated Features Overview  
 
 <div align="center">
 
