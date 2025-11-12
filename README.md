@@ -74,4 +74,3 @@ Each click, color, and animation is designed to **calm the user’s mind** while
 
 ---
 
-## 🧭 Project Structure
