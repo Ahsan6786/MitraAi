@@ -54,8 +54,6 @@ It combines **AI chat**, **mental health tools**, and **immersive VR experiences
 MitraAI embraces **motion therapy principles** — blending **Framer Motion animations**, **adaptive theming**, and **Gemini-based sentiment understanding**.  
 Each click, color, and animation is designed to **calm the user’s mind** while maintaining a futuristic interface.  
 
-> 🌠 _Technology with empathy — that’s MitraAI._
-
 ---
 
 ## ⚙️ Tech Stack
